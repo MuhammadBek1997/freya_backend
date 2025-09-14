@@ -3,12 +3,12 @@ const router = express.Router();
 const {
     getAllMasterSalons,
     getMasterSalonById,
+    createMasterSalon,
     updateMasterSalon,
     deleteMasterSalon,
     addMasterSalonComment,
     getMasterSalonComments
 } = require('../controllers/masterSalonController');
-const { createMasterSalon } = require('../controllers/salonController');
 const { verifyAdmin } = require('../middleware/authMiddleware');
 
 /**

@@ -1,4 +1,4 @@
-const db = require('../config/database');
+const { pool } = require('../config/database');
 
 // Get all employees for a specific salon
 const getEmployeesBySalonId = async (req, res) => {
@@ -13,36 +13,36 @@ const getEmployeesBySalonId = async (req, res) => {
                    AVG(c.rating) as avg_rating
             FROM employees e
             LEFT JOIN employee_comments c ON e.id = c.employee_id
-            WHERE e.salon_id = ?
+            WHERE e.salon_id = $1
         `;
         
         const params = [salonId];
         
         if (search) {
-            query += ` AND (e.name LIKE ? OR e.surname LIKE ? OR e.profession LIKE ?)`;
+            query += ` AND (e.name ILIKE $2 OR e.surname ILIKE $3 OR e.profession ILIKE $4)`;
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
-        query += ` GROUP BY e.id ORDER BY e.created_at DESC LIMIT ? OFFSET ?`;
+        query += ` GROUP BY e.id ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
-        const employees = await db.query(query, params);
+        const employees = await pool.query(query, params);
         
         // Get total count
-        let countQuery = `SELECT COUNT(*) as total FROM employees WHERE salon_id = ?`;
+        let countQuery = `SELECT COUNT(*) as total FROM employees WHERE salon_id = $1`;
         const countParams = [salonId];
         
         if (search) {
-            countQuery += ` AND (name LIKE ? OR surname LIKE ? OR profession LIKE ?)`;
+            countQuery += ` AND (name ILIKE $2 OR surname ILIKE $3 OR profession ILIKE $4)`;
             countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
-        const totalResult = await db.query(countQuery, countParams);
-        const total = totalResult[0].total;
+        const totalResult = await pool.query(countQuery, countParams);
+        const total = totalResult.rows[0].total;
 
         res.json({
             success: true,
-            data: employees,
+            data: employees.rows,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -66,53 +66,53 @@ const getEmployeeById = async (req, res) => {
         
         // Get employee basic info
         const employeeQuery = `
-            SELECT e.*, s.name as salon_name
+            SELECT e.*, s.salon_name as salon_name
             FROM employees e
             LEFT JOIN salons s ON e.salon_id = s.id
-            WHERE e.id = ?
+            WHERE e.id = $1
         `;
-        const employees = await db.query(employeeQuery, [id]);
+        const employees = await pool.query(employeeQuery, [id]);
         
-        if (employees.length === 0) {
+        if (employees.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
             });
         }
         
-        const employee = employees[0];
+        const employee = employees.rows[0];
         
         // Get comments
         const commentsQuery = `
             SELECT c.*, u.username, u.full_name
             FROM employee_comments c
             LEFT JOIN users u ON c.user_id = u.id
-            WHERE c.employee_id = ?
+            WHERE c.employee_id = $1
             ORDER BY c.created_at DESC
         `;
-        const comments = await db.query(commentsQuery, [id]);
+        const comments = await pool.query(commentsQuery, [id]);
         
         // Get posts
         const postsQuery = `
             SELECT p.*, 
-                   GROUP_CONCAT(pm.file_path) as media_files
+                   STRING_AGG(pm.file_path, ',') as media_files
             FROM employee_posts p
             LEFT JOIN post_media pm ON p.id = pm.post_id
-            WHERE p.employee_id = ?
+            WHERE p.employee_id = $1
             GROUP BY p.id
             ORDER BY p.created_at DESC
         `;
-        const posts = await db.query(postsQuery, [id]);
+        const posts = await pool.query(postsQuery, [id]);
         
         // Format posts with media
-        const formattedPosts = posts.map(post => ({
+        const formattedPosts = posts.rows.map(post => ({
             ...post,
             media: post.media_files ? post.media_files.split(',') : []
         }));
         
         // Calculate average rating
-        const avgRating = comments.length > 0 
-            ? comments.reduce((sum, comment) => sum + comment.rating, 0) / comments.length 
+        const avgRating = comments.rows.length > 0 
+            ? comments.rows.reduce((sum, comment) => sum + comment.rating, 0) / comments.rows.length 
             : 0;
         
         res.json({
@@ -120,7 +120,7 @@ const getEmployeeById = async (req, res) => {
             data: {
                 ...employee,
                 rating: parseFloat(avgRating.toFixed(1)),
-                comments,
+                comments: comments.rows,
                 posts: formattedPosts
             }
         });
@@ -148,12 +148,12 @@ const createEmployee = async (req, res) => {
         } = req.body;
         
         // Check if username or email already exists
-        const existingEmployee = await db.query(
-            'SELECT id FROM employees WHERE username = ? OR email = ?',
+        const existingEmployee = await pool.query(
+            'SELECT id FROM employees WHERE username = $1 OR email = $2',
             [username, email]
         );
         
-        if (existingEmployee.length > 0) {
+        if (existingEmployee.rows.length > 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Username yoki email allaqachon mavjud'
@@ -162,10 +162,11 @@ const createEmployee = async (req, res) => {
         
         const query = `
             INSERT INTO employees (salon_id, name, surname, phone, email, profession, username, password, is_waiting)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id
         `;
         
-        const result = await db.query(query, [
+        const result = await pool.query(query, [
             salon_id, name, surname, phone, email, profession, username, password, true
         ]);
         
@@ -173,7 +174,7 @@ const createEmployee = async (req, res) => {
             success: true,
             message: 'Xodim muvaffaqiyatli yaratildi',
             data: {
-                id: result.insertId,
+                id: result.rows[0].id,
                 salon_id,
                 name,
                 surname,
@@ -206,8 +207,8 @@ const updateEmployee = async (req, res) => {
         } = req.body;
         
         // Check if employee exists
-        const existingEmployee = await db.query('SELECT id FROM employees WHERE id = ?', [id]);
-        if (existingEmployee.length === 0) {
+        const existingEmployee = await pool.query('SELECT id FROM employees WHERE id = $1', [id]);
+        if (existingEmployee.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
@@ -215,12 +216,12 @@ const updateEmployee = async (req, res) => {
         }
         
         // Check if username or email already exists for other employees
-        const duplicateCheck = await db.query(
-            'SELECT id FROM employees WHERE (username = ? OR email = ?) AND id != ?',
+        const duplicateCheck = await pool.query(
+            'SELECT id FROM employees WHERE (username = $1 OR email = $2) AND id != $3',
             [username, email, id]
         );
         
-        if (duplicateCheck.length > 0) {
+        if (duplicateCheck.rows.length > 0) {
             return res.status(400).json({
                 success: false,
                 message: 'Username yoki email allaqachon mavjud'
@@ -229,11 +230,11 @@ const updateEmployee = async (req, res) => {
         
         const query = `
             UPDATE employees 
-            SET name = ?, surname = ?, phone = ?, email = ?, profession = ?, username = ?
-            WHERE id = ?
+            SET name = $1, surname = $2, phone = $3, email = $4, profession = $5, username = $6
+            WHERE id = $7
         `;
         
-        await db.query(query, [name, surname, phone, email, profession, username, id]);
+        await pool.query(query, [name, surname, phone, email, profession, username, id]);
         
         res.json({
             success: true,
@@ -254,8 +255,8 @@ const deleteEmployee = async (req, res) => {
         const { id } = req.params;
         
         // Check if employee exists
-        const existingEmployee = await db.query('SELECT id FROM employees WHERE id = ?', [id]);
-        if (existingEmployee.length === 0) {
+        const existingEmployee = await pool.query('SELECT id FROM employees WHERE id = $1', [id]);
+        if (existingEmployee.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
@@ -263,7 +264,7 @@ const deleteEmployee = async (req, res) => {
         }
         
         // Soft delete
-        await db.query('UPDATE employees SET deleted_at = NOW() WHERE id = ?', [id]);
+        await pool.query('UPDATE employees SET deleted_at = CURRENT_TIMESTAMP WHERE id = $1', [id]);
         
         res.json({
             success: true,
@@ -286,8 +287,8 @@ const addEmployeeComment = async (req, res) => {
         const userId = req.user.id; // From auth middleware
         
         // Check if employee exists
-        const employee = await db.query('SELECT id FROM employees WHERE id = ?', [id]);
-        if (employee.length === 0) {
+        const employee = await pool.query('SELECT id FROM employees WHERE id = $1', [id]);
+        if (employee.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
@@ -296,16 +297,17 @@ const addEmployeeComment = async (req, res) => {
         
         const query = `
             INSERT INTO employee_comments (employee_id, user_id, text, rating)
-            VALUES (?, ?, ?, ?)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id
         `;
         
-        const result = await db.query(query, [id, userId, text, rating]);
+        const result = await pool.query(query, [id, userId, text, rating]);
         
         res.status(201).json({
             success: true,
             message: 'Izoh muvaffaqiyatli qo\'shildi',
             data: {
-                id: result.insertId,
+                id: result.rows[0].id,
                 employee_id: id,
                 user_id: userId,
                 text,
@@ -328,8 +330,8 @@ const addEmployeePost = async (req, res) => {
         const { title, description, media } = req.body;
         
         // Check if employee exists
-        const employee = await db.query('SELECT id FROM employees WHERE id = ?', [id]);
-        if (employee.length === 0) {
+        const employee = await pool.query('SELECT id FROM employees WHERE id = $1', [id]);
+        if (employee.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
@@ -338,17 +340,18 @@ const addEmployeePost = async (req, res) => {
         
         const postQuery = `
             INSERT INTO employee_posts (employee_id, title, description)
-            VALUES (?, ?, ?)
+            VALUES ($1, $2, $3)
+            RETURNING id
         `;
         
-        const result = await db.query(postQuery, [id, title, description]);
-        const postId = result.insertId;
+        const result = await pool.query(postQuery, [id, title, description]);
+        const postId = result.rows[0].id;
         
         // Add media files if provided
         if (media && media.length > 0) {
-            const mediaQuery = 'INSERT INTO post_media (post_id, file_path) VALUES ?';
-            const mediaValues = media.map(filePath => [postId, filePath]);
-            await db.query(mediaQuery, [mediaValues]);
+            for (const filePath of media) {
+                await pool.query('INSERT INTO post_media (post_id, file_path) VALUES ($1, $2)', [postId, filePath]);
+            }
         }
         
         res.status(201).json({
@@ -386,13 +389,13 @@ const updateEmployeeWaitingStatus = async (req, res) => {
 
         const query = `
             UPDATE employees 
-            SET is_waiting = ?, updated_at = NOW() 
-            WHERE id = ?
+            SET is_waiting = $1, updated_at = CURRENT_TIMESTAMP 
+            WHERE id = $2
         `;
         
-        const result = await db.query(query, [is_waiting, id]);
+        const result = await pool.query(query, [is_waiting, id]);
         
-        if (result.affectedRows === 0) {
+        if (result.rowCount === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Xodim topilmadi'
@@ -432,21 +435,21 @@ const bulkUpdateEmployeeWaitingStatus = async (req, res) => {
             });
         }
 
-        const placeholders = employee_ids.map(() => '?').join(',');
+        const placeholders = employee_ids.map((_, index) => `$${index + 2}`).join(',');
         const query = `
             UPDATE employees 
-            SET is_waiting = ?, updated_at = NOW() 
+            SET is_waiting = $1, updated_at = CURRENT_TIMESTAMP 
             WHERE id IN (${placeholders})
         `;
         
         const params = [is_waiting, ...employee_ids];
-        const result = await db.query(query, params);
+        const result = await pool.query(query, params);
         
         res.json({
             success: true,
-            message: `${result.affectedRows} ta xodim holati muvaffaqiyatli yangilandi`,
+            message: `${result.rowCount} ta xodim holati muvaffaqiyatli yangilandi`,
             data: {
-                updated_count: result.affectedRows,
+                updated_count: result.rowCount,
                 employee_ids,
                 is_waiting
             }

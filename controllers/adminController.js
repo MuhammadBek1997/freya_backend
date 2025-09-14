@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const db = require('../config/database');
+const pool = require('../config/database');
 const authMiddleware = require('../middleware/authMiddleware');
 
 const adminController = {
@@ -13,7 +13,7 @@ const adminController = {
       }
 
       // Find admin by email
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT * FROM admins WHERE email = $1 AND is_active = true',
         [email]
       );
@@ -57,7 +57,7 @@ const adminController = {
       }
 
       // Check if admin already exists
-      const existingAdmin = await db.query(
+      const existingAdmin = await pool.query(
         'SELECT id FROM admins WHERE email = $1 OR username = $2',
         [email, username]
       );
@@ -71,7 +71,7 @@ const adminController = {
       const password_hash = await bcrypt.hash(password, saltRounds);
 
       // Create admin
-      const result = await db.query(
+      const result = await pool.query(
         'INSERT INTO admins (username, email, password_hash, full_name) VALUES ($1, $2, $3, $4) RETURNING id, username, email, full_name, role, created_at',
         [username, email, password_hash, full_name]
       );
@@ -94,17 +94,17 @@ const adminController = {
   getDashboard: async (req, res) => {
     try {
       // Get statistics
-      const userCount = await db.query('SELECT COUNT(*) FROM users WHERE is_active = true');
-      const contentCount = await db.query('SELECT COUNT(*) FROM content');
-      const publishedContentCount = await db.query('SELECT COUNT(*) FROM content WHERE status = \'published\'');
+      const userCount = await pool.query('SELECT COUNT(*) FROM users WHERE is_active = true');
+      const contentCount = await pool.query('SELECT COUNT(*) FROM content');
+      const publishedContentCount = await pool.query('SELECT COUNT(*) FROM content WHERE status = \'published\'');
       
       // Get recent users
-      const recentUsers = await db.query(
+      const recentUsers = await pool.query(
         'SELECT id, full_name, email, created_at FROM users ORDER BY created_at DESC LIMIT 5'
       );
 
       // Get recent content
-      const recentContent = await db.query(
+      const recentContent = await pool.query(
         'SELECT id, title, content_type, status, created_at FROM content ORDER BY created_at DESC LIMIT 5'
       );
 
@@ -130,12 +130,12 @@ const adminController = {
       const limit = parseInt(req.query.limit) || 10;
       const offset = (page - 1) * limit;
 
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT id, username, email, full_name, phone, is_active, is_verified, created_at FROM users ORDER BY created_at DESC LIMIT $1 OFFSET $2',
         [limit, offset]
       );
 
-      const totalResult = await db.query('SELECT COUNT(*) FROM users');
+      const totalResult = await pool.query('SELECT COUNT(*) FROM users');
       const total = parseInt(totalResult.rows[0].count);
 
       res.json({
@@ -158,7 +158,7 @@ const adminController = {
     try {
       const { id } = req.params;
 
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT id, username, email, full_name, phone, avatar_url, date_of_birth, gender, is_active, is_verified, last_login, created_at FROM users WHERE id = $1',
         [id]
       );
@@ -180,7 +180,7 @@ const adminController = {
       const { id } = req.params;
       const { full_name, phone, is_active, is_verified } = req.body;
 
-      const result = await db.query(
+      const result = await pool.query(
         'UPDATE users SET full_name = $1, phone = $2, is_active = $3, is_verified = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5 RETURNING *',
         [full_name, phone, is_active, is_verified, id]
       );
@@ -202,7 +202,7 @@ const adminController = {
     try {
       const { id } = req.params;
 
-      const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+      const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Foydalanuvchi topilmadi' });
@@ -234,7 +234,7 @@ const adminController = {
       query += ' ORDER BY created_at DESC LIMIT $' + (params.length + 1) + ' OFFSET $' + (params.length + 2);
       params.push(limit, offset);
 
-      const result = await db.query(query, params);
+      const result = await pool.query(query, params);
 
       let countQuery = 'SELECT COUNT(*) FROM content';
       let countParams = [];
@@ -243,7 +243,7 @@ const adminController = {
         countParams.push(status);
       }
 
-      const totalResult = await db.query(countQuery, countParams);
+      const totalResult = await pool.query(countQuery, countParams);
       const total = parseInt(totalResult.rows[0].count);
 
       res.json({
@@ -271,7 +271,7 @@ const adminController = {
         return res.status(400).json({ message: 'Sarlavha va kontent turi talab qilinadi' });
       }
 
-      const result = await db.query(
+      const result = await pool.query(
         'INSERT INTO content (title, description, content_type, content_data, image_url, video_url, status, tags, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *',
         [title, description, content_type, JSON.stringify(content_data), image_url, video_url, status || 'draft', tags, created_by]
       );
@@ -292,7 +292,7 @@ const adminController = {
       const { id } = req.params;
       const { title, description, content_type, content_data, image_url, video_url, status, tags } = req.body;
 
-      const result = await db.query(
+      const result = await pool.query(
         'UPDATE content SET title = $1, description = $2, content_type = $3, content_data = $4, image_url = $5, video_url = $6, status = $7, tags = $8, updated_at = CURRENT_TIMESTAMP WHERE id = $9 RETURNING *',
         [title, description, content_type, JSON.stringify(content_data), image_url, video_url, status, tags, id]
       );
@@ -316,7 +316,7 @@ const adminController = {
     try {
       const { id } = req.params;
 
-      const result = await db.query('DELETE FROM content WHERE id = $1 RETURNING id', [id]);
+      const result = await pool.query('DELETE FROM content WHERE id = $1 RETURNING id', [id]);
 
       if (result.rows.length === 0) {
         return res.status(404).json({ message: 'Kontent topilmadi' });
@@ -333,7 +333,7 @@ const adminController = {
   getAnalytics: async (req, res) => {
     try {
       // Get daily user registrations for last 30 days
-      const userRegistrations = await db.query(`
+      const userRegistrations = await pool.query(`
         SELECT DATE(created_at) as date, COUNT(*) as count 
         FROM users 
         WHERE created_at >= CURRENT_DATE - INTERVAL '30 days' 
@@ -342,14 +342,14 @@ const adminController = {
       `);
 
       // Get content views by type
-      const contentViews = await db.query(`
+      const contentViews = await pool.query(`
         SELECT content_type, SUM(view_count) as total_views 
         FROM content 
         GROUP BY content_type
       `);
 
       // Get top content
-      const topContent = await db.query(`
+      const topContent = await pool.query(`
         SELECT title, view_count, like_count 
         FROM content 
         WHERE status = 'published' 

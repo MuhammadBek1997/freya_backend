@@ -8,11 +8,11 @@ const getAllMasterSalons = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT * FROM salons 
+            SELECT * FROM master_salons 
             WHERE is_active = true
         `;
         let countQuery = `
-            SELECT COUNT(*) as total FROM salons 
+            SELECT COUNT(*) as total FROM master_salons 
             WHERE is_active = true
         `;
         
@@ -91,7 +91,7 @@ const getMasterSalonById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const query = 'SELECT * FROM salons WHERE id = $1 AND is_active = true AND salon_format::text LIKE \'%"format":"private"%\'';
+        const query = 'SELECT * FROM master_salons WHERE id = $1 AND is_active = true';
         const result = await pool.query(query, [id]);
 
         if (result.rows.length === 0) {
@@ -156,7 +156,7 @@ const updateMasterSalon = async (req, res) => {
         } = req.body;
 
         // Check if master salon exists
-        const checkQuery = 'SELECT * FROM salons WHERE id = $1 AND salon_format::text LIKE \'%"format":"private"%\'';
+        const checkQuery = 'SELECT * FROM master_salons WHERE id = $1 AND salon_format::text LIKE \'%"format":"private"%\'';
         const checkResult = await pool.query(checkQuery, [id]);
 
         if (checkResult.rows.length === 0) {
@@ -167,7 +167,7 @@ const updateMasterSalon = async (req, res) => {
         }
 
         const query = `
-            UPDATE salons SET
+            UPDATE master_salons SET
                 salon_name = $1, salon_phone = $2, salon_add_phone = $3, salon_instagram = $4,
                 salon_rating = $5, comments = $6, salon_payment = $7, salon_description = $8, salon_types = $9,
                 salon_format = $10, work_schedule = $11, salon_title = $12, salon_additionals = $13, sale_percent = $14,
@@ -193,7 +193,7 @@ const updateMasterSalon = async (req, res) => {
             salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
             salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
             salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            salon.salon_format = salon.salon_format && salon.salon_format !== 'null' ? JSON.parse(salon.salon_format) : [];
+            salon.salon_format = salon.salon_format && salon.salon_format !== 'null' ? JSON.parse(salon.salon_format) : masterSalonFormat;
             salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
             salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
             salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
@@ -206,7 +206,7 @@ const updateMasterSalon = async (req, res) => {
             salon.comments = [];
             salon.salon_payment = null;
             salon.salon_types = [];
-            salon.salon_format = [];
+            salon.salon_format = masterSalonFormat;
             salon.work_schedule = [];
             salon.salon_additionals = [];
             salon.location = null;
@@ -236,7 +236,7 @@ const deleteMasterSalon = async (req, res) => {
         const { id } = req.params;
 
         // Check if master salon exists
-        const checkQuery = 'SELECT * FROM salons WHERE id = $1 AND salon_format::text LIKE \'%"format":"private"%\'';
+        const checkQuery = 'SELECT * FROM master_salons WHERE id = $1 AND salon_format::text LIKE \'%"format":"private"%\'';
         const checkResult = await pool.query(checkQuery, [id]);
 
         if (checkResult.rows.length === 0) {
@@ -247,7 +247,7 @@ const deleteMasterSalon = async (req, res) => {
         }
 
         // Soft delete - set is_active to false
-        const query = 'UPDATE salons SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1';
+        const query = 'UPDATE master_salons SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1';
         await pool.query(query, [id]);
 
         res.json({
@@ -292,7 +292,7 @@ const addMasterSalonComment = async (req, res) => {
         };
 
         const result = await pool.query(
-            `UPDATE salons 
+            `UPDATE master_salons 
              SET comments = COALESCE(comments, '[]'::jsonb) || $1::jsonb 
              WHERE id = $2 AND is_active = true 
              RETURNING *`,
@@ -328,7 +328,7 @@ const getMasterSalonComments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         const result = await pool.query(
-            'SELECT comments FROM salons WHERE id = $1 AND is_active = true',
+            'SELECT comments FROM master_salons WHERE id = $1 AND is_active = true',
             [id]
         );
 
@@ -400,9 +400,109 @@ const getMasterSalonComments = async (req, res) => {
     }
 };
 
+// Create master salon
+const createMasterSalon = async (req, res) => {
+    try {
+        const {
+            salon_name, salon_phone, salon_add_phone, salon_instagram,
+            salon_rating, comments, salon_payment, salon_description, salon_types,
+            salon_format, work_schedule, salon_title, salon_additionals, sale_percent,
+            sale_limit, location, salon_orient, salon_photos, salon_comfort
+        } = req.body;
+
+        if (!salon_name || !salon_phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Salon nomi va telefon raqami majburiy'
+            });
+        }
+
+        // Ensure salon_format is set to private for master salon
+        const masterSalonFormat = [{ "selected": true, "format": "private" }];
+
+        const query = `
+            INSERT INTO master_salons (
+                salon_name, salon_phone, salon_add_phone, salon_instagram,
+                salon_rating, comments, salon_payment, salon_description, salon_types,
+                salon_format, work_schedule, salon_title, salon_additionals, sale_percent,
+                sale_limit, location, salon_orient, salon_photos, salon_comfort,
+                is_active, created_at, updated_at
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            ) RETURNING *
+        `;
+
+        const values = [
+            salon_name,
+            salon_phone,
+            salon_add_phone || null,
+            salon_instagram || null,
+            salon_rating || '0',
+            JSON.stringify(comments || []),
+            JSON.stringify(salon_payment || null),
+            salon_description || null,
+            JSON.stringify(salon_types || []),
+            JSON.stringify(masterSalonFormat),
+            JSON.stringify(work_schedule || []),
+            salon_title || null,
+            JSON.stringify(salon_additionals || []),
+            sale_percent || 0,
+            sale_limit || 0,
+            JSON.stringify(location || null),
+            JSON.stringify(salon_orient || null),
+            JSON.stringify(salon_photos || []),
+            JSON.stringify(salon_comfort || [])
+        ];
+
+        const result = await pool.query(query, values);
+        const salon = result.rows[0];
+
+        // Parse JSON fields back to objects
+        try {
+            salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
+            salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
+            salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
+            salon.salon_format = salon.salon_format && salon.salon_format !== 'null' ? JSON.parse(salon.salon_format) : [];
+            salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
+            salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
+            salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
+            salon.salon_orient = salon.salon_orient && salon.salon_orient !== 'null' ? JSON.parse(salon.salon_orient) : null;
+            salon.salon_photos = salon.salon_photos && salon.salon_photos !== 'null' ? JSON.parse(salon.salon_photos) : [];
+            salon.salon_comfort = salon.salon_comfort && salon.salon_comfort !== 'null' ? JSON.parse(salon.salon_comfort) : [];
+        } catch (parseError) {
+            console.error('JSON parsing error:', parseError);
+            // Set default values if parsing fails
+            salon.comments = [];
+            salon.salon_payment = null;
+            salon.salon_types = [];
+            salon.salon_format = [];
+            salon.work_schedule = [];
+            salon.salon_additionals = [];
+            salon.location = null;
+            salon.salon_orient = null;
+            salon.salon_photos = [];
+            salon.salon_comfort = [];
+        }
+
+        res.status(201).json({
+            success: true,
+            message: 'Master salon muvaffaqiyatli yaratildi',
+            data: salon
+        });
+    } catch (error) {
+        console.error('Master salon yaratishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAllMasterSalons,
     getMasterSalonById,
+    createMasterSalon,
     updateMasterSalon,
     deleteMasterSalon,
     addMasterSalonComment,

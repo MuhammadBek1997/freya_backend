@@ -127,6 +127,76 @@ CREATE TABLE IF NOT EXISTS salons (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Employees table
+CREATE TABLE IF NOT EXISTS employees (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    surname VARCHAR(100) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(100) UNIQUE,
+    profession VARCHAR(100),
+    username VARCHAR(50) UNIQUE,
+    password VARCHAR(255),
+    avatar_url VARCHAR(255),
+    bio TEXT,
+    experience_years INTEGER DEFAULT 0,
+    rating DECIMAL(3,2) DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    is_waiting BOOLEAN DEFAULT true,
+    deleted_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Employee comments table
+CREATE TABLE IF NOT EXISTS employee_comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    text TEXT NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Employee posts table
+CREATE TABLE IF NOT EXISTS employee_posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    image_url VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Master salons table
+CREATE TABLE IF NOT EXISTS master_salons (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    salon_logo VARCHAR(255),
+    salon_name VARCHAR(200) NOT NULL,
+    salon_phone VARCHAR(20),
+    salon_add_phone VARCHAR(20),
+    salon_instagram VARCHAR(100),
+    salon_rating DECIMAL(3,2) DEFAULT 0,
+    comments JSONB DEFAULT '[]',
+    salon_payment JSONB,
+    salon_description TEXT,
+    salon_types JSONB DEFAULT '[]',
+    salon_format JSONB DEFAULT '[]',
+    work_schedule JSONB DEFAULT '[]',
+    salon_title VARCHAR(200),
+    salon_additionals JSONB DEFAULT '[]',
+    sale_percent INTEGER DEFAULT 0,
+    sale_limit INTEGER DEFAULT 0,
+    location JSONB,
+    salon_orient JSONB,
+    salon_photos JSONB DEFAULT '[]',
+    salon_comfort JSONB DEFAULT '[]',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -140,6 +210,15 @@ CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON analytics(created_at);
 CREATE INDEX IF NOT EXISTS idx_salons_name ON salons(salon_name);
 CREATE INDEX IF NOT EXISTS idx_salons_rating ON salons(salon_rating);
 CREATE INDEX IF NOT EXISTS idx_salons_active ON salons(is_active);
+CREATE INDEX IF NOT EXISTS idx_employees_salon_id ON employees(salon_id);
+CREATE INDEX IF NOT EXISTS idx_employees_email ON employees(email);
+CREATE INDEX IF NOT EXISTS idx_employees_username ON employees(username);
+CREATE INDEX IF NOT EXISTS idx_employees_active ON employees(is_active);
+CREATE INDEX IF NOT EXISTS idx_employee_comments_employee_id ON employee_comments(employee_id);
+CREATE INDEX IF NOT EXISTS idx_employee_posts_employee_id ON employee_posts(employee_id);
+CREATE INDEX IF NOT EXISTS idx_master_salons_name ON master_salons(salon_name);
+CREATE INDEX IF NOT EXISTS idx_master_salons_rating ON master_salons(salon_rating);
+CREATE INDEX IF NOT EXISTS idx_master_salons_active ON master_salons(is_active);
 
 -- Insert default admin user (password: admin123)
 INSERT INTO admins (username, email, password_hash, full_name) 
