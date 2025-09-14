@@ -4,6 +4,7 @@ const pool = require('../config/database');
 
 // Create a new salon
 const createSalon = async (req, res) => {
+    console.log('CreateSalon function called with body:', req.body);
     try {
         const {
             salon_name,
@@ -15,7 +16,7 @@ const createSalon = async (req, res) => {
             salon_payment,
             salon_description,
             salon_types = [],
-            salon_format = [{"selected":true,"format":"corporative"}],
+            private_salon = false,
             work_schedule = [],
             salon_title,
             salon_additionals = [],
@@ -39,7 +40,7 @@ const createSalon = async (req, res) => {
             INSERT INTO salons (
                 salon_name, salon_phone, salon_add_phone, salon_instagram,
                 salon_rating, comments, salon_payment, salon_description, salon_types,
-                salon_format, work_schedule, salon_title, salon_additionals, sale_percent,
+                private_salon, work_schedule, salon_title, salon_additionals, sale_percent,
                 sale_limit, location, salon_orient, salon_photos, salon_comfort
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
             RETURNING *
@@ -55,7 +56,7 @@ const createSalon = async (req, res) => {
             JSON.stringify(salon_payment),
             salon_description,
             JSON.stringify(salon_types),
-            JSON.stringify(salon_format),
+            private_salon,
             JSON.stringify(work_schedule),
             salon_title,
             JSON.stringify(salon_additionals),
@@ -67,7 +68,9 @@ const createSalon = async (req, res) => {
             JSON.stringify(salon_comfort)
         ];
 
+        console.log('Executing database query...');
         const result = await pool.query(query, values);
+        console.log('Database query completed successfully');
         const salon = result.rows[0];
 
         // Parse JSON fields back to objects
@@ -75,7 +78,7 @@ const createSalon = async (req, res) => {
             salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
             salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
             salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            salon.salon_format = salon.salon_format && salon.salon_format !== 'null' ? JSON.parse(salon.salon_format) : [{"selected":true,"format":"private"}];
+            // private_salon is already a boolean, no need to parse
             salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
             salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
             salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
@@ -88,7 +91,7 @@ const createSalon = async (req, res) => {
             salon.comments = [];
             salon.salon_payment = null;
             salon.salon_types = [];
-            salon.salon_format = [{"selected":true,"format":"corporative"}];
+            // private_salon is already a boolean, no need to set default
             salon.work_schedule = [];
             salon.salon_additionals = [];
             salon.location = null;
@@ -114,103 +117,7 @@ const createSalon = async (req, res) => {
 };
 
 // Create a new master salon
-const createMasterSalon = async (req, res) => {
-    try {
-        const {
-            salon_name,
-            salon_phone,
-            salon_add_phone,
-            salon_instagram,
-            salon_rating = 0,
-            comments = [],
-            salon_payment,
-            salon_description,
-            salon_types = [],
-            work_schedule = [],
-            salon_title,
-            salon_additionals = [],
-            sale_percent = 0,
-            sale_limit = 0,
-            location,
-            salon_orient,
-            salon_photos = [],
-            salon_comfort = []
-        } = req.body;
-        
-        // Force salon_format to be "private" for master salons
-        let salon_format = [{"selected":true,"format":"private"}];
 
-        // Validate required fields
-        if (!salon_name || !salon_phone) {
-            return res.status(400).json({
-                success: false,
-                message: 'Salon nomi va telefon raqami majburiy'
-            });
-        }
-
-
-
-        const query = `
-            INSERT INTO salons (
-                salon_name, salon_phone, salon_add_phone, salon_instagram,
-                salon_rating, comments, salon_payment, salon_description, salon_types,
-                salon_format, work_schedule, salon_title, salon_additionals, sale_percent,
-                sale_limit, location, salon_orient, salon_photos, salon_comfort
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-            RETURNING *
-        `;
-
-        const values = [
-            salon_name, salon_phone, salon_add_phone, salon_instagram,
-            salon_rating, JSON.stringify(comments), JSON.stringify(salon_payment), salon_description, JSON.stringify(salon_types),
-            JSON.stringify(salon_format), JSON.stringify(work_schedule), salon_title, JSON.stringify(salon_additionals), sale_percent,
-            sale_limit, JSON.stringify(location), JSON.stringify(salon_orient), JSON.stringify(salon_photos), JSON.stringify(salon_comfort)
-        ];
-
-        const result = await pool.query(query, values);
-        const salon = result.rows[0];
-
-        // Parse JSON fields back to objects
-        try {
-            salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
-            salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
-            salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            salon.salon_format = salon.salon_format && salon.salon_format !== 'null' ? JSON.parse(salon.salon_format) : [{"selected":true,"format":"private"}];
-            salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
-            salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
-            salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
-            salon.salon_orient = salon.salon_orient && salon.salon_orient !== 'null' ? JSON.parse(salon.salon_orient) : null;
-            salon.salon_photos = salon.salon_photos && salon.salon_photos !== 'null' ? JSON.parse(salon.salon_photos) : [];
-            salon.salon_comfort = salon.salon_comfort && salon.salon_comfort !== 'null' ? JSON.parse(salon.salon_comfort) : [];
-        } catch (parseError) {
-            console.error('JSON parsing error:', parseError);
-            // Set default values if parsing fails
-            salon.comments = [];
-            salon.salon_payment = null;
-            salon.salon_types = [];
-            salon.salon_format = [{"selected":true,"format":"corporative"}];
-            salon.work_schedule = [];
-            salon.salon_additionals = [];
-            salon.location = null;
-            salon.salon_orient = null;
-            salon.salon_photos = [];
-            salon.salon_comfort = [];
-        }
-
-        res.status(201).json({
-            success: true,
-            message: 'Master salon muvaffaqiyatli yaratildi',
-            data: salon
-        });
-    } catch (error) {
-        console.error('Master salon yaratishda xatolik:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server xatoligi',
-            error: error.message
-        });
-    }
-};
 
 // Get all salons
 const getAllSalons = async (req, res) => {
@@ -250,8 +157,7 @@ const getAllSalons = async (req, res) => {
                 salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
                 salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
                 salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-                const parsedFormat = salon.salon_format && salon.salon_format !== 'null' && salon.salon_format !== '[]' ? JSON.parse(salon.salon_format) : null;
-            salon.salon_format = parsedFormat && parsedFormat.length > 0 ? parsedFormat : [{"selected":true,"format":"corporative"}];
+                // private_salon is already a boolean, no need to parse
                 salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
                 salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
                 salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
@@ -264,7 +170,7 @@ const getAllSalons = async (req, res) => {
                 salon.comments = [];
                 salon.salon_payment = null;
                 salon.salon_types = [];
-                salon.salon_format = [{"selected":true,"format":"corporative"}];
+                // private_salon is already a boolean, no need to set default
                 salon.work_schedule = [];
                 salon.salon_additionals = [];
                 salon.location = null;
@@ -322,8 +228,7 @@ const getSalonById = async (req, res) => {
             salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
             salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
             salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            const parsedFormat = salon.salon_format && salon.salon_format !== 'null' && salon.salon_format !== '[]' ? JSON.parse(salon.salon_format) : null;
-            salon.salon_format = parsedFormat && parsedFormat.length > 0 ? parsedFormat : [{"selected":true,"format":"corporative"}];
+            // private_salon is already a boolean, no need to parse
             salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
             salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
             salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
@@ -336,7 +241,7 @@ const getSalonById = async (req, res) => {
             salon.comments = [];
             salon.salon_payment = null;
             salon.salon_types = [];
-            salon.salon_format = [];
+            salon.salon_format = {"selected":true,"format":"corporative"};
             salon.work_schedule = [];
             salon.salon_additionals = [];
             salon.location = null;
@@ -414,7 +319,7 @@ const updateSalon = async (req, res) => {
         salon.comments = JSON.parse(salon.comments || '[]');
         salon.salon_payment = JSON.parse(salon.salon_payment || '{}');
         salon.salon_types = JSON.parse(salon.salon_types || '[]');
-        salon.salon_format = JSON.parse(salon.salon_format || '[]');
+        salon.salon_format = JSON.parse(salon.salon_format || '{"selected":true,"format":"corporative"}');
         salon.work_schedule = JSON.parse(salon.work_schedule || '[]');
         salon.salon_additionals = JSON.parse(salon.salon_additionals || '[]');
         salon.location = JSON.parse(salon.location || '{}');
@@ -557,7 +462,6 @@ const getSalonComments = async (req, res) => {
 
 module.exports = {
     createSalon,
-    createMasterSalon,
     getAllSalons,
     getSalonById,
     updateSalon,

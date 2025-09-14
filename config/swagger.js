@@ -1,214 +1,139 @@
-const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerJSDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 
-const options = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Freya Backend API',
-      version: '1.0.0',
-      description: 'Freya loyihasi uchun backend API dokumentatsiyasi',
-      contact: {
-        name: 'Freya Development Team',
-        email: 'support@freya.com'
-      }
-    },
-    servers: [
-      {
-        url: 'http://localhost:5000',
-        description: 'Development server'
-      },
-      {
-        url: 'https://api.freya.com',
-        description: 'Production server'
-      }
-    ],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT'
-        }
-      },
-      schemas: {
-        Salon: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'Salon ID'
-            },
-            salon_name: {
-              type: 'string',
-              description: 'Salon nomi'
-            },
-            salon_phone: {
-              type: 'string',
-              description: 'Salon telefon raqami'
-            },
-            salon_add_phone: {
-              type: 'string',
-              description: 'Qo\'shimcha telefon raqami'
-            },
-            salon_instagram: {
-              type: 'string',
-              description: 'Instagram profili'
-            },
-            salon_rating: {
-              type: 'string',
-              description: 'Salon reytingi'
-            },
-            salon_description: {
-              type: 'string',
-              description: 'Salon tavsifi'
-            },
-            salon_format: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  selected: {
-                    type: 'boolean'
-                  },
-                  format: {
-                    type: 'string',
-                    enum: ['corporative', 'private']
-                  }
-                }
-              },
-              description: 'Salon formati'
-            },
-            is_active: {
-              type: 'boolean',
-              description: 'Salon faol holati'
-            },
-            created_at: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Yaratilgan vaqt'
-            },
-            updated_at: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Yangilangan vaqt'
-            }
-          }
-        },
-        User: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'User ID'
-            },
-            username: {
-              type: 'string',
-              description: 'Foydalanuvchi nomi'
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              description: 'Email manzil'
-            },
-            full_name: {
-              type: 'string',
-              description: 'To\'liq ism'
-            },
-            phone: {
-              type: 'string',
-              description: 'Telefon raqami'
-            },
-            is_active: {
-              type: 'boolean',
-              description: 'Faol holat'
-            },
-            created_at: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Yaratilgan vaqt'
-            }
-          }
-        },
-        Admin: {
-          type: 'object',
-          properties: {
-            id: {
-              type: 'string',
-              format: 'uuid',
-              description: 'Admin ID'
-            },
-            username: {
-              type: 'string',
-              description: 'Admin nomi'
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              description: 'Email manzil'
-            },
-            full_name: {
-              type: 'string',
-              description: 'To\'liq ism'
-            },
-            role: {
-              type: 'string',
-              description: 'Admin roli'
-            },
-            is_active: {
-              type: 'boolean',
-              description: 'Faol holat'
-            }
-          }
-        },
-        Error: {
-          type: 'object',
-          properties: {
-            success: {
-              type: 'boolean',
-              example: false
-            },
-            message: {
-              type: 'string',
-              description: 'Xato xabari'
-            },
-            error: {
-              type: 'string',
-              description: 'Xato tafsilotlari'
-            }
-          }
-        },
-        Success: {
-          type: 'object',
-          properties: {
-            success: {
-              type: 'boolean',
-              example: true
-            },
-            message: {
-              type: 'string',
-              description: 'Muvaffaqiyat xabari'
-            },
-            data: {
-              type: 'object',
-              description: 'Qaytarilgan ma\'lumotlar'
-            }
-          }
-        }
-      }
-    }
+const swaggerDefinition = {
+  openapi: '3.0.0',
+  info: {
+    title: 'Freya API',
+    version: '1.0.0',
+    description: 'API dokumentatsiyasi Freya loyihasi uchun',
   },
-  apis: [
-    './routes/*.js',
-    './controllers/*.js'
-  ]
+  servers: [
+    {
+      url: 'http://localhost:7002',
+      description: 'Development server',
+    },
+  ],
+  components: {
+    securitySchemes: {
+      bearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: 'Login qilib olingan JWT tokenni kiriting. Format: Bearer {token}'
+      },
+    },
+    schemas: {
+      LoginResponse: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            example: 'Muvaffaqiyatli login'
+          },
+          token: {
+            type: 'string',
+            example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEyM2U0NTY3LWU4OWItMTJkMy1hNDU2LTQyNjYxNDE3NDAwMCIsInVzZXJuYW1lIjoic3VwZXJhZG1pbiIsInJvbGUiOiJzdXBlcmFkbWluIiwiaWF0IjoxNzM0NzA5MjAwLCJleHAiOjE3MzQ3OTU2MDB9.abc123def456ghi789',
+            description: 'JWT token - bu tokenni Authorization headerga Bearer {token} formatida qo\'shing'
+          },
+          user: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                example: '123e4567-e89b-12d3-a456-426614174000'
+              },
+              username: {
+                type: 'string',
+                example: 'superadmin'
+              },
+              email: {
+                type: 'string',
+                example: 'superadmin@freya.com'
+              },
+              full_name: {
+                type: 'string',
+                example: 'Super Administrator'
+              },
+              role: {
+                type: 'string',
+                example: 'superadmin'
+              }
+            }
+          }
+        }
+      },
+      Error: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            description: 'Xato xabari',
+          },
+          error: {
+            type: 'string',
+            description: 'Xato kodi',
+          },
+        },
+      },
+      Success: {
+        type: 'object',
+        properties: {
+          success: {
+            type: 'boolean',
+            description: 'Muvaffaqiyat holati',
+          },
+          message: {
+            type: 'string',
+            description: 'Muvaffaqiyat xabari',
+          },
+          data: {
+            type: 'object',
+            description: 'Qaytarilgan ma\'lumotlar',
+          },
+        },
+      },
+    },
+  },
+  security: [
+    {
+      bearerAuth: [],
+    },
+  ],
 };
 
-const specs = swaggerJsdoc(options);
+const options = {
+  definition: swaggerDefinition,
+  apis: ['./routes/*.js'],
+};
+
+const specs = swaggerJSDoc(options);
+
+// Swagger UI konfiguratsiyasi
+const swaggerUiOptions = {
+  explorer: true,
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    docExpansion: 'none',
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true,
+    tryItOutEnabled: true
+  },
+  customCss: `
+    .swagger-ui .topbar { display: none }
+    .swagger-ui .info .title { color: #3b82f6 }
+    .swagger-ui .scheme-container { background: #f8fafc; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    .swagger-ui .auth-wrapper { background: #ecfdf5; padding: 15px; border-radius: 8px; border: 1px solid #10b981; }
+    .swagger-ui .authorization__btn { background: #10b981; border-color: #10b981; }
+    .swagger-ui .authorization__btn:hover { background: #059669; }
+  `,
+  customSiteTitle: 'Freya API Documentation'
+};
 
 module.exports = {
   swaggerUi,
-  specs
+  specs,
+  swaggerUiOptions,
 };

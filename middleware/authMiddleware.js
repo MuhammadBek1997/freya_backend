@@ -1,8 +1,37 @@
 const jwt = require('jsonwebtoken');
-const db = require('../config/database');
+const { pool } = require('../config/database');
 
 const authMiddleware = {
-  // Admin authentication middleware
+  // Superadmin authentication middleware
+  verifySuperAdmin: async (req, res, next) => {
+    try {
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if superadmin exists and is active
+      const result = await pool.query(
+        'SELECT * FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
+        [decoded.id, 'superadmin']
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ message: 'Superadmin huquqi talab qilinadi' });
+      }
+
+      req.admin = result.rows[0];
+      next();
+    } catch (error) {
+      console.error('Superadmin verification error:', error);
+      res.status(401).json({ message: 'Token yaroqsiz' });
+    }
+  },
+
+  // Admin authentication middleware (admin yoki superadmin)
   verifyAdmin: async (req, res, next) => {
     try {
       const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -13,20 +42,20 @@ const authMiddleware = {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Check if user is admin
-      const result = await db.query(
-        'SELECT * FROM admins WHERE id = $1 AND is_active = true',
-        [decoded.id]
+      // Check if admin or superadmin exists and is active
+      const result = await pool.query(
+        'SELECT * FROM admins WHERE id = $1 AND role IN ($2, $3) AND is_active = true',
+        [decoded.id, 'admin', 'superadmin']
       );
 
       if (result.rows.length === 0) {
-        return res.status(401).json({ message: 'Admin topilmadi yoki faol emas' });
+        return res.status(401).json({ message: 'Admin huquqi talab qilinadi' });
       }
 
       req.admin = result.rows[0];
       next();
     } catch (error) {
-      console.error('Admin auth error:', error);
+      console.error('Admin verification error:', error);
       res.status(401).json({ message: 'Token yaroqsiz' });
     }
   },
@@ -43,7 +72,7 @@ const authMiddleware = {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Check if user exists and is active
-      const result = await db.query(
+      const result = await pool.query(
         'SELECT * FROM users WHERE id = $1 AND is_active = true',
         [decoded.id]
       );
@@ -66,4 +95,9 @@ const authMiddleware = {
   }
 };
 
-module.exports = authMiddleware;
+module.exports = {
+  verifySuperAdmin: authMiddleware.verifySuperAdmin,
+  verifyAdmin: authMiddleware.verifyAdmin,
+  verifyUser: authMiddleware.verifyUser,
+  generateToken: authMiddleware.generateToken
+};

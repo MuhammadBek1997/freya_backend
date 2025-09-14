@@ -1,11 +1,95 @@
 const { pool } = require('../config/database');
 
+// Get all employees
+const getAllEmployees = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const offset = (page - 1) * limit;
+
+        let query = `
+            SELECT e.*, s.salon_name,
+                   COUNT(c.id) as comment_count,
+                   AVG(c.rating) as avg_rating
+            FROM employees e
+            LEFT JOIN salons s ON e.salon_id = s.id
+            LEFT JOIN employee_comments c ON e.id = c.employee_id
+            WHERE e.deleted_at IS NULL
+        `;
+        
+        const params = [];
+        
+        if (search) {
+            query += ` AND (e.name ILIKE $1 OR e.surname ILIKE $2 OR e.profession ILIKE $3)`;
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        
+        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(parseInt(limit), parseInt(offset));
+
+        const employees = await pool.query(query, params);
+        
+        // Get total count
+        let countQuery = `SELECT COUNT(*) as total FROM employees WHERE deleted_at IS NULL`;
+        const countParams = [];
+        
+        if (search) {
+            countQuery += ` AND (name ILIKE $1 OR surname ILIKE $2 OR profession ILIKE $3)`;
+            countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        
+        const totalResult = await pool.query(countQuery, countParams);
+        const total = totalResult.rows[0].total;
+
+        res.json({
+            success: true,
+            data: employees.rows,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching all employees:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Xodim ma\'lumotlarini olishda xatolik yuz berdi'
+        });
+    }
+};
+
 // Get all employees for a specific salon
 const getEmployeesBySalonId = async (req, res) => {
     try {
         const { salonId } = req.params;
         const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
+
+        // Check if salon is private
+        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
+        const salonResult = await pool.query(salonQuery, [salonId]);
+        
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+        
+        // If salon is private, return empty employee list
+        if (salonResult.rows[0].private_salon) {
+            return res.json({
+                success: true,
+                data: [],
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: 0,
+                    pages: 0
+                }
+            });
+        }
 
         let query = `
             SELECT e.*, 
@@ -94,20 +178,17 @@ const getEmployeeById = async (req, res) => {
         
         // Get posts
         const postsQuery = `
-            SELECT p.*, 
-                   STRING_AGG(pm.file_path, ',') as media_files
+            SELECT p.*
             FROM employee_posts p
-            LEFT JOIN post_media pm ON p.id = pm.post_id
             WHERE p.employee_id = $1
-            GROUP BY p.id
             ORDER BY p.created_at DESC
         `;
         const posts = await pool.query(postsQuery, [id]);
         
-        // Format posts with media
+        // Format posts
         const formattedPosts = posts.rows.map(post => ({
             ...post,
-            media: post.media_files ? post.media_files.split(',') : []
+            media: []
         }));
         
         // Calculate average rating
@@ -146,6 +227,25 @@ const createEmployee = async (req, res) => {
             username,
             password
         } = req.body;
+        
+        // Check if salon is private
+        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
+        const salonResult = await pool.query(salonQuery, [salon_id]);
+        
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+        
+        // If salon is private, don't allow creating employees
+        if (salonResult.rows[0].private_salon) {
+            return res.status(403).json({
+                success: false,
+                message: 'Private salonga xodim qo\'shish mumkin emas'
+            });
+        }
         
         // Check if username or email already exists
         const existingEmployee = await pool.query(
@@ -464,6 +564,7 @@ const bulkUpdateEmployeeWaitingStatus = async (req, res) => {
 };
 
 module.exports = {
+    getAllEmployees,
     getEmployeesBySalonId,
     getEmployeeById,
     createEmployee,

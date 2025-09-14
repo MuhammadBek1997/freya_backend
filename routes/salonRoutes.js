@@ -9,48 +9,17 @@ const {
     addSalonComment,
     getSalonComments
 } = require('../controllers/salonController');
-const { verifyAdmin } = require('../middleware/authMiddleware');
+const { verifySuperAdmin } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     SalonInput:
- *       type: object
- *       required:
- *         - salon_name
- *         - salon_phone
- *       properties:
- *         salon_name:
- *           type: string
- *           description: Salon nomi
- *         salon_phone:
- *           type: string
- *           description: Salon telefon raqami
- *         salon_add_phone:
- *           type: string
- *           description: Qo'shimcha telefon raqami
- *         salon_instagram:
- *           type: string
- *           description: Instagram profili
- *         salon_rating:
- *           type: string
- *           description: Salon reytingi
- *         salon_description:
- *           type: string
- *           description: Salon tavsifi
- *         salon_format:
- *           type: array
- *           items:
- *             type: object
- *             properties:
- *               selected:
- *                 type: boolean
- *               format:
- *                 type: string
- *                 enum: [corporative, private]
- *           description: Salon formati
+ * tags:
+ *   name: Salons
+ *   description: Salon boshqaruvi API
  */
+
+
+
 
 /**
  * @swagger
@@ -58,21 +27,47 @@ const { verifyAdmin } = require('../middleware/authMiddleware');
  *   get:
  *     summary: Barcha salonlarni olish
  *     tags: [Salons]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Qidiruv so'zi
  *     responses:
  *       200:
- *         description: Muvaffaqiyatli javob
+ *         description: Salonlar ro'yxati
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
+ *                 salons:
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Salon'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
  *       500:
  *         description: Server xatosi
  *         content:
@@ -80,8 +75,9 @@ const { verifyAdmin } = require('../middleware/authMiddleware');
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Public routes
-router.get('/', getAllSalons); // Get all salons with pagination and search
+router.get('/', getAllSalons);
+
+
 /**
  * @swagger
  * /api/salons/{id}:
@@ -93,22 +89,15 @@ router.get('/', getAllSalons); // Get all salons with pagination and search
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *         description: Salon ID
  *     responses:
  *       200:
- *         description: Muvaffaqiyatli javob
+ *         description: Salon ma'lumotlari
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   $ref: '#/components/schemas/Salon'
+ *               $ref: '#/components/schemas/Salon'
  *       404:
  *         description: Salon topilmadi
  *         content:
@@ -122,7 +111,8 @@ router.get('/', getAllSalons); // Get all salons with pagination and search
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', getSalonById); // Get salon by ID
+router.get('/:id', getSalonById);
+
 
 /**
  * @swagger
@@ -130,38 +120,93 @@ router.get('/:id', getSalonById); // Get salon by ID
  *   post:
  *     summary: Yangi salon yaratish
  *     tags: [Salons]
- *     security:
- *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SalonInput'
+ *             type: object
+ *             required:
+ *               - salon_name
+ *             properties:
+ *               salon_name:
+ *                 type: string
+ *                 description: Salon nomi
+ *               salon_phone:
+ *                 type: string
+ *                 description: Salon telefon raqami
+ *               salon_add_phone:
+ *                 type: string
+ *                 description: Salon qo'shimcha telefon raqami
+ *               salon_instagram:
+ *                 type: string
+ *                 description: Salon Instagram sahifasi
+ *               salon_rating:
+ *                 type: number
+ *                 description: Salon reytingi
+ *               comments:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                 description: Salon izohlari
+ *               salon_payment:
+ *                 type: object
+ *                 description: To'lov usullari
+ *               salon_description:
+ *                 type: string
+ *                 description: Salon tavsifi
+ *               salon_types:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Salon turlari
+ *               private_salon:
+ *                 type: boolean
+ *                 description: Shaxsiy salon
+ *               work_schedule:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                 description: Ish jadvali
+ *               salon_title:
+ *                 type: string
+ *                 description: Salon sarlavhasi
+ *               salon_additionals:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                 description: Qo'shimcha xizmatlar
+ *               sale_percent:
+ *                 type: integer
+ *                 description: Chegirma foizi
+ *               sale_limit:
+ *                 type: integer
+ *                 description: Chegirma limiti
+ *               location:
+ *                 type: object
+ *                 description: Salon joylashuvi
+ *               salon_orient:
+ *                 type: object
+ *                 description: Salon yo'nalishi
+ *               salon_photos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Salon rasmlari
+ *               salon_comfort:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                 description: Salon qulayliklari
  *     responses:
  *       201:
  *         description: Salon muvaffaqiyatli yaratildi
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Salon muvaffaqiyatli yaratildi
- *                 data:
- *                   $ref: '#/components/schemas/Salon'
+ *               $ref: '#/components/schemas/Salon'
  *       400:
  *         description: Noto'g'ri ma'lumotlar
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
- *       401:
- *         description: Avtorizatsiya talab qilinadi
  *         content:
  *           application/json:
  *             schema:
@@ -173,8 +218,8 @@ router.get('/:id', getSalonById); // Get salon by ID
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Protected routes (require admin authentication)
-router.post('/', createSalon); // Create new salon (temporarily public for testing)
+router.post('/', verifySuperAdmin, createSalon);
+
 /**
  * @swagger
  * /api/salons/{id}:
@@ -188,37 +233,37 @@ router.post('/', createSalon); // Create new salon (temporarily public for testi
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *         description: Salon ID
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/SalonInput'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Salon nomi
+ *               address:
+ *                 type: string
+ *                 description: Salon manzili
+ *               phone:
+ *                 type: string
+ *                 description: Salon telefon raqami
+ *               description:
+ *                 type: string
+ *                 description: Salon tavsifi
+ *               image_url:
+ *                 type: string
+ *                 description: Salon rasmi URL
  *     responses:
  *       200:
  *         description: Salon muvaffaqiyatli yangilandi
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Salon muvaffaqiyatli yangilandi
- *                 data:
- *                   $ref: '#/components/schemas/Salon'
- *       400:
- *         description: Noto'g'ri ma'lumotlar
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
+ *               $ref: '#/components/schemas/Salon'
  *       401:
  *         description: Avtorizatsiya talab qilinadi
  *         content:
@@ -238,7 +283,8 @@ router.post('/', createSalon); // Create new salon (temporarily public for testi
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', verifyAdmin, updateSalon); // Update salon
+router.put('/:id', verifySuperAdmin, updateSalon);
+
 /**
  * @swagger
  * /api/salons/{id}:
@@ -252,8 +298,7 @@ router.put('/:id', verifyAdmin, updateSalon); // Update salon
  *         name: id
  *         required: true
  *         schema:
- *           type: string
- *           format: uuid
+ *           type: integer
  *         description: Salon ID
  *     responses:
  *       200:
@@ -263,9 +308,6 @@ router.put('/:id', verifyAdmin, updateSalon); // Update salon
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
  *                 message:
  *                   type: string
  *                   example: Salon muvaffaqiyatli o'chirildi
@@ -288,7 +330,8 @@ router.put('/:id', verifyAdmin, updateSalon); // Update salon
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
+router.delete('/:id', verifySuperAdmin, deleteSalon);
+
 
 /**
  * @swagger
@@ -302,63 +345,16 @@ router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
  *         required: true
  *         schema:
  *           type: integer
- *         description: Salon ID si
- *       - in: query
- *         name: page
- *         schema:
- *           type: integer
- *           default: 1
- *         description: Sahifa raqami
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: Sahifadagi elementlar soni
+ *         description: Salon ID
  *     responses:
  *       200:
- *         description: Muvaffaqiyatli javob
+ *         description: Salon izohlari
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       salon_id:
- *                         type: integer
- *                       user_id:
- *                         type: integer
- *                       username:
- *                         type: string
- *                       full_name:
- *                         type: string
- *                       text:
- *                         type: string
- *                       rating:
- *                         type: integer
- *                       created_at:
- *                         type: string
- *                         format: date-time
- *                 pagination:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                     limit:
- *                       type: integer
- *                     total:
- *                       type: integer
- *                     pages:
- *                       type: integer
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Comment'
  *       404:
  *         description: Salon topilmadi
  *         content:
@@ -371,8 +367,14 @@ router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ */
+router.get('/:id/comments', getSalonComments);
+
+/**
+ * @swagger
+ * /api/salons/{id}/comments:
  *   post:
- *     summary: Salonga izoh qo'shish
+ *     summary: Salon uchun izoh qo'shish
  *     tags: [Salons]
  *     security:
  *       - bearerAuth: []
@@ -382,7 +384,7 @@ router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
  *         required: true
  *         schema:
  *           type: integer
- *         description: Salon ID si
+ *         description: Salon ID
  *     requestBody:
  *       required: true
  *       content:
@@ -390,47 +392,28 @@ router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
  *           schema:
  *             type: object
  *             required:
- *               - text
+ *               - content
+ *               - author_name
  *               - rating
  *             properties:
- *               text:
+ *               content:
  *                 type: string
  *                 description: Izoh matni
+ *               author_name:
+ *                 type: string
+ *                 description: Muallif ismi
  *               rating:
  *                 type: integer
  *                 minimum: 1
  *                 maximum: 5
- *                 description: Reyting (1-5)
+ *                 description: Baho (1-5)
  *     responses:
  *       201:
  *         description: Izoh muvaffaqiyatli qo'shildi
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                   example: true
- *                 message:
- *                   type: string
- *                   example: Izoh muvaffaqiyatli qo'shildi
- *                 data:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     salon_id:
- *                       type: integer
- *                     user_id:
- *                       type: integer
- *                     text:
- *                       type: string
- *                     rating:
- *                       type: integer
- *                     created_at:
- *                       type: string
- *                       format: date-time
+ *               $ref: '#/components/schemas/Comment'
  *       400:
  *         description: Noto'g'ri ma'lumotlar
  *         content:
@@ -456,7 +439,6 @@ router.delete('/:id', verifyAdmin, deleteSalon); // Delete salon (soft delete)
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id/comments', getSalonComments);
-router.post('/:id/comments', verifyAdmin, addSalonComment);
+router.post('/:id/comments', verifySuperAdmin, addSalonComment);
 
 module.exports = router;

@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS salons (
     salon_payment JSONB,
     salon_description TEXT,
     salon_types JSONB DEFAULT '[]',
-    salon_format JSONB DEFAULT '[]',
+    private_salon BOOLEAN DEFAULT false,
     work_schedule JSONB DEFAULT '[]',
     salon_title VARCHAR(200),
     salon_additionals JSONB DEFAULT '[]',
@@ -169,29 +169,19 @@ CREATE TABLE IF NOT EXISTS employee_posts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Master salons table
-CREATE TABLE IF NOT EXISTS master_salons (
+-- Schedule table
+CREATE TABLE IF NOT EXISTS schedules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    salon_logo VARCHAR(255),
-    salon_name VARCHAR(200) NOT NULL,
-    salon_phone VARCHAR(20),
-    salon_add_phone VARCHAR(20),
-    salon_instagram VARCHAR(100),
-    salon_rating DECIMAL(3,2) DEFAULT 0,
-    comments JSONB DEFAULT '[]',
-    salon_payment JSONB,
-    salon_description TEXT,
-    salon_types JSONB DEFAULT '[]',
-    salon_format JSONB DEFAULT '[]',
-    work_schedule JSONB DEFAULT '[]',
-    salon_title VARCHAR(200),
-    salon_additionals JSONB DEFAULT '[]',
-    sale_percent INTEGER DEFAULT 0,
-    sale_limit INTEGER DEFAULT 0,
-    location JSONB,
-    salon_orient JSONB,
-    salon_photos JSONB DEFAULT '[]',
-    salon_comfort JSONB DEFAULT '[]',
+    salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
+    title VARCHAR(300),
+    date DATE NOT NULL,
+    repeat BOOLEAN DEFAULT false,
+    repeat_value INTEGER DEFAULT NULL,
+    employee_list UUID[] DEFAULT '{}',
+    price DECIMAL(10,2) NOT NULL,
+    full_pay DECIMAL(10,2) DEFAULT NULL,
+    deposit DECIMAL(10,2) DEFAULT NULL,
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -216,15 +206,29 @@ CREATE INDEX IF NOT EXISTS idx_employees_username ON employees(username);
 CREATE INDEX IF NOT EXISTS idx_employees_active ON employees(is_active);
 CREATE INDEX IF NOT EXISTS idx_employee_comments_employee_id ON employee_comments(employee_id);
 CREATE INDEX IF NOT EXISTS idx_employee_posts_employee_id ON employee_posts(employee_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_salon_id ON schedules(salon_id);
+CREATE INDEX IF NOT EXISTS idx_schedules_date ON schedules(date);
+CREATE INDEX IF NOT EXISTS idx_schedules_active ON schedules(is_active);
 CREATE INDEX IF NOT EXISTS idx_master_salons_name ON master_salons(salon_name);
 CREATE INDEX IF NOT EXISTS idx_master_salons_rating ON master_salons(salon_rating);
 CREATE INDEX IF NOT EXISTS idx_master_salons_active ON master_salons(is_active);
 
+-- Insert default superadmin user (password: admin123)
+INSERT INTO admins (username, email, password_hash, full_name, role) 
+VALUES (
+    'superadmin', 
+    'superadmin@freya.com', 
+    '$2b$10$dzmXkTgJ2hSJ3NpM0fPeceZiWLP4OLV9Hh5TBZRhArf3kkGp2rH.S', 
+    'Super Administrator',
+    'superadmin'
+) ON CONFLICT (email) DO NOTHING;
+
 -- Insert default admin user (password: admin123)
-INSERT INTO admins (username, email, password_hash, full_name) 
+INSERT INTO admins (username, email, password_hash, full_name, role) 
 VALUES (
     'admin', 
     'admin@freya.com', 
-    '$2b$10$rQZ8kHWKtGKVQZ8kHWKtGOuKVQZ8kHWKtGKVQZ8kHWKtGKVQZ8kHW', 
-    'System Administrator'
+    '$2b$10$dzmXkTgJ2hSJ3NpM0fPeceZiWLP4OLV9Hh5TBZRhArf3kkGp2rH.S', 
+    'Administrator',
+    'admin'
 ) ON CONFLICT (email) DO NOTHING;
