@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
 const { pool } = require('./config/database');
 const swaggerUi = require('swagger-ui-express');
@@ -29,14 +30,25 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Routes
 app.get('/', (req, res) => {
-  res.json({ message: 'Freya Backend API ishlamoqda!' });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// API health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'success', 
+    message: 'Freya Backend API ishlamoqda!',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // Auth routes
