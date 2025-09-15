@@ -12,6 +12,7 @@ const salonRoutes = require('./routes/salonRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const authRoutes = require('./routes/authRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,6 +41,9 @@ app.get('/', (req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// User routes
+app.use('/api/users', userRoutes);
 
 // Salon routes
 app.use('/api/salons', salonRoutes);
