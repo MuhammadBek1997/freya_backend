@@ -116,24 +116,6 @@ const specs = swaggerJSDoc(options);
 // Swagger UI konfiguratsiyasi
 const swaggerUiOptions = {
   explorer: true,
-  swaggerOptions: {
-    persistAuthorization: true,
-    displayRequestDuration: true,
-    docExpansion: 'none',
-    filter: true,
-    showExtensions: true,
-    showCommonExtensions: true,
-    tryItOutEnabled: true
-  },
-  customCss: `
-    .swagger-ui .topbar { display: none }
-    .swagger-ui .info .title { color: #3b82f6 }
-    .swagger-ui .scheme-container { background: #f8fafc; padding: 10px; border-radius: 5px; margin: 10px 0; }
-    .swagger-ui .auth-wrapper { background: #ecfdf5; padding: 15px; border-radius: 8px; border: 1px solid #10b981; }
-    .swagger-ui .authorization__btn { background: #10b981; border-color: #10b981; }
-    .swagger-ui .authorization__btn:hover { background: #059669; }
-  `,
-  customSiteTitle: 'Freya API Documentation'
 };
 
 module.exports = {
