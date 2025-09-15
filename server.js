@@ -33,8 +33,19 @@ app.use(express.urlencoded({ extended: true }));
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+// Serve swagger.json for API documentation
+app.get('/api-docs/swagger.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(specs);
+});
+
+// Serve custom Swagger UI HTML
+app.get('/api-docs', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public/swagger.html'));
+});
+
+// Fallback for swagger-ui middleware (for local development)
+app.use('/api-docs-old', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Routes
 app.get('/', (req, res) => {
@@ -77,15 +88,21 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route topilmadi' });
 });
 
-app.listen(PORT, async () => {
-  console.log(`Server ${PORT} portda ishlamoqda`);
-  
-  // Test database connection
-  try {
-    const client = await pool.connect();
-    console.log('Database connection successful');
-    client.release();
-  } catch (err) {
-    console.error('Database connection failed:', err.message);
-  }
-});
+// Export app for Vercel
+module.exports = app;
+
+// Only start server if not in Vercel environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, async () => {
+    console.log(`Server ${PORT} portda ishlamoqda`);
+    
+    // Test database connection
+    try {
+      const client = await pool.connect();
+      console.log('Database connection successful');
+      client.release();
+    } catch (err) {
+      console.error('Database connection failed:', err.message);
+    }
+  });
+}
