@@ -9,15 +9,11 @@ const swaggerDefinition = {
     description: 'API dokumentatsiyasi Freya loyihasi uchun',
   },
   servers: [
-        {
-            url: 'http://localhost:6666',
-            description: 'Local Development server (CORS enabled)'
-        },
-        {
-            url: 'https://freya-backend.onrender.com',
-            description: 'Production server'
-        }
-    ],
+    {
+      url: 'https://freya-backend.onrender.com',
+      description: 'Production server'
+    }
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {
@@ -242,24 +238,15 @@ const specs = swaggerJSDoc(options);
 const swaggerUiOptions = {
   explorer: true,
   swaggerOptions: {
-        requestInterceptor: (req) => {
-            // CORS headers qo'shish
-            req.headers['Access-Control-Allow-Origin'] = '*';
-            req.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
-            req.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin';
-            req.headers['Access-Control-Allow-Credentials'] = 'true';
-            
-            // Content-Type ni to'g'ri o'rnatish
-            if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-                req.headers['Content-Type'] = 'application/json';
-            }
-            
-            return req;
-        },
-        // CORS uchun qo'shimcha sozlamalar
-        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
-        tryItOutEnabled: true
-    }
+    requestInterceptor: (req) => {
+      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+        req.headers['Content-Type'] = 'application/json';
+      }
+      return req;
+    },
+    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
+    tryItOutEnabled: true
+  }
 };
 
 module.exports = {
