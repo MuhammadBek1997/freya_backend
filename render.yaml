@@ -10,4 +10,20 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: freya-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: FRONTEND_URL
+        value: https://freya-frontend.onrender.com
     healthCheckPath: /api/health
+
+databases:
+  - name: freya-postgres
+    databaseName: freya_db
+    user: freya_user
+    plan: free

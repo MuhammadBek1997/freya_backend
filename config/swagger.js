@@ -93,6 +93,131 @@ const swaggerDefinition = {
           },
         },
       },
+      Salon: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Salon ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
+          },
+          name: {
+            type: 'string',
+            description: 'Salon nomi',
+            example: 'Beauty Salon'
+          },
+          description: {
+            type: 'string',
+            description: 'Salon tavsifi',
+            example: 'Professional beauty salon with experienced staff'
+          },
+          address: {
+            type: 'string',
+            description: 'Salon manzili',
+            example: 'Tashkent, Yunusobod tumani, Amir Temur ko\'chasi 1'
+          },
+          phone: {
+            type: 'string',
+            description: 'Salon telefon raqami',
+            example: '+998901234567'
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Salon email manzili',
+            example: 'salon@example.com'
+          },
+          working_hours: {
+            type: 'object',
+            description: 'Ish vaqtlari',
+            example: {
+              monday: '09:00-18:00',
+              tuesday: '09:00-18:00',
+              wednesday: '09:00-18:00',
+              thursday: '09:00-18:00',
+              friday: '09:00-18:00',
+              saturday: '10:00-16:00',
+              sunday: 'closed'
+            }
+          },
+          location: {
+            type: 'object',
+            properties: {
+              latitude: {
+                type: 'number',
+                format: 'float',
+                description: 'Kenglik',
+                example: 41.2995
+              },
+              longitude: {
+                type: 'number',
+                format: 'float',
+                description: 'Uzunlik',
+                example: 69.2401
+              }
+            }
+          },
+          rating: {
+            type: 'number',
+            format: 'float',
+            minimum: 0,
+            maximum: 5,
+            description: 'Salon reytingi',
+            example: 4.5
+          },
+          images: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uri'
+            },
+            description: 'Salon rasmlari URL lari',
+            example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+          },
+          services: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid'
+                },
+                name: {
+                  type: 'string'
+                },
+                price: {
+                  type: 'number'
+                },
+                duration: {
+                  type: 'integer',
+                  description: 'Davomiyligi (daqiqalarda)'
+                }
+              }
+            },
+            description: 'Salon xizmatlari'
+          },
+          is_active: {
+            type: 'boolean',
+            description: 'Salon faol holati',
+            example: true
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          }
+        },
+        required: ['id', 'name', 'address', 'phone']
+      },
     },
   },
   security: [
