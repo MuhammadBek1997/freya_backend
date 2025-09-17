@@ -10,8 +10,12 @@ const swaggerDefinition = {
   },
   servers: [
         {
-            url: 'http://localhost:5000',
+            url: 'http://localhost:6666',
             description: 'Local Development server (CORS enabled)'
+        },
+        {
+            url: 'https://freya-backend.onrender.com',
+            description: 'Production server'
         }
     ],
   components: {
