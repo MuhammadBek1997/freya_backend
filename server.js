@@ -1,7 +1,8 @@
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
+const cors = require('cors');
 const morgan = require('morgan');
+const corsProxy = require('./middleware/cors-proxy');
 const path = require('path');
 const http = require('http');
 
@@ -14,6 +15,7 @@ require('dotenv').config();
 const salonRoutes = require('./routes/salonRoutes');
 const employeeRoutes = require('./routes/employeeRoutes');
 const authRoutes = require('./routes/authRoutes');
+const swaggerProxyRoutes = require('./routes/swagger-proxy');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const userRoutes = require('./routes/userRoutes');
 const messageRoutes = require('./routes/messageRoutes');
@@ -29,41 +31,55 @@ const io = initializeSocket(server);
 
 // Middleware
 app.use(helmet());
+
+// CORS Proxy Middleware (birinchi)
+app.use(corsProxy);
+
+// CORS konfiguratsiyasi
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:7001'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
+        'https://freya-web-frontend.vercel.app'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true,
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200
 }));
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// OPTIONS handler for preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.header('Access-Control-Max-Age', '86400');
+  res.sendStatus(200);
+});
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Routes
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    res.json({ message: 'Freya Backend API ishlamoqda!' });
 });
 
-// API health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'success', 
-    message: 'Freya Backend API ishlamoqda!',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Auth routes
+// Swagger proxy route
+app.use('/api', swaggerProxyRoutes);
+
 app.use('/api/auth', authRoutes);
-
-// User routes
-app.use('/api/users', userRoutes);
-
-// Salon routes
+app.use('/api/user', userRoutes);
 app.use('/api/salons', salonRoutes);
 
 // Employee routes
@@ -89,7 +105,21 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route topilmadi' });
+  console.log(`404 - Route topilmadi: ${req.method} ${req.originalUrl}`);
+  console.log('Headers:', req.headers);
+  res.status(404).json({ 
+    message: 'Route topilmadi',
+    method: req.method,
+    url: req.originalUrl,
+    availableRoutes: [
+      'GET /',
+      'GET /api/health',
+      'GET /api-docs',
+      'POST /api/auth/superadmin/login',
+      'POST /api/auth/admin/login',
+      'POST /api/auth/employee/login'
+    ]
+  });
 });
 
 // Start server

@@ -8,8 +8,8 @@ node_modules
 *.tmp
 *.temp
 coverage/
-.nyc_output/
+test/
 .railwayignore
-Procfile
 railway.json
+.vercel
 README.md
