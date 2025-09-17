@@ -437,6 +437,43 @@ const addEmployeePost = async (req, res) => {
                 message: 'Xodim topilmadi'
             });
         }
+
+        // Post limit tekshirish
+        const limitResult = await pool.query(`
+            SELECT * FROM employee_post_limits 
+            WHERE employee_id = $1
+        `, [id]);
+
+        let limits;
+        if (limitResult.rows.length === 0) {
+            // Agar record yo'q bo'lsa, yaratish
+            const createResult = await pool.query(`
+                INSERT INTO employee_post_limits (employee_id) 
+                VALUES ($1) 
+                RETURNING *
+            `, [id]);
+            limits = createResult.rows[0];
+        } else {
+            limits = limitResult.rows[0];
+        }
+
+        // Limit tekshirish
+        const remainingFreePosts = Math.max(0, 4 - limits.free_posts_used);
+        const usedPaidPosts = limits.free_posts_used > 4 ? limits.free_posts_used - 4 : 0;
+        const remainingPaidPosts = Math.max(0, limits.total_paid_posts - usedPaidPosts);
+
+        if (remainingFreePosts === 0 && remainingPaidPosts === 0) {
+            return res.status(403).json({
+                success: false,
+                message: 'Post limiti tugagan. Yangi postlar uchun to\'lov qiling.',
+                data: {
+                    free_posts_used: limits.free_posts_used,
+                    total_paid_posts: limits.total_paid_posts,
+                    remaining_free_posts: remainingFreePosts,
+                    remaining_paid_posts: remainingPaidPosts
+                }
+            });
+        }
         
         const postQuery = `
             INSERT INTO employee_posts (employee_id, title, description)
@@ -453,6 +490,24 @@ const addEmployeePost = async (req, res) => {
                 await pool.query('INSERT INTO post_media (post_id, file_path) VALUES ($1, $2)', [postId, filePath]);
             }
         }
+
+        // Post limitini yangilash
+        await pool.query(`
+            UPDATE employee_post_limits 
+            SET free_posts_used = free_posts_used + 1, updated_at = CURRENT_TIMESTAMP
+            WHERE employee_id = $1
+        `, [id]);
+
+        // Yangilangan limitlarni olish
+        const updatedLimits = await pool.query(`
+            SELECT * FROM employee_post_limits 
+            WHERE employee_id = $1
+        `, [id]);
+
+        const newLimits = updatedLimits.rows[0];
+        const newRemainingFreePosts = Math.max(0, 4 - newLimits.free_posts_used);
+        const newUsedPaidPosts = newLimits.free_posts_used > 4 ? newLimits.free_posts_used - 4 : 0;
+        const newRemainingPaidPosts = Math.max(0, newLimits.total_paid_posts - newUsedPaidPosts);
         
         res.status(201).json({
             success: true,
@@ -462,7 +517,13 @@ const addEmployeePost = async (req, res) => {
                 employee_id: id,
                 title,
                 description,
-                media
+                media,
+                limits: {
+                    free_posts_used: newLimits.free_posts_used,
+                    total_paid_posts: newLimits.total_paid_posts,
+                    remaining_free_posts: newRemainingFreePosts,
+                    remaining_paid_posts: newRemainingPaidPosts
+                }
             }
         });
     } catch (error) {

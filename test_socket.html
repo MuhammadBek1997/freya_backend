@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.io Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Socket.io Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+
+    <script>
+        const socket = io('http://localhost:5004', {
+            auth: {
+                token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjQxOTk3NDJlLWYxYzItNDI5Yi04MmE2LTEyMThiOTliZGYzNCIsInJvbGUiOiJlbXBsb3llZSIsIm5hbWUiOiJKb2huIERvZSIsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3NTgwMDU0OTYsImV4cCI6MTc1ODA5MTg5Nn0.kh-PGvprjFtuz0uBWFb-qah__mLqZs0Db4gxk0a-940'
+            }
+        });
+
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+
+        socket.on('connect', () => {
+            statusDiv.innerHTML = '<span style="color: green;">Connected to Socket.io server!</span>';
+            console.log('Connected to server');
+        });
+
+        socket.on('disconnect', () => {
+            statusDiv.innerHTML = '<span style="color: red;">Disconnected from server</span>';
+            console.log('Disconnected from server');
+        });
+
+        socket.on('connect_error', (error) => {
+            statusDiv.innerHTML = '<span style="color: red;">Connection error: ' + error.message + '</span>';
+            console.error('Connection error:', error);
+        });
+
+        socket.on('newMessage', (data) => {
+            messagesDiv.innerHTML += '<div>New message received: ' + JSON.stringify(data) + '</div>';
+            console.log('New message:', data);
+        });
+
+        // Test message sending
+        setTimeout(() => {
+            socket.emit('joinRoom', { userId: '4199742e-f1c2-429b-82a6-1218b99bdf34' });
+        }, 1000);
+    </script>
+</body>
+</html>

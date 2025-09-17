@@ -3,10 +3,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const http = require('http');
 
 const { pool } = require('./config/database');
 const swaggerUi = require('swagger-ui-express');
 const { specs, swaggerUiOptions } = require('./config/swagger');
+const { initializeSocket } = require('./config/socket');
 require('dotenv').config();
 
 const salonRoutes = require('./routes/salonRoutes');
@@ -14,9 +16,16 @@ const employeeRoutes = require('./routes/employeeRoutes');
 const authRoutes = require('./routes/authRoutes');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const userRoutes = require('./routes/userRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const paymentRoutes = require('./routes/payments');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
+const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
+
+// Initialize Socket.io
+const io = initializeSocket(server);
 
 // Middleware
 app.use(helmet());
@@ -63,6 +72,15 @@ app.use('/api', employeeRoutes);
 // Schedule routes
 app.use('/api', scheduleRoutes);
 
+// Message routes
+app.use('/api/messages', messageRoutes);
+
+// Payment routes
+app.use('/api/payments', paymentRoutes);
+
+// Admin routes
+app.use('/api/admin', adminRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -75,6 +93,7 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server ${PORT} portda ishlamoqda`);
+  console.log(`Socket.io server ham ishga tushdi`);
 });

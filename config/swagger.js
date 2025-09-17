@@ -14,7 +14,7 @@ const swaggerDefinition = {
       description: 'Development server',
     },
     {
-      url: 'https://web-production-c133c.up.railway.app',
+      url: 'https://freyabackend-n5gu1r7os-muhammads-projects-3a6ae627.vercel.app',
       description: 'Production server',
     },
   ],

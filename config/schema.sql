@@ -187,6 +187,41 @@ CREATE TABLE IF NOT EXISTS schedules (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Messages table for chat functionality
+CREATE TABLE IF NOT EXISTS messages (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_id UUID NOT NULL,
+    sender_type VARCHAR(20) NOT NULL, -- 'user', 'employee', 'admin'
+    receiver_id UUID NOT NULL,
+    receiver_type VARCHAR(20) NOT NULL, -- 'user', 'employee', 'admin'
+    message_text TEXT NOT NULL,
+    message_type VARCHAR(20) DEFAULT 'text', -- 'text', 'image', 'file'
+    file_url VARCHAR(255),
+    is_read BOOLEAN DEFAULT false,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chat rooms table for group conversations
+CREATE TABLE IF NOT EXISTS chat_rooms (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_name VARCHAR(100),
+    room_type VARCHAR(20) DEFAULT 'private', -- 'private', 'group'
+    created_by UUID NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Chat room participants
+CREATE TABLE IF NOT EXISTS chat_participants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    room_id UUID NOT NULL REFERENCES chat_rooms(id) ON DELETE CASCADE,
+    participant_id UUID NOT NULL,
+    participant_type VARCHAR(20) NOT NULL, -- 'user', 'employee', 'admin'
+    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -212,6 +247,11 @@ CREATE INDEX IF NOT EXISTS idx_schedules_active ON schedules(is_active);
 CREATE INDEX IF NOT EXISTS idx_master_salons_name ON master_salons(salon_name);
 CREATE INDEX IF NOT EXISTS idx_master_salons_rating ON master_salons(salon_rating);
 CREATE INDEX IF NOT EXISTS idx_master_salons_active ON master_salons(is_active);
+CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id, sender_type);
+CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, receiver_type);
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
+CREATE INDEX IF NOT EXISTS idx_chat_participants_room ON chat_participants(room_id);
+CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(participant_id, participant_type);
 
 -- Insert default superadmin user (password: admin123)
 INSERT INTO admins (username, email, password_hash, full_name, role) 
