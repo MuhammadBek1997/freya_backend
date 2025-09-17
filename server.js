@@ -66,13 +66,42 @@ app.options('*', (req, res) => {
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
+// Database connection test
+app.get('/api/db-test', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.json({ 
+            status: 'Database ulanishi muvaffaqiyatli', 
+            timestamp: result.rows[0].now,
+            database_url: process.env.DATABASE_URL ? 'O\'rnatilgan' : 'O\'rnatilmagan'
+        });
+    } catch (error) {
+        console.error('Database test xatosi:', error);
+        res.status(500).json({ 
+            status: 'Database ulanish xatosi', 
+            error: error.message,
+            database_url: process.env.DATABASE_URL ? 'O\'rnatilgan' : 'O\'rnatilmagan'
+        });
+    }
+});
+
 // Routes
 app.get('/', (req, res) => {
-    res.json({ message: 'Freya Backend API ishlamoqda!' });
+    res.json({ 
+        message: 'Freya Backend API ishlamoqda!',
+        environment: process.env.NODE_ENV || 'development',
+        port: PORT,
+        database_configured: !!process.env.DATABASE_URL
+    });
 });
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        database_configured: !!process.env.DATABASE_URL
+    });
 });
 
 // Swagger proxy route
@@ -99,8 +128,18 @@ app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Server xatosi yuz berdi!' });
+  console.error('Server xatosi:', err.stack);
+  console.error('Xato tafsilotlari:', {
+    message: err.message,
+    name: err.name,
+    code: err.code
+  });
+  
+  res.status(500).json({ 
+    message: 'Server xatosi yuz berdi!',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // 404 handler
