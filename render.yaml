@@ -18,10 +18,18 @@ services:
         value: 7d
       - key: FRONTEND_URL
         value: https://freya-frontend.onrender.com
+      - key: CLICK_MERCHANT_ID
+        value: your_click_merchant_id
+      - key: CLICK_SERVICE_ID
+        value: your_click_service_id
+      - key: CLICK_SECRET_KEY
+        value: your_click_secret_key
+      - key: SMS_API_URL
+        value: https://notify.eskiz.uz/api
+      - key: SMS_API_TOKEN
+        value: your_sms_api_token
+      - key: UPLOAD_PATH
+        value: uploads/
+      - key: MAX_FILE_SIZE
+        value: 5242880
     healthCheckPath: /api/health
-
-databases:
-  - name: freya-postgres
-    databaseName: freya_db
-    user: freya_user
-    plan: free
