@@ -35,7 +35,7 @@ app.use(helmet());
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
 
-// CORS konfiguratsiyasi
+// CORS konfiguratsiyasi (Swagger uchun maxsus sozlash)
 app.use(cors({
     origin: [
         'http://localhost:3000',
@@ -50,21 +50,30 @@ app.use(cors({
     preflightContinue: false,
     optionsSuccessStatus: 200
 }));
+
+// OPTIONS handler for preflight requests (maxsus Swagger uchun)
+app.options('*', (req, res) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.header('Access-Control-Max-Age', '86400');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.sendStatus(200);
+});
+
+// Logging
 app.use(morgan('combined'));
+
+// Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// OPTIONS handler for preflight requests
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-  res.header('Access-Control-Max-Age', '86400');
-  res.sendStatus(200);
-});
-
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+// Swagger UI (CORS bilan moslashgan)
+app.use('/api-docs', (req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    next();
+}, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Database connection test
 app.get('/api/db-test', async (req, res) => {
@@ -128,41 +137,41 @@ app.use('/api/admin', adminRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server xatosi:', err.stack);
-  console.error('Xato tafsilotlari:', {
-    message: err.message,
-    name: err.name,
-    code: err.code
-  });
-  
-  res.status(500).json({ 
-    message: 'Server xatosi yuz berdi!',
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error',
-    timestamp: new Date().toISOString()
-  });
+    console.error('Server xatosi:', err.stack);
+    console.error('Xato tafsilotlari:', {
+        message: err.message,
+        name: err.name,
+        code: err.code
+    });
+    res.status(500).json({ 
+        message: 'Server xatosi yuz berdi!',
+        error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // 404 handler
 app.use((req, res) => {
-  console.log(`404 - Route topilmadi: ${req.method} ${req.originalUrl}`);
-  console.log('Headers:', req.headers);
-  res.status(404).json({ 
-    message: 'Route topilmadi',
-    method: req.method,
-    url: req.originalUrl,
-    availableRoutes: [
-      'GET /',
-      'GET /api/health',
-      'GET /api-docs',
-      'POST /api/auth/superadmin/login',
-      'POST /api/auth/admin/login',
-      'POST /api/auth/employee/login'
-    ]
-  });
+    console.log(`404 - Route topilmadi: ${req.method} ${req.originalUrl}`);
+    console.log('Headers:', req.headers);
+    res.status(404).json({ 
+        message: 'Route topilmadi',
+        method: req.method,
+        url: req.originalUrl,
+        availableRoutes: [
+            'GET /',
+            'GET /api/health',
+            'GET /api-docs',
+            'POST /api/auth/superadmin/login',
+            'POST /api/auth/admin/login',
+            'POST /api/auth/employee/login'
+        ]
+    });
 });
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`Server ${PORT} portda ishlamoqda`);
-  console.log(`Socket.io server ham ishga tushdi`);
+    console.log(`Server ${PORT} portda ishlamoqda`);
+    console.log(`Socket.io server ham ishga tushdi`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
