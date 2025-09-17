@@ -152,32 +152,36 @@ const getAllSalons = async (req, res) => {
         ]);
 
         const salons = salonsResult.rows.map(salon => {
+            // Helper function to safely parse JSON
+            const safeJsonParse = (value, defaultValue) => {
+                if (!value || value === 'null' || value === '' || value === '{}' || value === '[]') {
+                    return defaultValue;
+                }
+                
+                // If it's already an object/array, return as is
+                if (typeof value === 'object') {
+                    return value;
+                }
+                
+                try {
+                    return JSON.parse(value);
+                } catch (error) {
+                    console.error('JSON parsing error for value:', value, 'Error:', error.message);
+                    return defaultValue;
+                }
+            };
+
             // Parse JSON fields safely
-            try {
-                salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
-                salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
-                salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-                // private_salon is already a boolean, no need to parse
-                salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
-                salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
-                salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
-                salon.salon_orient = salon.salon_orient && salon.salon_orient !== 'null' ? JSON.parse(salon.salon_orient) : null;
-                salon.salon_photos = salon.salon_photos && salon.salon_photos !== 'null' ? JSON.parse(salon.salon_photos) : [];
-                salon.salon_comfort = salon.salon_comfort && salon.salon_comfort !== 'null' ? JSON.parse(salon.salon_comfort) : [];
-            } catch (parseError) {
-                console.error('JSON parsing error in getAllSalons:', parseError);
-                // Set default values if parsing fails
-                salon.comments = [];
-                salon.salon_payment = null;
-                salon.salon_types = [];
-                // private_salon is already a boolean, no need to set default
-                salon.work_schedule = [];
-                salon.salon_additionals = [];
-                salon.location = null;
-                salon.salon_orient = null;
-                salon.salon_photos = [];
-                salon.salon_comfort = [];
-            }
+            salon.comments = safeJsonParse(salon.comments, []);
+            salon.salon_payment = safeJsonParse(salon.salon_payment, null);
+            salon.salon_types = safeJsonParse(salon.salon_types, []);
+            salon.work_schedule = safeJsonParse(salon.work_schedule, []);
+            salon.salon_additionals = safeJsonParse(salon.salon_additionals, []);
+            salon.location = safeJsonParse(salon.location, null);
+            salon.salon_orient = safeJsonParse(salon.salon_orient, null);
+            salon.salon_photos = safeJsonParse(salon.salon_photos, []);
+            salon.salon_comfort = safeJsonParse(salon.salon_comfort, []);
+            
             return salon;
         });
 
