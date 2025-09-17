@@ -39,7 +39,17 @@ app.use(corsProxy);
 app.use(cors({
     origin: [
         'http://localhost:3000',
+        'http://localhost:3001',
+        'http://localhost:4000',
         'http://localhost:5173',
+        'http://localhost:5003',
+        'http://localhost:5004',
+        'http://localhost:5005',
+        'http://localhost:5006',
+        'http://localhost:5007',
+        'http://localhost:5008',
+        'http://localhost:8080',
+        'http://localhost:9000',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app'
     ],
