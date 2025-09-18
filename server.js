@@ -97,28 +97,7 @@ app.options('*', (req, res) => {
 app.use(morgan('combined'));
 
 // Swagger UI middleware
-const swaggerDocument = require('./config/swagger');
-
-// Custom CSS for Swagger UI
-const customCss = `
-    .swagger-ui .topbar { display: none }
-    body { margin: 0; padding: 0; }
-    .swagger-ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-`;
-
-// Swagger UI options
-const swaggerOptions = {
-    customCss: customCss,
-    customSiteTitle: "Freya API Documentation",
-    swaggerOptions: {
-        tryItOutEnabled: true,
-        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
-        validatorUrl: null,
-        deepLinking: true
-    }
-};
-
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Body parser
 app.use(express.json({ limit: '10mb' }));
