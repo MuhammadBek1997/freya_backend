@@ -122,6 +122,12 @@ const createSalon = async (req, res) => {
 // Get all salons
 const getAllSalons = async (req, res) => {
     try {
+        console.log('getAllSalons called with query:', req.query);
+        
+        // Database connection test
+        const dbTest = await pool.query('SELECT NOW()');
+        console.log('Database connection OK:', dbTest.rows[0]);
+        
         const { page = 1, limit = 10, search = '' } = req.query;
         const offset = (page - 1) * limit;
 

@@ -218,8 +218,36 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Debug route - barcha route'larni ko'rish uchun
+app.get('/api/debug/routes', (req, res) => {
+    const routes = [];
+    app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+            routes.push({
+                path: middleware.route.path,
+                methods: Object.keys(middleware.route.methods)
+            });
+        } else if (middleware.name === 'router') {
+            middleware.handle.stack.forEach((handler) => {
+                if (handler.route) {
+                    routes.push({
+                        path: middleware.regexp.source + handler.route.path,
+                        methods: Object.keys(handler.route.methods)
+                    });
+                }
+            });
+        }
+    });
+    res.json({ routes });
+});
+
 // Swagger proxy route
 app.use('/api', swaggerProxyRoutes);
+
+// Test salon route
+app.get('/api/salons/test', (req, res) => {
+    res.json({ message: 'Salon route is working!', timestamp: new Date().toISOString() });
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -266,6 +294,10 @@ app.use((req, res) => {
         availableRoutes: [
             'GET /',
             'GET /api/health',
+            'GET /api/db-test',
+            'GET /api/debug/routes',
+            'GET /api/salons/test',
+            'GET /api/salons',
             'GET /api-docs',
             'POST /api/auth/superadmin/login',
             'POST /api/auth/admin/login',
