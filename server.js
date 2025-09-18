@@ -100,8 +100,51 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI (Render.com uchun CORS va CSP yangilangan)
-app.use('/api-docs', (req, res, next) => {
+// Swagger UI uchun custom HTML page
+app.get('/api-docs', (req, res) => {
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Freya API Documentation</title>
+        <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
+        <style>
+            .swagger-ui .topbar { display: none }
+            body { margin: 0; padding: 0; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.onload = function() {
+                const ui = SwaggerUIBundle({
+                    url: '/api/swagger.json',
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    plugins: [
+                        SwaggerUIBundle.plugins.DownloadUrl
+                    ],
+                    layout: "StandaloneLayout",
+                    validatorUrl: null,
+                    tryItOutEnabled: true,
+                    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options']
+                });
+            };
+        </script>
+    </body>
+    </html>
+    `;
+    res.send(html);
+});
+
+// Swagger JSON uchun CORS headers
+app.get('/api/swagger.json', (req, res) => {
     const allowedOrigins = [
         'http://localhost:3000',
         'http://localhost:5173',
@@ -118,24 +161,12 @@ app.use('/api-docs', (req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
     }
     
-    // CSP headers for Swagger UI
-    res.header('Content-Security-Policy', 
-        "default-src 'self'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "img-src 'self' data: https:; " +
-        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
-        "object-src 'none'; " +
-        "media-src 'self'; " +
-        "frame-src 'none';"
-    );
-    
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    next();
-}, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+    
+    res.json(specs);
+});
 
 // CSP middleware for all API routes
 app.use('/api', (req, res, next) => {

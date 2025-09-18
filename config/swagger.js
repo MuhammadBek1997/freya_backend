@@ -238,9 +238,11 @@ const options = {
 
 const specs = swaggerJSDoc(options);
 
-// Swagger UI konfiguratsiyasi
+// Swagger UI konfiguratsiyasi (Render.com uchun yangilangan)
 const swaggerUiOptions = {
   explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Freya API Documentation',
   swaggerOptions: {
     requestInterceptor: (req) => {
       if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
@@ -249,8 +251,19 @@ const swaggerUiOptions = {
       return req;
     },
     supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
-    tryItOutEnabled: true
-  }
+    tryItOutEnabled: true,
+    validatorUrl: null, // Disable validator
+    docExpansion: 'list',
+    defaultModelsExpandDepth: 1,
+    defaultModelExpandDepth: 1
+  },
+  customJs: [
+    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js',
+    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js'
+  ],
+  customCssUrl: [
+    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css'
+  ]
 };
 
 module.exports = {
