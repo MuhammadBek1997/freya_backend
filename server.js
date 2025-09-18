@@ -176,7 +176,8 @@ app.get('/api/health', (req, res) => {
         status: 'OK', 
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV || 'development',
-        database_configured: !!process.env.DATABASE_URL
+        database_configured: !!process.env.DATABASE_URL,
+        version: '1.0.1'
     });
 });
 

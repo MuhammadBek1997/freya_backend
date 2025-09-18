@@ -10,12 +10,12 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'https://freyaweb-backend.onrender.com',
-      description: 'Production server'
-    },
-    {
       url: 'http://localhost:4444',
       description: 'Development server'
+    },
+    {
+      url: 'https://freyaweb-backend.onrender.com',
+      description: 'Production server'
     }
   ],
   components: {
