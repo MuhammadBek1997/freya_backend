@@ -29,8 +29,23 @@ const PORT = process.env.PORT || 5000;
 // Initialize Socket.io
 const io = initializeSocket(server);
 
-// Middleware
-app.use(helmet());
+// Middleware - CSP sozlamalari Swagger UI uchun
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
+        },
+    },
+    crossOriginEmbedderPolicy: false
+}));
 
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
@@ -85,7 +100,7 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI (Render.com uchun CORS yangilangan)
+// Swagger UI (Render.com uchun CORS va CSP yangilangan)
 app.use('/api-docs', (req, res, next) => {
     const allowedOrigins = [
         'http://localhost:3000',
@@ -103,11 +118,36 @@ app.use('/api-docs', (req, res, next) => {
         res.header('Access-Control-Allow-Origin', '*');
     }
     
+    // CSP headers for Swagger UI
+    res.header('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "img-src 'self' data: https:; " +
+        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "object-src 'none'; " +
+        "media-src 'self'; " +
+        "frame-src 'none';"
+    );
+    
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
     next();
 }, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+
+// CSP middleware for all API routes
+app.use('/api', (req, res, next) => {
+    res.header('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "style-src 'self' 'unsafe-inline'; " +
+        "img-src 'self' data: https:;"
+    );
+    next();
+});
 
 // Database connection test
 app.get('/api/db-test', async (req, res) => {
