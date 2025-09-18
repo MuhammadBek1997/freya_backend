@@ -37,7 +37,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             imgSrc: ["'self'", "data:", "https:", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-            connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com"],
+            connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com", "https://cdn.jsdelivr.net", "https://unpkg.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -96,105 +96,35 @@ app.options('*', (req, res) => {
 // Logging
 app.use(morgan('combined'));
 
+// Swagger UI middleware
+const swaggerDocument = require('./config/swagger');
+
+// Custom CSS for Swagger UI
+const customCss = `
+    .swagger-ui .topbar { display: none }
+    body { margin: 0; padding: 0; }
+    .swagger-ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+`;
+
+// Swagger UI options
+const swaggerOptions = {
+    customCss: customCss,
+    customSiteTitle: "Freya API Documentation",
+    swaggerOptions: {
+        tryItOutEnabled: true,
+        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
+        validatorUrl: null,
+        deepLinking: true
+    }
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+
 // Body parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI - CDN orqali yuklash
-app.get('/api-docs', (req, res) => {
-    // CSP headers for Swagger UI
-    res.header('Content-Security-Policy', 
-        "default-src 'self'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; " +
-        "img-src 'self' data: https: https://unpkg.com https://cdn.jsdelivr.net; " +
-        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
-        "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net; " +
-        "object-src 'none'; " +
-        "media-src 'self'; " +
-        "frame-src 'none';"
-    );
-    
-    // CORS headers
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-        'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com'
-    ];
-    
-    const origin = req.headers.origin;
-    
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', '*');
-    }
-    
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Freya API Documentation</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui.css" />
-        <style>
-            .swagger-ui .topbar { display: none }
-            body { margin: 0; padding: 0; }
-            .swagger-ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        </style>
-    </head>
-    <body>
-        <div id="swagger-ui"></div>
-        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
-        <script>
-            window.onload = function() {
-                try {
-                    const ui = SwaggerUIBundle({
-                        url: '/api/swagger.json',
-                        dom_id: '#swagger-ui',
-                        deepLinking: true,
-                        presets: [
-                            SwaggerUIBundle.presets.apis,
-                            SwaggerUIStandalonePreset
-                        ],
-                        plugins: [
-                            SwaggerUIBundle.plugins.DownloadUrl
-                        ],
-                        layout: "StandaloneLayout",
-                        validatorUrl: null,
-                        tryItOutEnabled: true,
-                        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
-                        onComplete: function() {
-                            console.log('Swagger UI loaded successfully');
-                        },
-                        onFailure: function(error) {
-                            console.error('Swagger UI failed to load:', error);
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error initializing Swagger UI:', error);
-                    document.getElementById('swagger-ui').innerHTML = 
-                        '<div style="padding: 20px; text-align: center; color: red;">' +
-                        '<h2>Swagger UI yuklanmadi</h2>' +
-                        '<p>Xato: ' + error.message + '</p>' +
-                        '<p>Iltimos, sahifani yangilang yoki keyinroq urinib ko'ring.</p>' +
-                        '</div>';
-                }
-            };
-        </script>
-    </body>
-    </html>
-    `;
-    res.send(html);
-});
+
 
 // Swagger JSON uchun CORS headers
 app.get('/api/swagger.json', (req, res) => {

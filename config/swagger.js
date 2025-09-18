@@ -222,6 +222,152 @@ const swaggerDefinition = {
         },
         required: ['id', 'name', 'address', 'phone']
       },
+      User: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Foydalanuvchi ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
+          },
+          username: {
+            type: 'string',
+            description: 'Foydalanuvchi nomi',
+            example: 'john_doe'
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email manzili',
+            example: 'john@example.com'
+          },
+          full_name: {
+            type: 'string',
+            description: 'To\'liq ismi',
+            example: 'John Doe'
+          },
+          phone: {
+            type: 'string',
+            description: 'Telefon raqami',
+            example: '+998901234567'
+          },
+          role: {
+            type: 'string',
+            enum: ['user', 'admin', 'superadmin'],
+            description: 'Foydalanuvchi roli',
+            example: 'user'
+          },
+          is_active: {
+            type: 'boolean',
+            description: 'Faol holati',
+            example: true
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt'
+          }
+        },
+        required: ['id', 'username', 'email', 'role']
+      },
+      Employee: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Xodim ID si'
+          },
+          salon_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Salon ID si'
+          },
+          name: {
+            type: 'string',
+            description: 'Xodim ismi'
+          },
+          position: {
+            type: 'string',
+            description: 'Lavozimi'
+          },
+          phone: {
+            type: 'string',
+            description: 'Telefon raqami'
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email manzili'
+          },
+          specialization: {
+            type: 'array',
+            items: {
+              type: 'string'
+            },
+            description: 'Mutaxassisligi'
+          },
+          rating: {
+            type: 'number',
+            format: 'float',
+            minimum: 0,
+            maximum: 5,
+            description: 'Reyting'
+          },
+          is_active: {
+            type: 'boolean',
+            description: 'Faol holati'
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt'
+          }
+        },
+        required: ['id', 'salon_id', 'name', 'position']
+      },
+      Service: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Xizmat ID si'
+          },
+          name: {
+            type: 'string',
+            description: 'Xizmat nomi'
+          },
+          description: {
+            type: 'string',
+            description: 'Xizmat tavsifi'
+          },
+          price: {
+            type: 'number',
+            format: 'float',
+            description: 'Narxi'
+          },
+          duration: {
+            type: 'integer',
+            description: 'Davomiyligi (daqiqalarda)'
+          },
+          category: {
+            type: 'string',
+            description: 'Kategoriya'
+          },
+          is_active: {
+            type: 'boolean',
+            description: 'Faol holati'
+          }
+        },
+        required: ['id', 'name', 'price', 'duration']
+      },
     },
   },
   security: [
