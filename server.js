@@ -35,13 +35,14 @@ app.use(helmet());
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
 
-// CORS konfiguratsiyasi (Swagger uchun maxsus sozlash)
+// CORS konfiguratsiyasi (Render.com uchun yangilangan)
 app.use(cors({
     origin: [
         'http://localhost:3000',
         'http://localhost:5173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-        'https://freya-web-frontend.vercel.app'
+        'https://freya-web-frontend.vercel.app',
+        'https://freya-frontend.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -51,13 +52,29 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// OPTIONS handler for preflight requests (maxsus Swagger uchun)
+// OPTIONS handler for preflight requests (Render.com uchun yangilangan)
 app.options('*', (req, res) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
+        'https://freya-web-frontend.vercel.app',
+        'https://freya-frontend.onrender.com'
+    ];
+    
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
     res.header('Access-Control-Max-Age', '86400');
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
     res.sendStatus(200);
 });
 
@@ -68,10 +85,27 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI (CORS bilan moslashgan)
+// Swagger UI (Render.com uchun CORS yangilangan)
 app.use('/api-docs', (req, res, next) => {
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
+        'https://freya-web-frontend.vercel.app',
+        'https://freya-frontend.onrender.com'
+    ];
+    
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
     next();
 }, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
