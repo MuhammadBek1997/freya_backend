@@ -29,16 +29,16 @@ const PORT = process.env.PORT || 5000;
 // Initialize Socket.io
 const io = initializeSocket(server);
 
-// Middleware - CSP sozlamalari Swagger UI uchun
+// Middleware - CSP sozlamalari Swagger UI uchun (yangilangan)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            imgSrc: ["'self'", "data:", "https:"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com"],
+            imgSrc: ["'self'", "data:", "https:", "https://unpkg.com"],
             connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
@@ -100,48 +100,43 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI uchun custom HTML page
-app.get('/api-docs', (req, res) => {
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Freya API Documentation</title>
-        <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css" />
-        <style>
-            .swagger-ui .topbar { display: none }
-            body { margin: 0; padding: 0; }
-        </style>
-    </head>
-    <body>
-        <div id="swagger-ui"></div>
-        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
-        <script src="https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
-        <script>
-            window.onload = function() {
-                const ui = SwaggerUIBundle({
-                    url: '/api/swagger.json',
-                    dom_id: '#swagger-ui',
-                    deepLinking: true,
-                    presets: [
-                        SwaggerUIBundle.presets.apis,
-                        SwaggerUIStandalonePreset
-                    ],
-                    plugins: [
-                        SwaggerUIBundle.plugins.DownloadUrl
-                    ],
-                    layout: "StandaloneLayout",
-                    validatorUrl: null,
-                    tryItOutEnabled: true,
-                    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options']
-                });
-            };
-        </script>
-    </body>
-    </html>
-    `;
-    res.send(html);
-});
+// Swagger UI (swagger-ui-express bilan)
+app.use('/api-docs', (req, res, next) => {
+    // CSP headers for Swagger UI
+    res.header('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "img-src 'self' data: https:; " +
+        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "object-src 'none'; " +
+        "media-src 'self'; " +
+        "frame-src 'none';"
+    );
+    
+    // CORS headers
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
+        'https://freya-web-frontend.vercel.app',
+        'https://freya-frontend.onrender.com'
+    ];
+    
+    const origin = req.headers.origin;
+    
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    } else {
+        res.header('Access-Control-Allow-Origin', '*');
+    }
+    
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    next();
+}, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 // Swagger JSON uchun CORS headers
 app.get('/api/swagger.json', (req, res) => {

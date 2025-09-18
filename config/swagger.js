@@ -238,7 +238,7 @@ const options = {
 
 const specs = swaggerJSDoc(options);
 
-// Swagger UI konfiguratsiyasi (Render.com uchun yangilangan)
+// Swagger UI konfiguratsiyasi (soddalashtirilgan)
 const swaggerUiOptions = {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -256,14 +256,7 @@ const swaggerUiOptions = {
     docExpansion: 'list',
     defaultModelsExpandDepth: 1,
     defaultModelExpandDepth: 1
-  },
-  customJs: [
-    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-bundle.js',
-    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js'
-  ],
-  customCssUrl: [
-    'https://unpkg.com/swagger-ui-dist@4.15.5/swagger-ui.css'
-  ]
+  }
 };
 
 module.exports = {
