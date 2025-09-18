@@ -34,11 +34,11 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com"],
-            imgSrc: ["'self'", "data:", "https:", "https://unpkg.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+            imgSrc: ["'self'", "data:", "https:", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
@@ -100,16 +100,16 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Swagger UI (swagger-ui-express bilan)
-app.use('/api-docs', (req, res, next) => {
+// Swagger UI - CDN orqali yuklash
+app.get('/api-docs', (req, res) => {
     // CSP headers for Swagger UI
     res.header('Content-Security-Policy', 
         "default-src 'self'; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-        "img-src 'self' data: https:; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net; " +
+        "img-src 'self' data: https: https://unpkg.com https://cdn.jsdelivr.net; " +
         "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
-        "font-src 'self' https://fonts.gstatic.com; " +
+        "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net; " +
         "object-src 'none'; " +
         "media-src 'self'; " +
         "frame-src 'none';"
@@ -135,8 +135,66 @@ app.use('/api-docs', (req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    next();
-}, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+    
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Freya API Documentation</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui.css" />
+        <style>
+            .swagger-ui .topbar { display: none }
+            body { margin: 0; padding: 0; }
+            .swagger-ui { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        </style>
+    </head>
+    <body>
+        <div id="swagger-ui"></div>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui-bundle.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@4.15.5/swagger-ui-standalone-preset.js"></script>
+        <script>
+            window.onload = function() {
+                try {
+                    const ui = SwaggerUIBundle({
+                        url: '/api/swagger.json',
+                        dom_id: '#swagger-ui',
+                        deepLinking: true,
+                        presets: [
+                            SwaggerUIBundle.presets.apis,
+                            SwaggerUIStandalonePreset
+                        ],
+                        plugins: [
+                            SwaggerUIBundle.plugins.DownloadUrl
+                        ],
+                        layout: "StandaloneLayout",
+                        validatorUrl: null,
+                        tryItOutEnabled: true,
+                        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
+                        onComplete: function() {
+                            console.log('Swagger UI loaded successfully');
+                        },
+                        onFailure: function(error) {
+                            console.error('Swagger UI failed to load:', error);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error initializing Swagger UI:', error);
+                    document.getElementById('swagger-ui').innerHTML = 
+                        '<div style="padding: 20px; text-align: center; color: red;">' +
+                        '<h2>Swagger UI yuklanmadi</h2>' +
+                        '<p>Xato: ' + error.message + '</p>' +
+                        '<p>Iltimos, sahifani yangilang yoki keyinroq urinib ko'ring.</p>' +
+                        '</div>';
+                }
+            };
+        </script>
+    </body>
+    </html>
+    `;
+    res.send(html);
+});
 
 // Swagger JSON uchun CORS headers
 app.get('/api/swagger.json', (req, res) => {
@@ -213,6 +271,11 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Test salon route (birinchi)
+app.get('/api/salons/test', (req, res) => {
+    res.json({ message: 'Salon route is working!', timestamp: new Date().toISOString() });
+});
+
 // Debug route - barcha route'larni ko'rish uchun
 app.get('/api/debug/routes', (req, res) => {
     const routes = [];
@@ -238,11 +301,6 @@ app.get('/api/debug/routes', (req, res) => {
 
 // Swagger proxy route
 app.use('/api', swaggerProxyRoutes);
-
-// Test salon route
-app.get('/api/salons/test', (req, res) => {
-    res.json({ message: 'Salon route is working!', timestamp: new Date().toISOString() });
-});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
@@ -306,4 +364,18 @@ server.listen(PORT, () => {
     console.log(`Server ${PORT} portda ishlamoqda`);
     console.log(`Socket.io server ham ishga tushdi`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Database URL: ${process.env.DATABASE_URL ? 'O\'rnatilgan' : 'O\'rnatilmagan'}`);
+});
+
+// Error handling for server
+server.on('error', (err) => {
+    console.error('Server error:', err);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
+    });
 });
