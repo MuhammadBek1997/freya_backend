@@ -4,22 +4,22 @@ const corsProxy = (req, res, next) => {
     const allowedOrigins = [
         'http://localhost:3000',
         'http://localhost:5173',
+        'http://localhost:4173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
         'https://freya-frontend.onrender.com',
-        'https://freya-web-frontend.vercel.app',
-        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
+        'https://freyasalon-6f0b3dc79e01.herokuapp.com',
+        'https://freyajs.vercel.app',
+        'https://freya-admin.vercel.app',
+        'https://freya-admin.onrender.com',
+        'https://freyajs-git-main-muhammads-projects-3a6ae627.vercel.app',
+        'https://freyajs-muhammads-projects-3a6ae627.vercel.app'
     ];
     
     const origin = req.headers.origin;
     
-    // Origin tekshirish va CORS headerlarini o'rnatish
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        // Development uchun barcha originlarga ruxsat berish
-        res.header('Access-Control-Allow-Origin', '*');
-    }
+    // Barcha originlarga ruxsat berish
+    res.header('Access-Control-Allow-Origin', '*');
     
     // CORS headerlarini to'liq o'rnatish
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');

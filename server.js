@@ -50,15 +50,9 @@ app.use(helmet({
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
 
-// CORS konfiguratsiyasi (Render.com uchun yangilangan)
+// CORS konfiguratsiyasi (Barcha originlarga ruxsat)
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-        'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com'
-    ],
+    origin: true, // Barcha originlarga ruxsat
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
@@ -67,23 +61,12 @@ app.use(cors({
     optionsSuccessStatus: 200
 }));
 
-// OPTIONS handler for preflight requests (Render.com uchun yangilangan)
+// OPTIONS handler for preflight requests (Barcha originlarga ruxsat)
 app.options('*', (req, res) => {
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-        'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com'
-    ];
-    
     const origin = req.headers.origin;
     
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', '*');
-    }
+    // Barcha originlarga ruxsat berish
+    res.header('Access-Control-Allow-Origin', origin || '*');
     
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
@@ -107,21 +90,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Swagger JSON uchun CORS headers
 app.get('/api/swagger.json', (req, res) => {
-    const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-        'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com'
-    ];
-    
     const origin = req.headers.origin;
     
-    if (allowedOrigins.includes(origin)) {
-        res.header('Access-Control-Allow-Origin', origin);
-    } else {
-        res.header('Access-Control-Allow-Origin', '*');
-    }
+    // Barcha originlarga ruxsat berish
+    res.header('Access-Control-Allow-Origin', origin || '*');
     
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
