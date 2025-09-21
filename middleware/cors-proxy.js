@@ -4,15 +4,11 @@ const corsProxy = (req, res, next) => {
     const allowedOrigins = [
         'http://localhost:3000',
         'http://localhost:5173',
-        'http://localhost:5179',
-        'http://localhost:5187',
-        'http://localhost:5188',
-        'http://localhost:5189',
-        'http://localhost:5190',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
         'https://freya-frontend.onrender.com',
-        'https://freya-web-frontend.vercel.app'
+        'https://freya-web-frontend.vercel.app',
+        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
     ];
     
     const origin = req.headers.origin;
@@ -20,12 +16,9 @@ const corsProxy = (req, res, next) => {
     // Origin tekshirish va CORS headerlarini o'rnatish
     if (allowedOrigins.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
-    } else if (process.env.NODE_ENV === 'development' || !origin) {
-        // Development uchun yoki origin bo'lmagan so'rovlar uchun barcha originlarga ruxsat berish
-        res.header('Access-Control-Allow-Origin', '*');
     } else {
-        // Production'da noma'lum originlarga ruxsat bermaslik
-        res.header('Access-Control-Allow-Origin', 'null');
+        // Development uchun barcha originlarga ruxsat berish
+        res.header('Access-Control-Allow-Origin', '*');
     }
     
     // CORS headerlarini to'liq o'rnatish
@@ -36,13 +29,11 @@ const corsProxy = (req, res, next) => {
     res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
     
     // CORS debug uchun log
-    const isAllowed = allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development' || !origin;
     console.log('CORS Debug:', {
-        origin: origin || 'undefined',
+        origin: origin,
         method: req.method,
         url: req.url,
-        allowed: isAllowed,
-        isDevelopment: process.env.NODE_ENV === 'development'
+        allowed: allowedOrigins.includes(origin)
     });
     
     // OPTIONS so'rovlari uchun

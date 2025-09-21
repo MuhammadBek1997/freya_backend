@@ -50,71 +50,33 @@ app.use(helmet({
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
 
-// CORS konfiguratsiyasi (Production uchun to'liq sozlangan)
+// CORS konfiguratsiyasi (Render.com uchun yangilangan)
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        
-        const allowedOrigins = [
-            // Development URLs
-            'http://localhost:3000',
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'http://localhost:5175',
-            'http://localhost:5176',
-            'http://localhost:5177',
-            'http://localhost:5178',
-            'http://localhost:5179',
-            // Production URLs
-            'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
-            'https://freya-web-frontend.vercel.app',
-            'https://freya-frontend.onrender.com',
-            'https://freya-admin.vercel.app',
-            'https://freya-admin.netlify.app'
-        ];
-        
-        if (allowedOrigins.includes(origin) || origin.match(/^http:\/\/localhost:\d+$/)) {
-            return callback(null, true);
-        }
-        
-        return callback(new Error('Not allowed by CORS'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-    allowedHeaders: [
-        'Content-Type', 
-        'Authorization', 
-        'X-Requested-With', 
-        'Accept', 
-        'Origin',
-        'Cache-Control',
-        'X-File-Name'
-    ],
-    credentials: false,
-    exposedHeaders: ['Content-Length', 'X-Total-Count', 'X-Page-Count'],
-    preflightContinue: false,
-    optionsSuccessStatus: 200,
-    maxAge: 86400 // 24 soat cache
-}));
-
-// OPTIONS handler for preflight requests (Production uchun to'liq sozlangan)
-app.options('*', (req, res) => {
-    const allowedOrigins = [
-        // Development URLs
+    origin: [
         'http://localhost:3000',
         'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5175',
-        'http://localhost:5176',
-        'http://localhost:5177',
-        'http://localhost:5178',
-        'http://localhost:5179',
-        // Production URLs
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
         'https://freya-frontend.onrender.com',
-        'https://freya-admin.vercel.app',
-        'https://freya-admin.netlify.app'
+        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    credentials: true,
+    exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
+    preflightContinue: false,
+    optionsSuccessStatus: 200
+}));
+
+// OPTIONS handler for preflight requests (Render.com uchun yangilangan)
+app.options('*', (req, res) => {
+    const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
+        'https://freya-web-frontend.vercel.app',
+        'https://freya-frontend.onrender.com',
+        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
     ];
     
     const origin = req.headers.origin;
@@ -122,19 +84,14 @@ app.options('*', (req, res) => {
     if (allowedOrigins.includes(origin)) {
         res.header('Access-Control-Allow-Origin', origin);
     } else {
-        // Development uchun localhost pattern ni tekshirish
-        if (origin && origin.match(/^http:\/\/localhost:\d+$/)) {
-            res.header('Access-Control-Allow-Origin', origin);
-        } else {
-            res.header('Access-Control-Allow-Origin', '*');
-        }
+        res.header('Access-Control-Allow-Origin', '*');
     }
     
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-File-Name');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
     res.header('Access-Control-Max-Age', '86400');
-    res.header('Access-Control-Allow-Credentials', 'false');
-    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Total-Count, X-Page-Count');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
     res.sendStatus(200);
 });
 
@@ -157,7 +114,8 @@ app.get('/api/swagger.json', (req, res) => {
         'http://localhost:5173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com'
+        'https://freya-frontend.onrender.com',
+        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
     ];
     
     const origin = req.headers.origin;
