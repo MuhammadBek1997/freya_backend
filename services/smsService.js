@@ -23,7 +23,8 @@ class SMSService {
                 {
                     mobile_phone: formattedPhone,
                     message: message,
-                    from: '4546'
+                    from: '4546',
+                    callback_url: null
                 },
                 {
                     headers: {
@@ -58,15 +59,103 @@ class SMSService {
     }
 
     /**
-     * Tasdiqlash kodini yuborish
+     * Random 6 xonali kod generatsiya qilish
+     * @returns {string} - 6 xonali tasdiqlash kodi
+     */
+    generateVerificationCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    /**
+     * Tasdiqlash kodini yuborish (Ro'yxatdan o'tish uchun)
      * @param {string} phone - Telefon raqami
-     * @param {string} code - Tasdiqlash kodi
+     * @param {string} code - Tasdiqlash kodi (ixtiyoriy, agar berilmasa random yaratiladi)
      * @returns {Promise<Object>} - SMS yuborish natijasi
      */
-    async sendVerificationCode(phone, code) {
+    async sendVerificationCode(phone, code = null) {
+        // Agar kod berilmagan bo'lsa, random yaratish
+        const verificationCode = code || this.generateVerificationCode();
+        
         // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
-        const message = `Freya mobil ilovasiga ro'yxatdan o'tish uchun tasdiqlash kodi: ${code}`;
-        return this.sendSMS(phone, message);
+        const message = `Freya mobil ilovasiga ro'yxatdan o'tish uchun tasdiqlash kodi: ${verificationCode}`;
+        
+        const result = await this.sendSMS(phone, message);
+        
+        // Natijaga verification code qo'shish
+        if (result.success) {
+            result.verificationCode = verificationCode;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Parolni tiklash uchun tasdiqlash kodi yuborish
+     * @param {string} phone - Telefon raqami
+     * @param {string} code - Tasdiqlash kodi (ixtiyoriy, agar berilmasa random yaratiladi)
+     * @returns {Promise<Object>} - SMS yuborish natijasi
+     */
+    async sendPasswordResetCode(phone, code = null) {
+        // Agar kod berilmagan bo'lsa, random yaratish
+        const verificationCode = code || this.generateVerificationCode();
+        
+        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
+        const message = `Freya ilovasida parolni tiklash uchun tasdiqlash kodi: ${verificationCode}`;
+        
+        const result = await this.sendSMS(phone, message);
+        
+        // Natijaga verification code qo'shish
+        if (result.success) {
+            result.verificationCode = verificationCode;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Telefon raqamni o'zgartirish uchun tasdiqlash kodi yuborish
+     * @param {string} phone - Telefon raqami
+     * @param {string} code - Tasdiqlash kodi (ixtiyoriy, agar berilmasa random yaratiladi)
+     * @returns {Promise<Object>} - SMS yuborish natijasi
+     */
+    async sendPhoneChangeCode(phone, code = null) {
+        // Agar kod berilmagan bo'lsa, random yaratish
+        const verificationCode = code || this.generateVerificationCode();
+        
+        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
+        const message = `<#>Freya dasturiga Telefon raqamni o'zgartirish uchun tasdiqlash kodi:${verificationCode}`;
+        
+        const result = await this.sendSMS(phone, message);
+        
+        // Natijaga verification code qo'shish
+        if (result.success) {
+            result.verificationCode = verificationCode;
+        }
+        
+        return result;
+    }
+
+    /**
+     * Ro'yxatdan o'tish uchun tasdiqlash kodi yuborish (qisqa format)
+     * @param {string} phone - Telefon raqami
+     * @param {string} code - Tasdiqlash kodi (ixtiyoriy, agar berilmasa random yaratiladi)
+     * @returns {Promise<Object>} - SMS yuborish natijasi
+     */
+    async sendRegistrationCode(phone, code = null) {
+        // Agar kod berilmagan bo'lsa, random yaratish
+        const verificationCode = code || this.generateVerificationCode();
+        
+        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
+        const message = `<#>Freya dasturiga Ro'yhatdan o'tish uchun tasdiqlash kodi:${verificationCode}`;
+        
+        const result = await this.sendSMS(phone, message);
+        
+        // Natijaga verification code qo'shish
+        if (result.success) {
+            result.verificationCode = verificationCode;
+        }
+        
+        return result;
     }
 
     /**

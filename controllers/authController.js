@@ -111,8 +111,20 @@ const adminLogin = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Admin login xatosi:', error);
-        res.status(500).json({ message: 'Server xatosi' });
+        console.error('Admin login xatosi:', {
+            error: error.message,
+            stack: error.stack,
+            body: req.body,
+            headers: req.headers
+        });
+        
+        // Agar response allaqachon yuborilgan bo'lsa, qayta yubormaslik
+        if (!res.headersSent) {
+            res.status(500).json({ 
+                message: 'Server xatosi',
+                error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            });
+        }
     }
 };
 

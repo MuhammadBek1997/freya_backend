@@ -186,7 +186,7 @@ app.get('/api/debug/routes', (req, res) => {
 app.use('/api', swaggerProxyRoutes);
 
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/salons', salonRoutes);
 
 // Employee routes

@@ -17,9 +17,9 @@ const validateEmail = (email) => {
     return emailRegex.test(email);
 };
 
-// Tasodifiy 6 xonali kod generatsiya qilish
+// Tasodifiy 6 xonali kod generatsiya qilish (SMS service'dan foydalanish)
 const generateVerificationCode = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return smsService.generateVerificationCode();
 };
 
 // 1-bosqich: Telefon, email va parol bilan ro'yxatdan o'tish
@@ -88,8 +88,11 @@ const registerStep1 = async (req, res) => {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Verification code generatsiya qilish
-        const verificationCode = generateVerificationCode();
+        // Eskiz.uz orqali SMS yuborish (avtomatik random kod bilan)
+        const smsResult = await smsService.sendVerificationCode(phone);
+        
+        // SMS yuborilgan kod va vaqtni olish
+        const verificationCode = smsResult.verificationCode || generateVerificationCode();
         const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
 
         // Foydalanuvchini 1-bosqich bilan saqlash
@@ -101,9 +104,6 @@ const registerStep1 = async (req, res) => {
         );
 
         const user = result.rows[0];
-
-        // Eskiz.uz orqali SMS yuborish
-        const smsResult = await smsService.sendVerificationCode(phone, verificationCode);
         
         if (!smsResult.success) {
             console.error('SMS yuborishda xatolik:', smsResult.error);
@@ -374,9 +374,130 @@ const loginUser = async (req, res) => {
     }
 };
 
+// Parolni tiklash uchun SMS yuborish
+const sendPasswordResetCode = async (req, res) => {
+    try {
+        const { phone } = req.body;
+
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam kiritilishi shart'
+            });
+        }
+
+        if (!validatePhoneNumber(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam formati noto\'g\'ri'
+            });
+        }
+
+        // Foydalanuvchi mavjudligini tekshirish
+        const userResult = await pool.query('SELECT id FROM users WHERE phone = $1', [phone]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bu telefon raqam bilan ro\'yxatdan o\'tmagan'
+            });
+        }
+
+        // SMS yuborish
+        const smsResult = await smsService.sendPasswordResetCode(phone);
+        
+        if (smsResult.success) {
+            // Verification code'ni bazaga saqlash
+            const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
+            await pool.query(
+                'UPDATE users SET verification_code = $1, verification_expires_at = $2 WHERE phone = $3',
+                [smsResult.verificationCode, verificationExpires, phone]
+            );
+        }
+
+        res.json({
+            success: true,
+            message: 'Parolni tiklash kodi yuborildi',
+            data: {
+                phone: phone,
+                smsStatus: smsResult.success ? 'yuborildi' : 'yuborilmadi',
+                verificationCode: smsResult.verificationCode // Development uchun
+            }
+        });
+
+    } catch (error) {
+        console.error('Password Reset Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Telefon raqamni o'zgartirish uchun SMS yuborish
+const sendPhoneChangeCode = async (req, res) => {
+    try {
+        const { newPhone } = req.body;
+        const userId = req.user.id; // JWT token'dan olinadi
+
+        if (!newPhone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Yangi telefon raqam kiritilishi shart'
+            });
+        }
+
+        if (!validatePhoneNumber(newPhone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam formati noto\'g\'ri'
+            });
+        }
+
+        // Yangi telefon raqam allaqachon ishlatilganligini tekshirish
+        const existingUser = await pool.query('SELECT id FROM users WHERE phone = $1 AND id != $2', [newPhone, userId]);
+        if (existingUser.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bu telefon raqam allaqachon ishlatilmoqda'
+            });
+        }
+
+        // SMS yuborish
+        const smsResult = await smsService.sendPhoneChangeCode(newPhone);
+        
+        if (smsResult.success) {
+            // Verification code'ni bazaga saqlash
+            const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
+            await pool.query(
+                'UPDATE users SET verification_code = $1, verification_expires_at = $2 WHERE id = $3',
+                [smsResult.verificationCode, verificationExpires, userId]
+            );
+        }
+
+        res.json({
+            success: true,
+            message: 'Telefon raqamni o\'zgartirish kodi yuborildi',
+            data: {
+                newPhone: newPhone,
+                smsStatus: smsResult.success ? 'yuborildi' : 'yuborilmadi',
+                verificationCode: smsResult.verificationCode // Development uchun
+            }
+        });
+
+    } catch (error) {
+        console.error('Phone Change Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
     registerStep2,
-    loginUser
+    loginUser,
+    sendPasswordResetCode,
+    sendPhoneChangeCode
 };

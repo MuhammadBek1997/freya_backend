@@ -392,24 +392,59 @@ const options = {
 
 const specs = swaggerJSDoc(options);
 
-// Swagger UI konfiguratsiyasi (soddalashtirilgan)
+// Swagger UI konfiguratsiyasi (yaxshilangan)
 const swaggerUiOptions = {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Freya API Documentation',
   swaggerOptions: {
-    requestInterceptor: (req) => {
-      if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
-        req.headers['Content-Type'] = 'application/json';
-      }
-      return req;
+      requestInterceptor: (req) => {
+        console.log('Swagger Request:', {
+          url: req.url,
+          method: req.method,
+          headers: req.headers,
+          body: req.body
+        });
+        if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+          req.headers['Content-Type'] = 'application/json';
+        }
+        return req;
+      },
+      responseInterceptor: (res) => {
+        console.log('Swagger Response:', {
+          status: res.status,
+          statusText: res.statusText,
+          url: res.url,
+          headers: res.headers,
+          body: res.body
+        });
+        
+        // 500 xatosini aniqlash
+        if (res.status >= 500) {
+          console.error('Swagger 500 Error:', {
+            status: res.status,
+            statusText: res.statusText,
+            url: res.url,
+            response: res
+          });
+        }
+        
+        return res;
+      },
+    onComplete: () => {
+      console.log('Swagger UI loaded successfully');
+    },
+    onFailure: (error) => {
+      console.error('Swagger UI error:', error);
     },
     supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch', 'options'],
     tryItOutEnabled: true,
     validatorUrl: null, // Disable validator
     docExpansion: 'list',
     defaultModelsExpandDepth: 1,
-    defaultModelExpandDepth: 1
+    defaultModelExpandDepth: 1,
+    showRequestHeaders: true,
+    showCommonExtensions: true
   }
 };
 

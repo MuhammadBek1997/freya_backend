@@ -7,7 +7,9 @@ const {
     registerStep1,
     verifyPhone,
     registerStep2,
-    loginUser
+    loginUser,
+    sendPasswordResetCode,
+    sendPhoneChangeCode
 } = require('../controllers/userController');
 
 // Middleware
@@ -326,6 +328,98 @@ router.post('/login',
     validatePhoneNumber,
     validatePasswordStrength,
     loginUser
+);
+
+/**
+ * @swagger
+ * /api/users/password-reset/send-code:
+ *   post:
+ *     summary: Parolni tiklash uchun SMS kod yuborish
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Telefon raqam
+ *                 example: "+998901234567"
+ *     responses:
+ *       200:
+ *         description: SMS kod muvaffaqiyatli yuborildi
+ *       400:
+ *         description: Validatsiya xatosi
+ *       404:
+ *         description: Telefon raqam topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.post('/password-reset/send-code',
+    validatePhoneNumber,
+    sendPasswordResetCode
+);
+
+// Parolni tiklash uchun yangi endpoint (frontend bilan mos kelishi uchun)
+router.post('/reset-password',
+    validatePhoneNumber,
+    sendPasswordResetCode
+);
+
+/**
+ * @swagger
+ * /api/users/phone-change/send-code:
+ *   post:
+ *     summary: Telefon raqamni o'zgartirish uchun tasdiqlash kodi yuborish
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Yangi telefon raqami
+ *                 example: "+998901234567"
+ *     responses:
+ *       200:
+ *         description: Tasdiqlash kodi muvaffaqiyatli yuborildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Telefon raqamni o'zgartirish kodi yuborildi"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     phone:
+ *                       type: string
+ *                       example: "+998901234567"
+ *                     smsStatus:
+ *                       type: string
+ *                       example: "yuborildi"
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       500:
+ *         description: Server xatosi
+ */
+router.post('/phone-change/send-code',
+    validatePhoneNumber,
+    sendPhoneChangeCode
 );
 
 module.exports = router;
