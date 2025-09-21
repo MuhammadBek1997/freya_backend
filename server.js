@@ -37,7 +37,7 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             imgSrc: ["'self'", "data:", "https:", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-            connectSrc: ["'self'", "https://freya-backend.onrender.com", "https://*.onrender.com", "https://cdn.jsdelivr.net", "https://unpkg.com"],
+            connectSrc: ["'self'", "https://freya-backend-1.onrender.com", "https://*.onrender.com", "https://cdn.jsdelivr.net", "https://unpkg.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -57,8 +57,7 @@ app.use(cors({
         'http://localhost:5173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com',
-        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
+        'https://freya-frontend.onrender.com'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -75,8 +74,7 @@ app.options('*', (req, res) => {
         'http://localhost:5173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com',
-        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
+        'https://freya-frontend.onrender.com'
     ];
     
     const origin = req.headers.origin;
@@ -114,8 +112,7 @@ app.get('/api/swagger.json', (req, res) => {
         'http://localhost:5173',
         'https://freyabackend-parfa7zy7-muhammads-projects-3a6ae627.vercel.app',
         'https://freya-web-frontend.vercel.app',
-        'https://freya-frontend.onrender.com',
-        'https://freyasalon-6f0b3dc79e01.herokuapp.com'
+        'https://freya-frontend.onrender.com'
     ];
     
     const origin = req.headers.origin;
@@ -137,7 +134,7 @@ app.get('/api/swagger.json', (req, res) => {
 app.use('/api', (req, res, next) => {
     res.header('Content-Security-Policy', 
         "default-src 'self'; " +
-        "connect-src 'self' https://freya-backend.onrender.com https://*.onrender.com; " +
+        "connect-src 'self' https://freya-backend-1.onrender.com https://*.onrender.com; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https:;"
