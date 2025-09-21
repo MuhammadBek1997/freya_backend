@@ -124,6 +124,53 @@ const getAllSalons = async (req, res) => {
     try {
         console.log('getAllSalons called with query:', req.query);
         
+        // Check if DATABASE_URL is configured
+        if (!process.env.DATABASE_URL || process.env.DATABASE_URL.includes('your_username')) {
+            console.log('Database not configured, returning mock data');
+            // Return mock data for testing
+            const mockSalons = [
+                {
+                    id: '1',
+                    salon_name: 'Test Salon 1',
+                    salon_phone: '+998901234567',
+                    salon_rating: 4.5,
+                    salon_description: 'Bu test salon 1',
+                    location: { address: 'Toshkent, O\'zbekiston' },
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: '2',
+                    salon_name: 'Test Salon 2',
+                    salon_phone: '+998901234568',
+                    salon_rating: 4.8,
+                    salon_description: 'Bu test salon 2',
+                    location: { address: 'Samarqand, O\'zbekiston' },
+                    created_at: new Date().toISOString()
+                },
+                {
+                    id: '3',
+                    salon_name: 'Test Salon 3',
+                    salon_phone: '+998901234569',
+                    salon_rating: 4.2,
+                    salon_description: 'Bu test salon 3',
+                    location: { address: 'Buxoro, O\'zbekiston' },
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            return res.json({
+                success: true,
+                message: 'Salonlar muvaffaqiyatli olindi (mock data)',
+                data: mockSalons,
+                pagination: {
+                    page: 1,
+                    limit: 10,
+                    total: 3,
+                    totalPages: 1
+                }
+            });
+        }
+        
         // Database connection test
         const dbTest = await pool.query('SELECT NOW()');
         console.log('Database connection OK:', dbTest.rows[0]);
@@ -194,7 +241,7 @@ const getAllSalons = async (req, res) => {
         const totalCount = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalCount / limit);
 
-        const responseData = {
+        res.json({
             success: true,
             data: salons,
             pagination: {
@@ -204,16 +251,7 @@ const getAllSalons = async (req, res) => {
                 hasNext: page < totalPages,
                 hasPrev: page > 1
             }
-        };
-
-        // JSONP support
-        const callback = req.query.callback;
-        if (callback) {
-            res.setHeader('Content-Type', 'application/javascript');
-            res.send(`${callback}(${JSON.stringify(responseData)})`);
-        } else {
-            res.json(responseData);
-        }
+        });
 
     } catch (error) {
         console.error('Salonlarni olishda xatolik:', error);

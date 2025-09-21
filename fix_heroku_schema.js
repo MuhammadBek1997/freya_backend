@@ -1,132 +1,82 @@
 const { Pool } = require('pg');
-require('dotenv').config();
 
-// Heroku database connection
-// You need to get the actual DATABASE_URL from Heroku dashboard
-// For now, we'll try to connect using the environment variable
+// DATABASE_URL should be set as environment variable
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+    console.error('DATABASE_URL environment variable is not set');
+    process.exit(1);
+}
+
 const pool = new Pool({
-  connectionString: process.env.HEROKU_DATABASE_URL || process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Always use SSL for Heroku
+    connectionString: DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
 async function fixHerokuSchema() {
-  const client = await pool.connect();
-  
-  try {
-    console.log('🔄 Checking Heroku database schema...');
+    const client = await pool.connect();
     
-    // Check if salons table exists
-    const tableCheck = await client.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'salons'
-      );
-    `);
-    
-    if (!tableCheck.rows[0].exists) {
-      console.log('❌ Salons table does not exist. Creating...');
-      
-      // Create salons table with correct schema
-      await client.query(`
-        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    try {
+        console.log('🔍 Checking current schema...');
         
-        CREATE TABLE salons (
-          id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-          salon_logo VARCHAR(255),
-          salon_name VARCHAR(200) NOT NULL,
-          salon_phone VARCHAR(20),
-          salon_add_phone VARCHAR(20),
-          salon_instagram VARCHAR(100),
-          salon_rating DECIMAL(3,2) DEFAULT 0,
-          comments JSONB DEFAULT '[]',
-          salon_payment JSONB,
-          salon_description TEXT,
-          salon_types JSONB DEFAULT '[]',
-          private_salon BOOLEAN DEFAULT false,
-          work_schedule JSONB DEFAULT '[]',
-          salon_title VARCHAR(200),
-          salon_additionals JSONB DEFAULT '[]',
-          sale_percent INTEGER DEFAULT 0,
-          sale_limit INTEGER DEFAULT 0,
-          location JSONB,
-          salon_orient JSONB,
-          salon_photos JSONB DEFAULT '[]',
-          salon_comfort JSONB DEFAULT '[]',
-          is_active BOOLEAN DEFAULT true,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-      
-      console.log('✅ Salons table created successfully');
-    } else {
-      console.log('✅ Salons table exists');
-      
-      // Check if created_at column exists
-      const columnCheck = await client.query(`
-        SELECT EXISTS (
-          SELECT FROM information_schema.columns 
-          WHERE table_schema = 'public' 
-          AND table_name = 'salons' 
-          AND column_name = 'created_at'
-        );
-      `);
-      
-      if (!columnCheck.rows[0].exists) {
-        console.log('❌ created_at column missing. Adding...');
-        await client.query(`
-          ALTER TABLE salons 
-          ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+        // Check if created_at column exists
+        const checkColumn = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'salons' AND column_name = 'created_at'
         `);
-        console.log('✅ created_at and updated_at columns added');
-      } else {
-        console.log('✅ created_at column exists');
-      }
+        
+        if (checkColumn.rows.length > 0) {
+            console.log('✅ created_at column already exists');
+            return;
+        }
+        
+        console.log('➕ Adding created_at column to salons table...');
+        
+        // Add created_at column with default value
+        await client.query(`
+            ALTER TABLE salons 
+            ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        `);
+        
+        console.log('✅ Successfully added created_at column');
+        
+        // Update existing records to have created_at values
+        const updateResult = await client.query(`
+            UPDATE salons 
+            SET created_at = CURRENT_TIMESTAMP 
+            WHERE created_at IS NULL
+        `);
+        
+        console.log(`✅ Updated ${updateResult.rowCount} existing records with created_at timestamps`);
+        
+        // Verify the fix
+        const testQuery = await client.query('SELECT id, name, created_at FROM salons LIMIT 3');
+        console.log('🔍 Sample data after fix:');
+        testQuery.rows.forEach(row => {
+            console.log(`  - ${row.name}: ${row.created_at}`);
+        });
+        
+        console.log('🎉 Schema fix completed successfully!');
+        
+    } catch (error) {
+        console.error('❌ Error fixing schema:', error.message);
+        throw error;
+    } finally {
+        client.release();
+        await pool.end();
     }
-    
-    // Insert test data if table is empty
-    const countResult = await client.query('SELECT COUNT(*) FROM salons');
-    const count = parseInt(countResult.rows[0].count);
-    
-    if (count === 0) {
-      console.log('📝 Inserting test salon data...');
-      
-      await client.query(`
-        INSERT INTO salons (salon_name, salon_phone, salon_description, salon_rating, location) VALUES
-        ('Beauty Palace', '+998901234567', 'Luxury beauty salon with professional services', 4.8, '{"address": "Tashkent, Yunusobod"}'),
-        ('Glamour Studio', '+998907654321', 'Modern salon for hair and beauty treatments', 4.6, '{"address": "Tashkent, Chilonzor"}'),
-        ('Elite Salon', '+998909876543', 'Premium salon with experienced stylists', 4.9, '{"address": "Tashkent, Mirzo Ulugbek"}');
-      `);
-      
-      console.log('✅ Test data inserted successfully');
-    } else {
-      console.log(`✅ Salons table has ${count} records`);
-    }
-    
-    console.log('🎉 Heroku database schema fixed successfully!');
-    
-  } catch (error) {
-    console.error('❌ Error fixing schema:', error);
-    throw error;
-  } finally {
-    client.release();
-    await pool.end();
-  }
 }
 
-// Run the fix
-if (require.main === module) {
-  fixHerokuSchema()
+// Run the migration
+fixHerokuSchema()
     .then(() => {
-      console.log('✅ Schema fix completed');
-      process.exit(0);
+        console.log('Migration completed');
+        process.exit(0);
     })
-    .catch((error) => {
-      console.error('❌ Schema fix failed:', error);
-      process.exit(1);
+    .catch(error => {
+        console.error('Migration failed:', error);
+        process.exit(1);
     });
-}
-
-module.exports = { fixHerokuSchema };
