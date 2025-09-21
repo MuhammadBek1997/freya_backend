@@ -232,6 +232,43 @@ app.get('/api/salons/test', (req, res) => {
     res.json({ message: 'Salon route is working!', timestamp: new Date().toISOString() });
 });
 
+// Debug route - database URL ma'lumotlarini olish uchun (faqat development)
+app.get('/api/debug/db-url', (req, res) => {
+    const dbUrl = process.env.DATABASE_URL;
+    
+    if (!dbUrl) {
+        return res.json({
+            success: false,
+            message: "DATABASE_URL topilmadi"
+        });
+    }
+    
+    // URL'ning faqat host va database nomini ko'rsatamiz (xavfsizlik uchun)
+    const urlParts = dbUrl.match(/postgresql:\/\/([^:]+):([^@]+)@([^:]+):(\d+)\/(.+)/);
+    
+    if (urlParts) {
+        res.json({
+            success: true,
+            database_info: {
+                host: urlParts[3],
+                port: urlParts[4],
+                database: urlParts[5],
+                username: urlParts[1],
+                // Password'ni xavfsizlik uchun ko'rsatmaymiz
+                url_format: `postgresql://${urlParts[1]}:[password]@${urlParts[3]}:${urlParts[4]}/${urlParts[5]}`,
+                full_url_available: true
+            },
+            note: "To'liq URL uchun Heroku dashboard'dan config vars'ni ko'ring yoki migration script'ni ishlatish uchun environment variable o'rnating"
+        });
+    } else {
+        res.json({
+            success: false,
+            message: "DATABASE_URL format noto'g'ri",
+            raw_url_length: dbUrl.length
+        });
+    }
+});
+
 // Debug route - barcha route'larni ko'rish uchun
 app.get('/api/debug/routes', (req, res) => {
     const routes = [];
