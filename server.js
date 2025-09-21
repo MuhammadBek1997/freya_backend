@@ -79,12 +79,12 @@ app.options('*', (req, res) => {
 // Logging
 app.use(morgan('combined'));
 
-// Swagger UI middleware
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
-
-// Body parser
+// Body parser (Swagger UI'dan oldin bo'lishi kerak)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Swagger UI middleware
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 
 

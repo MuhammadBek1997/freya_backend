@@ -59,9 +59,17 @@ const superadminLogin = async (req, res) => {
 // Admin login
 const adminLogin = async (req, res) => {
     try {
+        console.log('Admin login so\'rovi keldi:', {
+            body: req.body,
+            headers: req.headers,
+            method: req.method,
+            url: req.url
+        });
+
         const { username, password } = req.body;
 
         if (!username || !password) {
+            console.log('Username yoki password yo\'q:', { username, password });
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
         }
 

@@ -57,7 +57,7 @@ router.post('/superadmin/login', superadminLogin);
  *             properties:
  *               username:
  *                 type: string
- *                 example: admin
+ *                 example: admin_beauty_palace
  *               password:
  *                 type: string
  *                 example: admin123
