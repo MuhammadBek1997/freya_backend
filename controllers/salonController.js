@@ -194,7 +194,7 @@ const getAllSalons = async (req, res) => {
         const totalCount = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalCount / limit);
 
-        res.json({
+        const responseData = {
             success: true,
             data: salons,
             pagination: {
@@ -204,7 +204,16 @@ const getAllSalons = async (req, res) => {
                 hasNext: page < totalPages,
                 hasPrev: page > 1
             }
-        });
+        };
+
+        // JSONP support
+        const callback = req.query.callback;
+        if (callback) {
+            res.setHeader('Content-Type', 'application/javascript');
+            res.send(`${callback}(${JSON.stringify(responseData)})`);
+        } else {
+            res.json(responseData);
+        }
 
     } catch (error) {
         console.error('Salonlarni olishda xatolik:', error);
