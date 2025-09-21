@@ -147,9 +147,41 @@ const authMiddleware = {
     }
   },
 
-  // Generate JWT token
+  // Generate JWT token with unique identifiers
   generateToken: (payload) => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
+    // Create unique token payload with timestamp and user type prefix
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 15);
+    
+    // Add user type prefix to ensure uniqueness
+    let userTypePrefix = '';
+    switch (payload.role) {
+      case 'superadmin':
+        userTypePrefix = 'SA';
+        break;
+      case 'admin':
+        userTypePrefix = 'AD';
+        break;
+      case 'employee':
+        userTypePrefix = 'EM';
+        break;
+      case 'user':
+        userTypePrefix = 'US';
+        break;
+      default:
+        userTypePrefix = 'UN';
+    }
+    
+    // Enhanced payload with unique identifiers
+    const enhancedPayload = {
+      ...payload,
+      tokenId: `${userTypePrefix}_${payload.id}_${timestamp}_${randomSuffix}`,
+      iat: Math.floor(timestamp / 1000),
+      userType: payload.role,
+      sessionId: `${userTypePrefix}_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`
+    };
+    
+    return jwt.sign(enhancedPayload, process.env.JWT_SECRET, { expiresIn: '7d' });
   }
 };
 

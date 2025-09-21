@@ -1,61 +1,54 @@
-const { pool } = require('./config/database');
 require('dotenv').config();
+const { pool } = require('./config/database');
 
 async function checkTables() {
-  try {
-    console.log('Database ga ulanish...');
-    
-    // Check if messages table exists
-    const messagesResult = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'messages'
-      );
-    `);
-    
-    console.log('Messages table mavjudmi:', messagesResult.rows[0].exists);
-    
-    // Check if users table exists
-    const usersResult = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users'
-      );
-    `);
-    
-    console.log('Users table mavjudmi:', usersResult.rows[0].exists);
-    
-    // Check if employees table exists
-    const employeesResult = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'employees'
-      );
-    `);
-    
-    console.log('Employees table mavjudmi:', employeesResult.rows[0].exists);
-    
-    // List all tables
-    const tablesResult = await pool.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-      ORDER BY table_name;
-    `);
-    
-    console.log('\nMavjud table lar:');
-    tablesResult.rows.forEach(row => {
-      console.log('-', row.table_name);
-    });
-    
-    process.exit(0);
-  } catch (error) {
-    console.error('Xatolik:', error);
-    process.exit(1);
-  }
+    try {
+        console.log('Checking table structures...\n');
+        
+        // Admins table structure
+        const adminsResult = await pool.query(`
+            SELECT column_name, data_type, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'admins' 
+            ORDER BY ordinal_position
+        `);
+        
+        console.log('ADMINS table columns:');
+        adminsResult.rows.forEach(row => {
+            console.log(`  - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        });
+        
+        // Employees table structure
+        const employeesResult = await pool.query(`
+            SELECT column_name, data_type, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'employees' 
+            ORDER BY ordinal_position
+        `);
+        
+        console.log('\nEMPLOYEES table columns:');
+        employeesResult.rows.forEach(row => {
+            console.log(`  - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        });
+        
+        // Salons table structure
+        const salonsResult = await pool.query(`
+            SELECT column_name, data_type, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'salons' 
+            ORDER BY ordinal_position
+        `);
+        
+        console.log('\nSALONS table columns:');
+        salonsResult.rows.forEach(row => {
+            console.log(`  - ${row.column_name}: ${row.data_type} (nullable: ${row.is_nullable})`);
+        });
+        
+    } catch (error) {
+        console.error('Error:', error);
+    } finally {
+        await pool.end();
+    }
 }
 
 checkTables();

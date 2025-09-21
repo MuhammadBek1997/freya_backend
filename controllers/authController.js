@@ -185,8 +185,9 @@ const employeeLogin = async (req, res) => {
 
         const employee = result.rows[0];
 
-        // Password tekshirish (plain text comparison for now)
-        if (password !== employee.password) {
+        // Password tekshirish
+        const isValidPassword = await bcrypt.compare(password, employee.password);
+        if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
 
