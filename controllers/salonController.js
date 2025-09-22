@@ -143,8 +143,8 @@ const getAllSalons = async (req, res) => {
         let paramIndex = 1;
 
         if (search) {
-            query += ` AND (salon_name ILIKE $${paramIndex} OR salon_description ILIKE $${paramIndex})`;
-            countQuery += ` AND (salon_name ILIKE $${paramIndex} OR salon_description ILIKE $${paramIndex})`;
+            query += ` AND (name ILIKE $${paramIndex} OR address ILIKE $${paramIndex})`;
+            countQuery += ` AND (name ILIKE $${paramIndex} OR address ILIKE $${paramIndex})`;
             queryParams.push(`%${search}%`);
             paramIndex++;
         }
