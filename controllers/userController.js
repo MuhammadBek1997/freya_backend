@@ -493,11 +493,101 @@ const sendPhoneChangeCode = async (req, res) => {
     }
 };
 
+// Foydalanuvchini o'chirish
+const deleteUser = async (req, res) => {
+    try {
+        const { phone, password } = req.body;
+
+        // Validatsiya
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam majburiy'
+            });
+        }
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Parol majburiy'
+            });
+        }
+
+        // Foydalanuvchini topish
+        const userQuery = 'SELECT * FROM users WHERE phone = $1';
+        const userResult = await pool.query(userQuery, [phone]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        // Parolni tekshirish
+        const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Noto\'g\'ri parol'
+            });
+        }
+
+        // Foydalanuvchi bilan bog'liq barcha ma'lumotlarni o'chirish
+        const client = await pool.connect();
+        
+        try {
+            await client.query('BEGIN');
+
+            // Foydalanuvchi bilan bog'liq xabarlarni o'chirish (sender yoki receiver sifatida)
+            await client.query('DELETE FROM messages WHERE sender_id = $1 OR receiver_id = $1', [user.id]);
+
+            // Foydalanuvchi bilan bog'liq user_favorites'ni o'chirish
+            await client.query('DELETE FROM user_favorites WHERE user_id = $1', [user.id]);
+
+            // Foydalanuvchi bilan bog'liq notifications'ni o'chirish
+            await client.query('DELETE FROM notifications WHERE user_id = $1', [user.id]);
+
+            // Foydalanuvchi bilan bog'liq user_sessions'ni o'chirish
+            await client.query('DELETE FROM user_sessions WHERE user_id = $1', [user.id]);
+
+            // Foydalanuvchi bilan bog'liq chat_participants'ni o'chirish
+            await client.query('DELETE FROM chat_participants WHERE participant_id = $1 AND participant_type = $2', [user.id, 'user']);
+
+            // Foydalanuvchini o'chirish
+            await client.query('DELETE FROM users WHERE id = $1', [user.id]);
+
+            await client.query('COMMIT');
+
+            res.json({
+                success: true,
+                message: 'Foydalanuvchi muvaffaqiyatli o\'chirildi'
+            });
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
+
+    } catch (error) {
+        console.error('Delete User Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
     registerStep2,
     loginUser,
     sendPasswordResetCode,
-    sendPhoneChangeCode
+    sendPhoneChangeCode,
+    deleteUser
 };

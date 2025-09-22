@@ -9,7 +9,8 @@ const {
     registerStep2,
     loginUser,
     sendPasswordResetCode,
-    sendPhoneChangeCode
+    sendPhoneChangeCode,
+    deleteUser
 } = require('../controllers/userController');
 
 // Middleware
@@ -94,6 +95,21 @@ const {
  *         password:
  *           type: string
  *           description: Foydalanuvchi paroli
+ *           example: "password123"
+ *     
+ *     UserDelete:
+ *       type: object
+ *       required:
+ *         - phone
+ *         - password
+ *       properties:
+ *         phone:
+ *           type: string
+ *           description: Foydalanuvchi telefon raqami (+998XXXXXXXXX formatida)
+ *           example: "+998901234567"
+ *         password:
+ *           type: string
+ *           description: Foydalanuvchi paroli (tasdiqlash uchun)
  *           example: "password123"
  */
 
@@ -421,5 +437,87 @@ router.post('/phone-change/send-code',
     validatePhoneNumber,
     sendPhoneChangeCode
 );
+
+/**
+ * @swagger
+ * /api/users/delete:
+ *   delete:
+ *     summary: Foydalanuvchini o'chirish
+ *     description: Foydalanuvchi hisobini va unga bog'liq barcha ma'lumotlarni o'chirish (xabarlar, chat ishtirokchilari, sevimlilar va boshqalar)
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserDelete'
+ *     responses:
+ *       200:
+ *         description: Foydalanuvchi muvaffaqiyatli o'chirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Foydalanuvchi muvaffaqiyatli o'chirildi"
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar (telefon raqam yoki parol noto'g'ri formatda)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Telefon raqam va parol talab qilinadi"
+ *       401:
+ *         description: Noto'g'ri parol
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Noto'g'ri parol"
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Foydalanuvchi topilmadi"
+ *       500:
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Server xatosi"
+ */
+router.delete('/delete', deleteUser);
 
 module.exports = router;
