@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/database');
+const { query } = require('../config/database');
 
 const authMiddleware = {
   // Superadmin authentication middleware
@@ -14,10 +14,10 @@ const authMiddleware = {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Check if superadmin exists and is active
-      const result = await pool.query(
-        'SELECT * FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
-        [decoded.id, 'superadmin']
-      );
+      const result = await query(
+      'SELECT * FROM admins WHERE id = ? AND role = ? AND is_active = 1',
+      [decoded.id, 'superadmin']
+    );
 
       if (result.rows.length === 0) {
         return res.status(401).json({ message: 'Superadmin huquqi talab qilinadi' });
@@ -43,8 +43,8 @@ const authMiddleware = {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Check if admin or superadmin exists and is active
-      const result = await pool.query(
-        'SELECT * FROM admins WHERE id = $1 AND role IN ($2, $3) AND is_active = true',
+      const result = await query(
+        'SELECT * FROM admins WHERE id = ? AND role IN (?, ?) AND is_active = 1',
         [decoded.id, 'admin', 'superadmin']
       );
 
@@ -64,27 +64,40 @@ const authMiddleware = {
   verifyUser: async (req, res, next) => {
     try {
       const token = req.header('Authorization')?.replace('Bearer ', '');
+      console.log('verifyUser - Token received:', token ? 'Yes' : 'No');
       
       if (!token) {
+        console.log('Token topilmadi');
+        console.log('verifyUser - No token provided');
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
+      console.log('Token mavjud, decode qilmoqda...');
+      console.log('JWT_SECRET:', process.env.JWT_SECRET);
+      console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 'undefined');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('Decoded token:', decoded);
+      console.log('verifyUser - Decoded token:', decoded);
       
       // Check if user exists and is active
-      const result = await pool.query(
-        'SELECT * FROM users WHERE id = $1 AND is_active = true',
-        [decoded.id]
+      const result = await query(
+        'SELECT * FROM users WHERE id = ? AND is_active = 1',
+        [decoded.userId]
       );
 
+      console.log('verifyUser - Database query result:', result.rows.length);
       if (result.rows.length === 0) {
+        console.log('verifyUser - User not found or inactive');
         return res.status(401).json({ message: 'Foydalanuvchi topilmadi yoki faol emas' });
       }
 
       req.user = result.rows[0];
+      console.log('verifyUser - User authenticated successfully:', req.user.id);
       next();
     } catch (error) {
-      console.error('User auth error:', error);
+      console.error('User auth error:', error.message);
+      console.error('Error name:', error.name);
+      console.error('Full error:', error);
       res.status(401).json({ message: 'Token yaroqsiz' });
     }
   },
@@ -106,8 +119,8 @@ const authMiddleware = {
       // Check based on role in token
       if (decoded.role === 'employee') {
         console.log('Checking employee with ID:', decoded.id);
-        const result = await pool.query(
-          'SELECT * FROM employees WHERE id = $1 AND is_active = true',
+        const result = await query(
+          'SELECT * FROM employees WHERE id = ? AND is_active = 1',
           [decoded.id]
         );
         console.log('Employee query result:', result.rows.length);
@@ -116,8 +129,8 @@ const authMiddleware = {
           console.log('Employee found:', user.name);
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
-        const result = await pool.query(
-          'SELECT * FROM admins WHERE id = $1 AND is_active = true',
+        const result = await query(
+          'SELECT * FROM admins WHERE id = ? AND is_active = 1',
           [decoded.id]
         );
         if (result.rows.length > 0) {
@@ -125,10 +138,10 @@ const authMiddleware = {
         }
       } else {
         // Default to user table
-        const result = await pool.query(
-          'SELECT * FROM users WHERE id = $1 AND is_active = true',
-          [decoded.id]
-        );
+        const result = await query(
+      'SELECT * FROM users WHERE id = ? AND is_active = 1',
+      [decoded.id]
+    );
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'user' };
         }
@@ -143,6 +156,41 @@ const authMiddleware = {
       next();
     } catch (error) {
       console.error('Auth error:', error);
+      res.status(401).json({ message: 'Token yaroqsiz' });
+    }
+  },
+
+  // User token authentication middleware (for read-only access)
+  verifyUserToken: async (req, res, next) => {
+    try {
+      const token = req.header('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Check if this is a user_readonly token
+      if (decoded.type !== 'user_readonly') {
+        return res.status(401).json({ message: 'Faqat user token bilan kirish mumkin' });
+      }
+      
+      // Check if user exists and is active
+      const result = await query(
+        'SELECT * FROM users WHERE id = ? AND is_active = true',
+        [decoded.userId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(401).json({ message: 'Foydalanuvchi topilmadi yoki faol emas' });
+      }
+
+      req.user = result.rows[0];
+      req.userToken = decoded; // Store token info for additional checks
+      next();
+    } catch (error) {
+      console.error('User token auth error:', error);
       res.status(401).json({ message: 'Token yaroqsiz' });
     }
   },
@@ -190,5 +238,6 @@ module.exports = {
   verifyAdmin: authMiddleware.verifyAdmin,
   verifyUser: authMiddleware.verifyUser,
   verifyAuth: authMiddleware.verifyAuth,
+  verifyUserToken: authMiddleware.verifyUserToken,
   generateToken: authMiddleware.generateToken
 };

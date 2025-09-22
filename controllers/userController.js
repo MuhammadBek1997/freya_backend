@@ -212,7 +212,7 @@ const verifyPhone = async (req, res) => {
 // 2-bosqich: Ism va familiya qo'shish
 const registerStep2 = async (req, res) => {
     try {
-        const { phone, firstName, lastName } = req.body;
+        const { phone, firstName, lastName, location } = req.body;
 
         if (!phone || !firstName || !lastName) {
             return res.status(400).json({
@@ -252,10 +252,10 @@ const registerStep2 = async (req, res) => {
         const updateResult = await pool.query(
             `UPDATE users 
              SET first_name = $1, last_name = $2, full_name = $3, username = $4, 
-                 registration_step = 2, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $5
-             RETURNING id, phone, email, first_name, last_name, full_name, username, registration_step`,
-            [firstName, lastName, `${firstName} ${lastName}`, username, user.id]
+                 location = $5, registration_step = 2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $6
+             RETURNING id, phone, email, first_name, last_name, full_name, username, location, registration_step`,
+            [firstName, lastName, `${firstName} ${lastName}`, username, location, user.id]
         );
 
         const updatedUser = updateResult.rows[0];
@@ -283,6 +283,7 @@ const registerStep2 = async (req, res) => {
                     lastName: updatedUser.last_name,
                     fullName: updatedUser.full_name,
                     username: updatedUser.username,
+                    location: updatedUser.location,
                     registrationStep: updatedUser.registration_step
                 },
                 token: token
@@ -582,6 +583,177 @@ const deleteUser = async (req, res) => {
     }
 };
 
+// User ma'lumotlarini yangilash
+const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, phone, password, location } = req.body;
+
+        // Foydalanuvchini tekshirish
+        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        // Validatsiya
+        if (phone && !validatePhoneNumber(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam formati noto\'g\'ri. Namuna: +998901234567'
+            });
+        }
+
+        if (email && !validateEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email formati noto\'g\'ri'
+            });
+        }
+
+        // Telefon raqam yoki email boshqa foydalanuvchida mavjudligini tekshirish
+        if (phone) {
+            const phoneCheck = await pool.query('SELECT id FROM users WHERE phone = $1 AND id != $2', [phone, id]);
+            if (phoneCheck.rows.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bu telefon raqam boshqa foydalanuvchi tomonidan ishlatilmoqda'
+                });
+            }
+        }
+
+        if (email) {
+            const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+            if (emailCheck.rows.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bu email boshqa foydalanuvchi tomonidan ishlatilmoqda'
+                });
+            }
+        }
+
+        // Yangilanishi kerak bo'lgan maydonlarni aniqlash
+        const updateFields = [];
+        const updateValues = [];
+        let paramIndex = 1;
+
+        if (name) {
+            updateFields.push(`name = $${paramIndex}`);
+            updateValues.push(name);
+            paramIndex++;
+        }
+
+        if (email !== undefined) {
+            updateFields.push(`email = $${paramIndex}`);
+            updateValues.push(email);
+            paramIndex++;
+        }
+
+        if (phone) {
+            updateFields.push(`phone = $${paramIndex}`);
+            updateValues.push(phone);
+            paramIndex++;
+        }
+
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateFields.push(`password = $${paramIndex}`);
+            updateValues.push(hashedPassword);
+            paramIndex++;
+        }
+
+        if (location !== undefined) {
+            updateFields.push(`location = $${paramIndex}`);
+            updateValues.push(location);
+            paramIndex++;
+        }
+
+        if (updateFields.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Yangilanishi kerak bo\'lgan maydon ko\'rsatilmagan'
+            });
+        }
+
+        updateFields.push(`updated_at = $${paramIndex}`);
+        updateValues.push(new Date());
+        updateValues.push(id);
+
+        const updateQuery = `
+            UPDATE users 
+            SET ${updateFields.join(', ')}
+            WHERE id = $${paramIndex + 1}
+            RETURNING id, name, email, phone, location, created_at, updated_at
+        `;
+
+        const result = await pool.query(updateQuery, updateValues);
+
+        res.json({
+            success: true,
+            message: 'Foydalanuvchi ma\'lumotlari muvaffaqiyatli yangilandi',
+            user: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Update User Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// User uchun alohida token generatsiya qilish
+const generateUserToken = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Foydalanuvchini tekshirish
+        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        // User uchun maxsus token yaratish (admin tokendan farqli)
+        const userToken = jwt.sign(
+            { 
+                userId: user.id, 
+                phone: user.phone,
+                type: 'user_readonly',
+                name: user.name 
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '30d' } // 30 kun amal qiladi
+        );
+
+        res.json({
+            success: true,
+            message: 'User token muvaffaqiyatli yaratildi',
+            token: userToken,
+            user: {
+                id: user.id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email
+            }
+        });
+
+    } catch (error) {
+        console.error('Generate User Token Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -589,5 +761,7 @@ module.exports = {
     loginUser,
     sendPasswordResetCode,
     sendPhoneChangeCode,
-    deleteUser
+    deleteUser,
+    updateUser,
+    generateUserToken
 };

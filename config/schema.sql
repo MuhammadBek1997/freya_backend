@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar_url VARCHAR(255),
     date_of_birth DATE,
     gender VARCHAR(10),
+    location VARCHAR(255),
     is_active BOOLEAN DEFAULT true,
     is_verified BOOLEAN DEFAULT false,
     last_login TIMESTAMP,

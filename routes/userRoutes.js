@@ -10,7 +10,9 @@ const {
     loginUser,
     sendPasswordResetCode,
     sendPhoneChangeCode,
-    deleteUser
+    deleteUser,
+    updateUser,
+    generateUserToken
 } = require('../controllers/userController');
 
 // Middleware
@@ -81,6 +83,10 @@ const {
  *           type: string
  *           description: Foydalanuvchi familiyasi
  *           example: "Karimov"
+ *         location:
+ *           type: string
+ *           description: Foydalanuvchi manzili (ixtiyoriy)
+ *           example: "Toshkent, O'zbekiston"
  *     
  *     UserLogin:
  *       type: object
@@ -519,5 +525,144 @@ router.post('/phone-change/send-code',
  *                   example: "Server xatosi"
  */
 router.delete('/delete', deleteUser);
+
+/**
+ * @swagger
+ * /api/users/update/{id}:
+ *   put:
+ *     summary: Foydalanuvchi ma'lumotlarini yangilash
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Foydalanuvchi ID raqami
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Yangi ism (ixtiyoriy)
+ *                 example: "Yangi Ism"
+ *               email:
+ *                 type: string
+ *                 description: Yangi email (ixtiyoriy)
+ *                 example: "newemail@example.com"
+ *               phone:
+ *                 type: string
+ *                 description: Yangi telefon raqam (ixtiyoriy)
+ *                 example: "+998901234567"
+ *               password:
+ *                 type: string
+ *                 description: Yangi parol (ixtiyoriy)
+ *                 example: "newpassword123"
+ *               location:
+ *                 type: string
+ *                 description: Yangi manzil (ixtiyoriy)
+ *                 example: "Toshkent, O'zbekiston"
+ *     responses:
+ *       200:
+ *         description: Foydalanuvchi muvaffaqiyatli yangilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Foydalanuvchi ma'lumotlari muvaffaqiyatli yangilandi"
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: "Yangi Ism"
+ *                     email:
+ *                       type: string
+ *                       example: "newemail@example.com"
+ *                     phone:
+ *                       type: string
+ *                       example: "+998901234567"
+ *                     location:
+ *                       type: string
+ *                       example: "Toshkent, O'zbekiston"
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *                     updated_at:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.put('/update/:id', updateUser);
+
+/**
+ * @swagger
+ * /api/users/generate-token/{id}:
+ *   post:
+ *     summary: Foydalanuvchi uchun alohida token yaratish
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Foydalanuvchi ID raqami
+ *     responses:
+ *       200:
+ *         description: Token muvaffaqiyatli yaratildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "User token muvaffaqiyatli yaratildi"
+ *                 token:
+ *                   type: string
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     name:
+ *                       type: string
+ *                       example: "John Doe"
+ *                     phone:
+ *                       type: string
+ *                       example: "+998901234567"
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.post('/generate-token/:id', generateUserToken);
 
 module.exports = router;

@@ -32,13 +32,15 @@ const validatePhoneNumber = (req, res, next) => {
 };
 
 // Telefon raqam mavjudligini tekshirish middleware
-const checkPhoneExists = (pool) => {
+const { query } = require('../config/database');
+
+const checkPhoneExists = () => {
     return async (req, res, next) => {
         try {
             const { phone } = req.body;
             
-            const result = await pool.query(
-                'SELECT id FROM users WHERE phone = $1',
+            const result = await query(
+                'SELECT id FROM users WHERE phone = ?',
                 [phone]
             );
 
@@ -61,13 +63,13 @@ const checkPhoneExists = (pool) => {
 };
 
 // Telefon raqam mavjudligini tekshirish (login uchun)
-const checkPhoneExistsForLogin = (pool) => {
+const checkPhoneExistsForLogin = () => {
     return async (req, res, next) => {
         try {
             const { phone } = req.body;
             
-            const result = await pool.query(
-                'SELECT id FROM users WHERE phone = $1 AND registration_step = 2',
+            const result = await query(
+                'SELECT id FROM users WHERE phone = ? AND registration_step = 2',
                 [phone]
             );
 

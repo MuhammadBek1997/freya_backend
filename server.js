@@ -10,6 +10,8 @@ const { pool } = require('./config/database');
 const swaggerUi = require('swagger-ui-express');
 const { specs, swaggerUiOptions } = require('./config/swagger');
 const { initializeSocket } = require('./config/socket');
+const i18next = require('./config/i18n');
+const { languageDetection, responseLocalization, setLanguageCookie } = require('./middleware/languageMiddleware');
 require('dotenv').config();
 
 const salonRoutes = require('./routes/salonRoutes');
@@ -18,9 +20,12 @@ const authRoutes = require('./routes/authRoutes');
 const swaggerProxyRoutes = require('./routes/swagger-proxy');
 const scheduleRoutes = require('./routes/scheduleRoutes');
 const userRoutes = require('./routes/userRoutes');
+const userSalonRoutes = require('./routes/userSalonRoutes');
+const userChatRoutes = require('./routes/userChatRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
+const i18nRoutes = require('./routes/i18nRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -82,6 +87,11 @@ app.use(morgan('combined'));
 // Body parser (Swagger UI'dan oldin bo'lishi kerak)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// I18n middleware
+app.use(languageDetection);
+app.use(responseLocalization);
+app.use(setLanguageCookie);
 
 // Swagger UI middleware
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
@@ -249,6 +259,8 @@ app.use('/api', swaggerProxyRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/user-salons', userSalonRoutes);
+app.use('/api/user-chat', userChatRoutes);
 app.use('/api/salons', salonRoutes);
 
 // Employee routes
@@ -265,6 +277,9 @@ app.use('/api/payments', paymentRoutes);
 
 // Admin routes
 app.use('/api/admin', adminRoutes);
+
+// I18n routes
+app.use('/api/i18n', i18nRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

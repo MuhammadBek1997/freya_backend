@@ -1,4 +1,4 @@
-const { pool } = require('../config/database');
+const { query } = require('../config/database');
 
 // Middleware to check if salon is private and restrict employee access
 const checkPrivateSalon = async (req, res, next) => {
@@ -13,8 +13,8 @@ const checkPrivateSalon = async (req, res, next) => {
         }
         
         // Check if salon exists and is private
-        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
-        const salonResult = await pool.query(salonQuery, [salonId]);
+        const salonQuery = 'SELECT private_salon FROM salons WHERE id = ?';
+        const salonResult = await query(salonQuery, [salonId]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
