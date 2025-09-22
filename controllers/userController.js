@@ -312,12 +312,14 @@ const loginUser = async (req, res) => {
         }
 
         // Foydalanuvchini topish
+        console.log('Login attempt for phone:', phone);
         const result = await pool.query(
             `SELECT id, phone, password_hash, registration_step
              FROM users 
              WHERE phone = $1 AND registration_step = 2`,
             [phone]
         );
+        console.log('Query result:', result.rows);
 
         if (result.rows.length === 0) {
             return res.status(401).json({
