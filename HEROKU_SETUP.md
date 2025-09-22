@@ -26,6 +26,17 @@ heroku config:set JWT_SECRET=your_super_secret_jwt_key_here_change_this_in_produ
 heroku config:set JWT_EXPIRES_IN=7d
 heroku config:set FRONTEND_URL=https://your-frontend-domain.com
 
+# Eskiz SMS sozlamalari
+heroku config:set ESKIZ_EMAIL=test@eskiz.uz
+heroku config:set ESKIZ_PASSWORD=j6DWtQjjpLDNjWEk74Sx
+heroku config:set ESKIZ_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEwNjY3NDYsImlhdCI6MTc1ODQ3NDc0Niwicm9sZSI6InVzZXIiLCJzaWduIjoiY2Y0MjBjNzQ5ODQ0NjhkMjVlMDI2ODkyNTI1NTZlZTgzZTc5OWUxMjIxMzFiMGNlYTBkYzAxZmE4MTIxMjRkMyIsInN1YiI6IjExOTE5In0.kufQYF5VAmLecgb9sA4Ej_NRtj4EHgiLK7WpniDYlL0
+heroku config:set ESKIZ_BASE_URL=https://notify.eskiz.uz/api
+
+# Click Payment sozlamalari
+heroku config:set CLICK_MERCHANT_ID=your_merchant_id
+heroku config:set CLICK_SERVICE_ID=your_service_id
+heroku config:set CLICK_SECRET_KEY=your_secret_key
+
 # Environment variables ni tekshiring
 heroku config
 ```
@@ -42,6 +53,17 @@ NODE_ENV=production
 JWT_SECRET=your_super_secret_jwt_key_here_change_this_in_production
 JWT_EXPIRES_IN=7d
 FRONTEND_URL=https://your-frontend-domain.com
+
+# Eskiz SMS Configuration
+ESKIZ_EMAIL=test@eskiz.uz
+ESKIZ_PASSWORD=j6DWtQjjpLDNjWEk74Sx
+ESKIZ_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEwNjY3NDYsImlhdCI6MTc1ODQ3NDc0Niwicm9sZSI6InVzZXIiLCJzaWduIjoiY2Y0MjBjNzQ5ODQ0NjhkMjVlMDI2ODkyNTI1NTZlZTgzZTc5OWUxMjIxMjRkMyIsInN1YiI6IjExOTE5In0.kufQYF5VAmLecgb9sA4Ej_NRtj4EHgiLK7WpniDYlL0
+ESKIZ_BASE_URL=https://notify.eskiz.uz/api
+
+# Click Payment Configuration
+CLICK_MERCHANT_ID=your_merchant_id
+CLICK_SERVICE_ID=your_service_id
+CLICK_SECRET_KEY=your_secret_key
 ```
 
 ### 3. Database tekshirish

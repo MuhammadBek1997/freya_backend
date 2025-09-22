@@ -159,6 +159,37 @@ app.get('/api/salons/test', (req, res) => {
     res.json({ message: 'Salon route is working!', timestamp: new Date().toISOString() });
 });
 
+// SMS test route
+app.get('/api/test-sms-config', async (req, res) => {
+    try {
+        const smsService = require('./services/smsService');
+        
+        // Environment variables check
+        const config = {
+            email: process.env.ESKIZ_EMAIL || 'NOT_SET',
+            password: process.env.ESKIZ_PASSWORD ? 'SET' : 'NOT_SET',
+            token: process.env.ESKIZ_TOKEN ? 'SET' : 'NOT_SET',
+            baseUrl: process.env.ESKIZ_BASE_URL || 'NOT_SET'
+        };
+        
+        // Try to get balance to test token
+        const balanceResult = await smsService.getBalance();
+        
+        res.json({
+            success: true,
+            config: config,
+            tokenTest: balanceResult,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Debug route - barcha route'larni ko'rish uchun
 app.get('/api/debug/routes', (req, res) => {
     const routes = [];
@@ -180,6 +211,37 @@ app.get('/api/debug/routes', (req, res) => {
         }
     });
     res.json({ routes });
+});
+
+// SMS test endpoint
+app.get('/api/test-sms', async (req, res) => {
+    try {
+        const smsService = require('./services/smsService');
+        
+        // Environment variables check
+        const envCheck = {
+            ESKIZ_EMAIL: process.env.ESKIZ_EMAIL || 'NOT_SET',
+            ESKIZ_PASSWORD: process.env.ESKIZ_PASSWORD ? 'SET' : 'NOT_SET',
+            ESKIZ_TOKEN: process.env.ESKIZ_TOKEN ? 'SET' : 'NOT_SET',
+            ESKIZ_BASE_URL: process.env.ESKIZ_BASE_URL || 'NOT_SET'
+        };
+        
+        // Test SMS sending
+        const testResult = await smsService.sendVerificationCode('+998901234567', '123456');
+        
+        res.json({
+            success: true,
+            environment: envCheck,
+            smsTest: testResult,
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // Swagger proxy route

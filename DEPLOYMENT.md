@@ -18,7 +18,10 @@
    CLICK_MERCHANT_ID=your_merchant_id
    CLICK_SERVICE_ID=your_service_id
    CLICK_SECRET_KEY=your_secret_key
-   SMS_API_KEY=your_sms_api_key
+   ESKIZ_EMAIL=test@eskiz.uz
+   ESKIZ_PASSWORD=j6DWtQjjpLDNjWEk74Sx
+   ESKIZ_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjEwNjY3NDYsImlhdCI6MTc1ODQ3NDc0Niwicm9sZSI6InVzZXIiLCJzaWduIjoiY2Y0MjBjNzQ5ODQ0NjhkMjVlMDI2ODkyNTI1NTZlZTgzZTc5OWUxMjIxMzFiMGNlYTBkYzAxZmE4MTIxMjRkMyIsInN1YiI6IjExOTE5In0.kufQYF5VAmLecgb9sA4Ej_NRtj4EHgiLK7WpniDYlL0
+   ESKIZ_BASE_URL=https://notify.eskiz.uz/api
    ```
 
 3. **Deploy:**

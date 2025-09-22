@@ -9,7 +9,9 @@ Freya admin panel va Flutter mobile app uchun backend API. Express.js, PostgreSQ
 - **PostgreSQL** - Database
 - **JWT** - Authentication
 - **bcryptjs** - Password hashing
-- **Heroku** - Cloud deployment
+- **Socket.io** - Real-time communication
+- **Eskiz.uz** - SMS service
+- **Heroku/Railway/Render/Vercel** - Cloud deployment
 
 ## O'rnatish
 
@@ -33,6 +35,17 @@ NODE_ENV=development
 DATABASE_URL=postgresql://username:password@localhost:5432/freya_db
 JWT_SECRET=your_super_secret_jwt_key_here
 FRONTEND_URL=http://localhost:3000
+
+# Eskiz.uz SMS Configuration
+ESKIZ_EMAIL=test@eskiz.uz
+ESKIZ_PASSWORD=j6DWtQjjpLDNjWEk74Sx
+ESKIZ_TOKEN=your_eskiz_token
+ESKIZ_BASE_URL=https://notify.eskiz.uz/api
+
+# Click Payment Configuration
+CLICK_MERCHANT_ID=your_merchant_id
+CLICK_SERVICE_ID=your_service_id
+CLICK_SECRET_KEY=your_secret_key
 ```
 
 ### 4. PostgreSQL database sozlash
@@ -168,6 +181,41 @@ backend/
 ├── README.md
 └── server.js               # Main server file
 ```
+
+## Deployment
+
+Loyiha quyidagi platformalarda deploy qilish uchun tayyor:
+
+### 1. Render
+```bash
+# render.yaml fayli mavjud
+# GitHub repository'ni Render'ga ulang
+# Environment variables'larni sozlang
+```
+
+### 2. Railway
+```bash
+# railway.json fayli mavjud
+# GitHub repository'ni Railway'ga ulang
+# PostgreSQL service qo'shing
+```
+
+### 3. Vercel
+```bash
+# vercel.json fayli mavjud
+npm install -g vercel
+vercel --prod
+```
+
+### 4. Heroku
+```bash
+# Procfile mavjud
+heroku create your-app-name
+heroku addons:create heroku-postgresql:hobby-dev
+git push heroku main
+```
+
+Batafsil ma'lumot uchun `DEPLOYMENT.md` faylini ko'ring.
 
 ## Xavfsizlik
 

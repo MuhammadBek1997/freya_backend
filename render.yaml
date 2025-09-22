@@ -11,7 +11,9 @@ services:
       - key: PORT
         value: 10000
       - key: DATABASE_URL
-        value: postgres://u82hhsnrq03vdb:p894645a6da7b84f388ce131c8306b8bf2c5c3a5c7b32d2e5cd60987b1c644d1f@c3mvmsjsgbq96j.cluster-czz5s0kz4scl.eu-west-1.rds.amazonaws.com:5432/d7cho3buhj3j6g
+        fromDatabase:
+          name: freya-db
+          property: connectionString
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -24,10 +26,14 @@ services:
         value: your_click_service_id
       - key: CLICK_SECRET_KEY
         value: your_click_secret_key
-      - key: SMS_API_URL
+      - key: ESKIZ_EMAIL
+        value: fayzullindmr@gmail.com
+      - key: ESKIZ_PASSWORD
+        value: rlPJjmkaqRvZshRoNpcIiCFtC5GiNzI7k7YNe8fs
+      - key: ESKIZ_TOKEN
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjExMDgxNzMsImlhdCI6MTc1ODUxNjE3Mywicm9sZSI6InVzZXIiLCJzaWduIjoiY2Y0MjBjNzQ5ODQ0NjhkMjVlMDI2ODkyNTI1NTZlZTgzZTc5OWUxMjIxMzFiMGNlYTBkYzAxZmE4MTIxMjRkMyIsInN1YiI6IjExOTE5In0.x5GCzyXbo70ODY1WRWYJgMUN5qDWwaCYQI83lq7jXw0
+      - key: ESKIZ_BASE_URL
         value: https://notify.eskiz.uz/api
-      - key: SMS_API_TOKEN
-        value: your_sms_api_token
       - key: UPLOAD_PATH
         value: uploads/
       - key: MAX_FILE_SIZE
