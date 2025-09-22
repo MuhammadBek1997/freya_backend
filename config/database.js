@@ -28,9 +28,14 @@ async function initializeTables() {
     await pool.query(`CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       phone VARCHAR(20) UNIQUE NOT NULL,
-      name VARCHAR(255),
-      role VARCHAR(50) DEFAULT 'user',
-      is_active BOOLEAN DEFAULT TRUE,
+      email VARCHAR(100) UNIQUE,
+      password_hash VARCHAR(255) NOT NULL,
+      full_name VARCHAR(100),
+      registration_step INTEGER DEFAULT 1,
+      verification_code VARCHAR(10),
+      verification_expires_at TIMESTAMP,
+      is_verified BOOLEAN DEFAULT false,
+      is_active BOOLEAN DEFAULT true,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
