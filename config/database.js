@@ -31,11 +31,15 @@ async function initializeTables() {
       email VARCHAR(100) UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
       full_name VARCHAR(100),
+      first_name VARCHAR(50),
+      last_name VARCHAR(50),
+      username VARCHAR(50) UNIQUE,
       registration_step INTEGER DEFAULT 1,
       verification_code VARCHAR(10),
       verification_expires_at TIMESTAMP,
       is_verified BOOLEAN DEFAULT false,
       is_active BOOLEAN DEFAULT true,
+      phone_verified BOOLEAN DEFAULT false,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
