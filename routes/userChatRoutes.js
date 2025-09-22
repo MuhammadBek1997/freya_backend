@@ -219,7 +219,7 @@ router.get('/conversations', verifyUser, userChatController.getConversations);
  *       500:
  *         description: Server xatosi
  */
-router.get('/conversation/:employeeId', verifyUser, userChatController.getConversation);
+router.get('/conversation/:employeeId', verifyUser, userChatController.getConversationWithEmployee);
 
 /**
  * @swagger
@@ -256,7 +256,7 @@ router.get('/conversation/:employeeId', verifyUser, userChatController.getConver
  *       500:
  *         description: Server xatosi
  */
-router.put('/mark-read/:messageId', verifyUser, userChatController.markAsRead);
+router.put('/mark-read/:messageId', verifyUser, userChatController.markMessageAsRead);
 
 /**
  * @swagger

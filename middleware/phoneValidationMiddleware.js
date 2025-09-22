@@ -40,7 +40,7 @@ const checkPhoneExists = () => {
             const { phone } = req.body;
             
             const result = await query(
-                'SELECT id FROM users WHERE phone = ?',
+                'SELECT id FROM users WHERE phone = $1',
                 [phone]
             );
 
@@ -69,7 +69,7 @@ const checkPhoneExistsForLogin = () => {
             const { phone } = req.body;
             
             const result = await query(
-                'SELECT id FROM users WHERE phone = ? AND registration_step = 2',
+                'SELECT id FROM users WHERE phone = $1 AND registration_step = 2',
                 [phone]
             );
 

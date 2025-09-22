@@ -1,123 +1,138 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-// SQLite database path
-const dbPath = path.join(__dirname, '..', 'freya_chat.db');
+// PostgreSQL connection configuration
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+});
 
-// Create SQLite database connection
-const db = new sqlite3.Database(dbPath, (err) => {
+// Test database connection
+pool.connect((err, client, release) => {
   if (err) {
-    console.error('SQLite database xatosi:', err);
+    console.error('PostgreSQL database ulanish xatosi:', err);
     process.exit(-1);
   } else {
-    console.log('SQLite database ga ulanish muvaffaqiyatli');
+    console.log('PostgreSQL database ga ulanish muvaffaqiyatli');
+    release();
     
-    // Create tables if they don't exist
+    // Initialize tables
     initializeTables();
   }
 });
 
 // Initialize database tables
-function initializeTables() {
-  // Users table
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    phone TEXT UNIQUE NOT NULL,
-    name TEXT,
-    role TEXT DEFAULT 'user',
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+async function initializeTables() {
+  try {
+    // Users table
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      phone VARCHAR(20) UNIQUE NOT NULL,
+      name VARCHAR(255),
+      role VARCHAR(50) DEFAULT 'user',
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-  // Employees table
-  db.run(`CREATE TABLE IF NOT EXISTS employees (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    phone TEXT UNIQUE,
-    email TEXT,
-    position TEXT,
-    salon_id TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+    // Employees table
+    await pool.query(`CREATE TABLE IF NOT EXISTS employees (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(255) NOT NULL,
+      phone VARCHAR(20) UNIQUE,
+      email VARCHAR(255),
+      position VARCHAR(255),
+      salon_id UUID,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-  // User chats table
-  db.run(`CREATE TABLE IF NOT EXISTS user_chats (
-    id TEXT PRIMARY KEY,
-    sender_id TEXT NOT NULL,
-    sender_type TEXT NOT NULL,
-    receiver_id TEXT NOT NULL,
-    receiver_type TEXT NOT NULL,
-    message_text TEXT NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )`);
+    // User chats table
+    await pool.query(`CREATE TABLE IF NOT EXISTS user_chats (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sender_id UUID NOT NULL,
+      sender_type VARCHAR(20) NOT NULL,
+      receiver_id UUID NOT NULL,
+      receiver_type VARCHAR(20) NOT NULL,
+      message_text TEXT NOT NULL,
+      message_type VARCHAR(20) DEFAULT 'text',
+      is_read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
 
-  console.log('Database tables initialized');
+    // Salons table
+    await pool.query(`CREATE TABLE IF NOT EXISTS salons (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      address TEXT,
+      phone VARCHAR(20),
+      email VARCHAR(255),
+      working_hours JSONB,
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Schedules table
+    await pool.query(`CREATE TABLE IF NOT EXISTS schedules (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      employee_id UUID NOT NULL,
+      salon_id UUID NOT NULL,
+      date DATE NOT NULL,
+      start_time TIME NOT NULL,
+      end_time TIME NOT NULL,
+      is_available BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (employee_id) REFERENCES employees(id),
+      FOREIGN KEY (salon_id) REFERENCES salons(id)
+    )`);
+
+    // Messages table
+    await pool.query(`CREATE TABLE IF NOT EXISTS messages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      sender_id UUID NOT NULL,
+      sender_type VARCHAR(20) NOT NULL,
+      receiver_id UUID NOT NULL,
+      receiver_type VARCHAR(20) NOT NULL,
+      content TEXT NOT NULL,
+      message_type VARCHAR(20) DEFAULT 'text',
+      file_url TEXT,
+      is_read BOOLEAN DEFAULT FALSE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    console.log('Database tables initialized');
+  } catch (error) {
+    console.error('Database tables yaratishda xatolik:', error);
+  }
 }
 
-// Database query helper function (adapted for SQLite)
+// Query function with logging
 const query = async (text, params = []) => {
-  return new Promise((resolve, reject) => {
-    const start = Date.now();
-    
-    // Convert PostgreSQL syntax to SQLite
-    let sqliteQuery = text
-      .replace(/\$(\d+)/g, '?') // Replace $1, $2, etc. with ?
-      .replace(/RETURNING \*/g, '') // Remove RETURNING clause
-      .replace(/NOW\(\)/g, 'CURRENT_TIMESTAMP'); // Replace NOW() with CURRENT_TIMESTAMP
-    
-    if (sqliteQuery.includes('INSERT') && text.includes('RETURNING')) {
-      // For INSERT queries that need to return the inserted row
-      db.run(sqliteQuery, params, function(err) {
-        if (err) {
-          console.error('Database query error:', err);
-          reject(err);
-        } else {
-          const duration = Date.now() - start;
-          console.log('Query executed:', { text: sqliteQuery, duration, rows: this.changes });
-          resolve({ rows: [{ id: this.lastID }], rowCount: this.changes });
-        }
-      });
-    } else if (sqliteQuery.includes('SELECT')) {
-      // For SELECT queries
-      db.all(sqliteQuery, params, (err, rows) => {
-        if (err) {
-          console.error('Database query error:', err);
-          reject(err);
-        } else {
-          const duration = Date.now() - start;
-          console.log('Query executed:', { text: sqliteQuery, duration, rows: rows.length });
-          resolve({ rows, rowCount: rows.length });
-        }
-      });
-    } else {
-      // For UPDATE, DELETE queries
-      db.run(sqliteQuery, params, function(err) {
-        if (err) {
-          console.error('Database query error:', err);
-          reject(err);
-        } else {
-          const duration = Date.now() - start;
-          console.log('Query executed:', { text: sqliteQuery, duration, rows: this.changes });
-          resolve({ rowCount: this.changes });
-        }
-      });
-    }
-  });
+  const start = Date.now();
+  try {
+    const result = await pool.query(text, params);
+    const duration = Date.now() - start;
+    console.log('Query executed:', { text, duration, rows: result.rowCount });
+    return result;
+  } catch (error) {
+    console.error('Database query error:', error);
+    throw error;
+  }
 };
 
-// Get a client from the pool (not needed for SQLite, but keeping for compatibility)
+// Get a client from the pool
 const getClient = async () => {
-  return db;
+  return await pool.connect();
 };
 
 module.exports = {
   query,
   getClient,
-  pool: db
+  pool
 };

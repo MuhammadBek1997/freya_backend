@@ -13,7 +13,7 @@ const checkPrivateSalon = async (req, res, next) => {
         }
         
         // Check if salon exists and is private
-        const salonQuery = 'SELECT private_salon FROM salons WHERE id = ?';
+        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
         const salonResult = await query(salonQuery, [salonId]);
         
         if (salonResult.rows.length === 0) {

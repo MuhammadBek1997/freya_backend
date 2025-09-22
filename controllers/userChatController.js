@@ -1,11 +1,11 @@
-const { pool } = require('../config/database');
+const { query } = require('../config/database');
 
 /**
  * Foydalanuvchi tomonidan xabar yuborish
  */
 const sendMessage = async (req, res) => {
   try {
-    const { receiver_id, receiver_type, message_text, message_type = 'text', file_url } = req.body;
+    const { receiver_id, receiver_type, message_text, message_type = 'text' } = req.body;
     const sender_id = req.user.id; // verifyUser middleware orqali olingan user ID
     const sender_type = 'user'; // Foydalanuvchi har doim 'user' turi
 
@@ -33,13 +33,13 @@ const sendMessage = async (req, res) => {
       });
     }
 
-    const query = `
-      INSERT INTO user_chats (sender_id, sender_type, receiver_id, receiver_type, message_text, message_type, file_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+    const queryText = `
+      INSERT INTO messages (sender_id, sender_type, receiver_id, receiver_type, content, message_type)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `;
 
-    await pool.query(query, [
-      sender_id, sender_type, receiver_id, receiver_type, message_text, message_type, file_url
+    await query(queryText, [
+      sender_id, sender_type, receiver_id, receiver_type, message_text, message_type
     ]);
 
     res.status(201).json({
@@ -63,7 +63,7 @@ const getConversations = async (req, res) => {
     const currentUserId = req.user.id;
     const currentUserType = 'user';
 
-    const query = `
+    const queryText = `
       WITH latest_messages AS (
         SELECT DISTINCT ON (
           CASE 
@@ -118,7 +118,7 @@ const getConversations = async (req, res) => {
       ORDER BY lm.created_at DESC
     `;
 
-    const result = await pool.query(query, [currentUserId, currentUserType]);
+    const result = await query(queryText, [currentUserId, currentUserType]);
 
     res.json({
       success: true,
@@ -137,23 +137,15 @@ const getConversations = async (req, res) => {
 /**
  * Muayyan employee bilan suhbatni olish
  */
-const getConversation = async (req, res) => {
+const getConversationWithEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const { page = 1, limit = 50 } = req.query;
-    const offset = (page - 1) * limit;
+    const { page = 1, limit = 20 } = req.query;
     const currentUserId = req.user.id;
     const currentUserType = 'user';
+    const offset = (page - 1) * limit;
 
-    // employeeId parametrini tekshirish
-    if (!employeeId) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'employeeId parametri talab qilinadi' 
-      });
-    }
-
-    const query = `
+    const queryText = `
       SELECT m.*, 
              CASE 
                WHEN m.sender_type = 'user' THEN u.full_name
@@ -161,38 +153,32 @@ const getConversation = async (req, res) => {
                WHEN m.sender_type = 'admin' THEN a.full_name
              END as sender_name,
              CASE 
-               WHEN m.receiver_type = 'user' THEN u2.full_name
-               WHEN m.receiver_type = 'employee' THEN CONCAT(e2.name, ' ', e2.surname)
-               WHEN m.receiver_type = 'admin' THEN a2.full_name
-             END as receiver_name
+               WHEN m.sender_type = 'user' THEN u.avatar_url
+               WHEN m.sender_type = 'employee' THEN e.avatar_url
+               WHEN m.sender_type = 'admin' THEN NULL
+             END as sender_avatar
       FROM messages m
       LEFT JOIN users u ON m.sender_id = u.id AND m.sender_type = 'user'
       LEFT JOIN employees e ON m.sender_id = e.id AND m.sender_type = 'employee'
       LEFT JOIN admins a ON m.sender_id = a.id AND m.sender_type = 'admin'
-      LEFT JOIN users u2 ON m.receiver_id = u2.id AND m.receiver_type = 'user'
-      LEFT JOIN employees e2 ON m.receiver_id = e2.id AND m.receiver_type = 'employee'
-      LEFT JOIN admins a2 ON m.receiver_id = a2.id AND m.receiver_type = 'admin'
-      WHERE (
-        (m.sender_id = $1 AND m.sender_type = $2 AND m.receiver_id = $3 AND m.receiver_type = 'employee') OR
-        (m.sender_id = $3 AND m.sender_type = 'employee' AND m.receiver_id = $1 AND m.receiver_type = $2)
-      )
+      WHERE ((m.sender_id = $1 AND m.sender_type = $2 AND m.receiver_id = $3 AND m.receiver_type = 'employee')
+             OR (m.sender_id = $4 AND m.sender_type = 'employee' AND m.receiver_id = $5 AND m.receiver_type = $6))
       ORDER BY m.created_at DESC
-      LIMIT $4 OFFSET $5
+      LIMIT $7 OFFSET $8
     `;
 
-    const result = await pool.query(query, [currentUserId, currentUserType, employeeId, limit, offset]);
+    const result = await query(queryText, [currentUserId, currentUserType, employeeId, employeeId, currentUserId, currentUserType, limit, offset]);
 
     // Umumiy xabarlar sonini olish
     const countQuery = `
       SELECT COUNT(*) as total
       FROM messages m
-      WHERE (
-        (m.sender_id = $1 AND m.sender_type = $2 AND m.receiver_id = $3 AND m.receiver_type = 'employee') OR
-        (m.sender_id = $3 AND m.sender_type = 'employee' AND m.receiver_id = $1 AND m.receiver_type = $2)
-      )
+      WHERE ((m.sender_id = $1 AND m.sender_type = $2 AND m.receiver_id = $3)
+             OR (m.sender_id = $4 AND m.sender_type = 'employee' AND m.receiver_id = $5 AND m.receiver_type = $6))
     `;
 
-    const countResult = await pool.query(countQuery, [currentUserId, currentUserType, employeeId]);
+    const countResult = await query(countQuery, [currentUserId, currentUserType, employeeId, employeeId, currentUserId, currentUserType]);
+
     const total = parseInt(countResult.rows[0].total);
 
     res.json({
@@ -218,27 +204,19 @@ const getConversation = async (req, res) => {
 /**
  * Xabarni o'qilgan deb belgilash
  */
-const markAsRead = async (req, res) => {
+const markMessageAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
     const currentUserId = req.user.id;
     const currentUserType = 'user';
 
-    if (!messageId) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'messageId parametri talab qilinadi' 
-      });
-    }
-
-    const query = `
+    const queryText = `
       UPDATE messages 
-      SET is_read = true, updated_at = CURRENT_TIMESTAMP
+      SET is_read = 1, read_at = CURRENT_TIMESTAMP
       WHERE id = $1 AND receiver_id = $2 AND receiver_type = $3
-      RETURNING *
     `;
 
-    const result = await pool.query(query, [messageId, currentUserId, currentUserType]);
+    const result = await query(queryText, [messageId, currentUserId, currentUserType]);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ 
@@ -269,13 +247,13 @@ const getUnreadCount = async (req, res) => {
     const currentUserId = req.user.id;
     const currentUserType = 'user';
 
-    const query = `
+    const queryText = `
       SELECT COUNT(*) as unread_count
       FROM messages
-      WHERE receiver_id = $1 AND receiver_type = $2 AND is_read = false
+      WHERE receiver_id = $1 AND receiver_type = $2 AND is_read = 0
     `;
 
-    const result = await pool.query(query, [currentUserId, currentUserType]);
+    const result = await query(queryText, [currentUserId, currentUserType]);
 
     res.json({
       success: true,
@@ -293,8 +271,8 @@ const getUnreadCount = async (req, res) => {
 
 module.exports = {
   sendMessage,
-  getConversation,
+  getConversationWithEmployee,
   getConversations,
-  markAsRead,
+  markMessageAsRead,
   getUnreadCount
 };

@@ -13,11 +13,11 @@ const authMiddleware = {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Check if superadmin exists and is active
+      // Check if admin exists and is active
       const result = await query(
-      'SELECT * FROM admins WHERE id = ? AND role = ? AND is_active = 1',
-      [decoded.id, 'superadmin']
-    );
+        'SELECT * FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
+        [decoded.adminId, decoded.role]
+      );
 
       if (result.rows.length === 0) {
         return res.status(401).json({ message: 'Superadmin huquqi talab qilinadi' });
@@ -42,10 +42,10 @@ const authMiddleware = {
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
-      // Check if admin or superadmin exists and is active
+      // Check if admin exists and is active
       const result = await query(
-        'SELECT * FROM admins WHERE id = ? AND role IN (?, ?) AND is_active = 1',
-        [decoded.id, 'admin', 'superadmin']
+        'SELECT * FROM admins WHERE id = $1 AND role IN ($2, $3) AND is_active = true',
+        [decoded.adminId, 'admin', 'superadmin']
       );
 
       if (result.rows.length === 0) {
@@ -81,7 +81,7 @@ const authMiddleware = {
       
       // Check if user exists and is active
       const result = await query(
-        'SELECT * FROM users WHERE id = ? AND is_active = 1',
+        'SELECT * FROM users WHERE id = $1 AND is_active = true',
         [decoded.userId]
       );
 
@@ -120,7 +120,7 @@ const authMiddleware = {
       if (decoded.role === 'employee') {
         console.log('Checking employee with ID:', decoded.id);
         const result = await query(
-          'SELECT * FROM employees WHERE id = ? AND is_active = 1',
+          'SELECT * FROM employees WHERE id = $1 AND is_active = true',
           [decoded.id]
         );
         console.log('Employee query result:', result.rows.length);
@@ -130,16 +130,16 @@ const authMiddleware = {
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
         const result = await query(
-          'SELECT * FROM admins WHERE id = ? AND is_active = 1',
-          [decoded.id]
-        );
+      'SELECT * FROM admins WHERE id = $1 AND is_active = true',
+      [decoded.id]
+    );
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: decoded.role };
         }
       } else {
         // Default to user table
         const result = await query(
-      'SELECT * FROM users WHERE id = ? AND is_active = 1',
+      'SELECT * FROM users WHERE id = $1 AND is_active = true',
       [decoded.id]
     );
         if (result.rows.length > 0) {
@@ -178,7 +178,7 @@ const authMiddleware = {
       
       // Check if user exists and is active
       const result = await query(
-        'SELECT * FROM users WHERE id = ? AND is_active = true',
+        'SELECT * FROM users WHERE id = $1 AND is_active = true',
         [decoded.userId]
       );
 
