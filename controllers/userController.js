@@ -313,8 +313,7 @@ const loginUser = async (req, res) => {
 
         // Foydalanuvchini topish
         const result = await pool.query(
-            `SELECT id, phone, email, password_hash, first_name, last_name, full_name, 
-                    username, registration_step, phone_verified
+            `SELECT id, phone, password_hash, registration_step
              FROM users 
              WHERE phone = $1 AND registration_step = 2`,
             [phone]
@@ -355,12 +354,7 @@ const loginUser = async (req, res) => {
             data: {
                 user: {
                     id: user.id,
-                    phone: user.phone,
-                    email: user.email,
-                    firstName: user.first_name,
-                    lastName: user.last_name,
-                    fullName: user.full_name,
-                    username: user.username
+                    phone: user.phone
                 },
                 token: token
             }
