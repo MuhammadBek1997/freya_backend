@@ -18,11 +18,7 @@ const swaggerDefinition = {
       description: 'Development server'
     },
     {
-      url: 'https://freya-backend-1.onrender.com',
-      description: 'Production server (Render)'
-    },
-    {
-      url: 'https://freyasalon-6f0b3dc79e01.herokuapp.com',
+      url: 'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
       description: 'Production server (Heroku)'
     }
   ],
