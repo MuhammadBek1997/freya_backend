@@ -302,9 +302,12 @@ const registerStep2 = async (req, res) => {
 // User login
 const loginUser = async (req, res) => {
     try {
+        console.log('Login attempt started');
         const { phone, password } = req.body;
+        console.log('Phone:', phone, 'Password length:', password ? password.length : 'undefined');
 
         if (!phone || !password) {
+            console.log('Missing phone or password');
             return res.status(400).json({
                 success: false,
                 message: 'Telefon raqam va parol majburiy'
@@ -312,12 +315,15 @@ const loginUser = async (req, res) => {
         }
 
         // Foydalanuvchini topish - eng sodda SQL
+        console.log('Searching for user with phone:', phone);
         const result = await pool.query(
             'SELECT * FROM users WHERE phone = $1',
             [phone]
         );
+        console.log('Query result rows:', result.rows.length);
 
         if (result.rows.length === 0) {
+            console.log('User not found');
             return res.status(401).json({
                 success: false,
                 message: 'Telefon raqam yoki parol noto\'g\'ri'
@@ -325,9 +331,11 @@ const loginUser = async (req, res) => {
         }
 
         const user = result.rows[0];
+        console.log('User found, registration_step:', user.registration_step);
 
         // Registration step tekshirish
         if (user.registration_step !== 2) {
+            console.log('Registration not completed');
             return res.status(401).json({
                 success: false,
                 message: 'Ro\'yxatdan o\'tish tugallanmagan'
@@ -335,8 +343,11 @@ const loginUser = async (req, res) => {
         }
 
         // Parolni tekshirish
+        console.log('Checking password...');
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+        console.log('Password valid:', isPasswordValid);
         if (!isPasswordValid) {
+            console.log('Invalid password');
             return res.status(401).json({
                 success: false,
                 message: 'Telefon raqam yoki parol noto\'g\'ri'
