@@ -311,15 +311,11 @@ const loginUser = async (req, res) => {
             });
         }
 
-        // Foydalanuvchini topish
-        console.log('Login attempt for phone:', phone);
+        // Foydalanuvchini topish - eng sodda SQL
         const result = await pool.query(
-            `SELECT id, phone, password_hash, registration_step
-             FROM users 
-             WHERE phone = $1 AND registration_step = 2`,
+            'SELECT * FROM users WHERE phone = $1',
             [phone]
         );
-        console.log('Query result:', result.rows);
 
         if (result.rows.length === 0) {
             return res.status(401).json({
@@ -329,6 +325,14 @@ const loginUser = async (req, res) => {
         }
 
         const user = result.rows[0];
+
+        // Registration step tekshirish
+        if (user.registration_step !== 2) {
+            return res.status(401).json({
+                success: false,
+                message: 'Ro\'yxatdan o\'tish tugallanmagan'
+            });
+        }
 
         // Parolni tekshirish
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
