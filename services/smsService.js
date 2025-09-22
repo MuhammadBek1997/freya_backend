@@ -15,8 +15,22 @@ class SMSService {
      */
     async sendSMS(phone, message) {
         try {
+            // Token tekshiruvi
+            if (!this.token || this.token.trim() === '') {
+                console.log('Token mavjud emas, yangi token olishga harakat qilaman...');
+                const refreshResult = await this.refreshToken();
+                if (!refreshResult.success) {
+                    return {
+                        success: false,
+                        error: 'Token olishda xatolik'
+                    };
+                }
+            }
+            
             // Telefon raqamini formatlash (faqat raqamlar)
             const formattedPhone = phone.replace(/[^\d]/g, '');
+            
+            console.log('SMS yuborish uchun token:', this.token ? 'Mavjud' : 'Mavjud emas');
             
             const response = await axios.post(
                 `${this.baseUrl}${eskizConfig.endpoints.sendSms}`,
@@ -76,8 +90,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
-        const message = `Freya mobil ilovasiga ro'yxatdan o'tish uchun tasdiqlash kodi: ${verificationCode}`;
+        // Oddiy SMS matni
+        const message = `Tasdiqlash kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -99,8 +113,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
-        const message = `Freya ilovasida parolni tiklash uchun tasdiqlash kodi: ${verificationCode}`;
+        // Oddiy SMS matni
+        const message = `Parol tiklash kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -122,8 +136,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
-        const message = `<#>Freya dasturiga Telefon raqamni o'zgartirish uchun tasdiqlash kodi:${verificationCode}`;
+        // Oddiy SMS matni
+        const message = `Telefon o'zgartirish kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -145,8 +159,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Tasdiqlangan SMS matni (eskiz.uz da moderatsiyadan o'tgan)
-        const message = `<#>Freya dasturiga Ro'yhatdan o'tish uchun tasdiqlash kodi:${verificationCode}`;
+        // Oddiy SMS matni
+        const message = `Ro'yxatdan o'tish kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
