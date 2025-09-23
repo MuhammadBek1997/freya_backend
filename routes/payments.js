@@ -4,7 +4,34 @@ const clickService = require('../services/clickService');
 const { pool } = require('../config/database');
 const { verifyAuth } = require('../middleware/authMiddleware');
 
-// Employee post uchun to'lov yaratish
+/**
+ * @swagger
+ * /api/payments/employee/post:
+ *   post:
+ *     summary: Employee post uchun to'lov yaratish
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               postCount:
+ *                 type: integer
+ *                 default: 4
+ *                 minimum: 1
+ *                 maximum: 20
+ *     responses:
+ *       200:
+ *         description: To'lov URL yaratildi
+ *       403:
+ *         description: Ruxsat yo'q
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ */
 router.post('/employee/post', verifyAuth, async (req, res) => {
     try {
         const { postCount = 4 } = req.body;

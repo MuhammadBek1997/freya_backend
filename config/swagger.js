@@ -10,16 +10,8 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3002',
+      url: 'http://localhost:3004',
       description: 'Development server (Current)'
-    },
-    {
-      url: 'http://localhost:3001',
-      description: 'Development server'
-    },
-    {
-      url: 'http://localhost:4444',
-      description: 'Development server'
     },
     {
       url: 'https://freya-salon-backend-cc373ce6622a.herokuapp.com',

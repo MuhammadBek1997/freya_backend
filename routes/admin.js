@@ -3,7 +3,37 @@ const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyAdmin } = require('../middleware/authMiddleware');
 
-// Admin salon top qilish endpoint
+/**
+ * @swagger
+ * /api/admin/salon/top:
+ *   post:
+ *     summary: Salonni top qilish
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               salonId:
+ *                 type: string
+ *                 format: uuid
+ *               isTop:
+ *                 type: boolean
+ *               duration:
+ *                 type: integer
+ *                 default: 7
+ *     responses:
+ *       200:
+ *         description: Salon muvaffaqiyatli top qilindi
+ *       403:
+ *         description: Ruxsat yo'q
+ *       404:
+ *         description: Salon topilmadi
+ */
 router.post('/salon/top', verifyAdmin, async (req, res) => {
     try {
         const { salonId } = req.params;
