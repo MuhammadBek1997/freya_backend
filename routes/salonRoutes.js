@@ -10,6 +10,7 @@ const {
     getSalonComments
 } = require('../controllers/salonController');
 const { verifySuperAdmin } = require('../middleware/authMiddleware');
+const { languageDetection } = require('../middleware/languageMiddleware');
 
 /**
  * @swagger
@@ -75,7 +76,7 @@ const { verifySuperAdmin } = require('../middleware/authMiddleware');
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/', getAllSalons);
+router.get('/', languageDetection, getAllSalons);
 
 
 /**
@@ -111,7 +112,7 @@ router.get('/', getAllSalons);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/:id', getSalonById);
+router.get('/:id', languageDetection, getSalonById);
 
 
 /**

@@ -1,0 +1,254 @@
+const fs = require('fs').promises;
+const path = require('path');
+const { translateSalonData } = require('../config/deepl');
+const pool = require('../config/database');
+
+class SalonTranslationService {
+    constructor() {
+        this.localesPath = path.join(__dirname, '../locales');
+        this.supportedLanguages = ['uz', 'en', 'ru'];
+    }
+
+    // JSON faylni o'qish
+    async readLocaleFile(language) {
+        try {
+            const filePath = path.join(this.localesPath, `${language}.json`);
+            const data = await fs.readFile(filePath, 'utf8');
+            return JSON.parse(data);
+        } catch (error) {
+            console.error(`Error reading ${language}.json:`, error);
+            return { salons: {}, common: {}, salon: {} };
+        }
+    }
+
+    // JSON faylga yozish
+    async writeLocaleFile(language, data) {
+        try {
+            const filePath = path.join(this.localesPath, `${language}.json`);
+            await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+            return true;
+        } catch (error) {
+            console.error(`Error writing ${language}.json:`, error);
+            return false;
+        }
+    }
+
+    // Salon ma'lumotlarini barcha tillarga tarjima qilish va saqlash
+    async translateAndStoreSalon(salonData, salonId) {
+        try {
+            const translations = {};
+
+            // Har bir til uchun tarjima qilish
+            for (const lang of this.supportedLanguages) {
+                let translatedData;
+                
+                if (lang === 'uz') {
+                    // Uzbek uchun original ma'lumotni saqlaymiz
+                    translatedData = {
+                        name: salonData.name || salonData.salon_name,
+                        description: salonData.description || salonData.salon_description
+                    };
+                } else {
+                    // Boshqa tillar uchun tarjima qilamiz
+                    translatedData = await translateSalonData({
+                        name: salonData.name || salonData.salon_name,
+                        description: salonData.description || salonData.salon_description
+                    }, lang);
+                }
+
+                translations[lang] = translatedData;
+
+                // Database'ga saqlash
+                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description);
+
+                // JSON faylga ham saqlash (backup uchun)
+                const localeData = await this.readLocaleFile(lang);
+                localeData.salons[salonId] = translatedData;
+                await this.writeLocaleFile(lang, localeData);
+            }
+
+            return translations;
+        } catch (error) {
+            console.error('Translation and storage error:', error);
+            throw error;
+        }
+    }
+
+    // Database'ga tarjima saqlash
+    async saveSalonTranslation(salonId, language, name, description) {
+        try {
+            const query = `
+                INSERT INTO salon_translations (salon_id, language, name, description)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (salon_id, language) 
+                DO UPDATE SET 
+                    name = EXCLUDED.name,
+                    description = EXCLUDED.description,
+                    updated_at = CURRENT_TIMESTAMP
+            `;
+            
+            await pool.query(query, [salonId, language, name, description]);
+            console.log(`Translation saved for salon ${salonId} in ${language}`);
+        } catch (error) {
+            console.error('Error saving salon translation:', error);
+            throw error;
+        }
+    }
+
+    // Salon ma'lumotlarini tilga qarab olish
+    async getSalonByLanguage(salonId, language = 'uz') {
+        try {
+            console.log(`Getting translation for salon ${salonId} in language ${language}`);
+            // Agar til qo'llab-quvvatlanmasa, uzbek tilini qaytaramiz
+            const lang = this.supportedLanguages.includes(language) ? language : 'uz';
+            console.log(`Final language to use: ${lang}`);
+            
+            // Database'dan tarjimani olish
+            const query = `
+                SELECT name, description 
+                FROM salon_translations 
+                WHERE salon_id = $1 AND language = $2
+            `;
+            
+            console.log(`Executing query with params: [${salonId}, ${lang}]`);
+            const result = await pool.query(query, [salonId, lang]);
+            
+            console.log(`Database query result for ${salonId}:`, result.rows);
+            
+            if (result.rows.length > 0) {
+                console.log(`Found translation in database:`, result.rows[0]);
+                return result.rows[0];
+            }
+            
+            // Database'da topilmasa, JSON fayldan olish (fallback)
+            console.log(`No translation found in database, trying JSON file`);
+            const localeData = await this.readLocaleFile(lang);
+            const jsonResult = localeData.salons[salonId] || null;
+            console.log(`JSON file result:`, jsonResult);
+            return jsonResult;
+        } catch (error) {
+            console.error('Get salon by language error:', error);
+            return null;
+        }
+    }
+
+    // Barcha salonlarni tilga qarab olish
+    async getAllSalonsByLanguage(language = 'uz') {
+        try {
+            const lang = this.supportedLanguages.includes(language) ? language : 'uz';
+            
+            const localeData = await this.readLocaleFile(lang);
+            return localeData.salons || {};
+        } catch (error) {
+            console.error('Get all salons by language error:', error);
+            return {};
+        }
+    }
+
+    // Salon ma'lumotlarini yangilash
+    async updateSalonTranslations(salonId, updatedData) {
+        try {
+            const translations = {};
+
+            // Har bir til uchun yangilash
+            for (const lang of this.supportedLanguages) {
+                let translatedData;
+                
+                if (lang === 'uz') {
+                    translatedData = updatedData;
+                } else {
+                    translatedData = await translateSalonData(updatedData, lang);
+                }
+
+                translations[lang] = translatedData;
+
+                // JSON faylni yangilash
+                const localeData = await this.readLocaleFile(lang);
+                if (localeData.salons[salonId]) {
+                    localeData.salons[salonId] = { ...localeData.salons[salonId], ...translatedData };
+                } else {
+                    localeData.salons[salonId] = translatedData;
+                }
+                await this.writeLocaleFile(lang, localeData);
+            }
+
+            return translations;
+        } catch (error) {
+            console.error('Update salon translations error:', error);
+            throw error;
+        }
+    }
+
+    // Salon ma'lumotlarini o'chirish
+    async deleteSalonTranslations(salonId) {
+        try {
+            for (const lang of this.supportedLanguages) {
+                const localeData = await this.readLocaleFile(lang);
+                if (localeData.salons[salonId]) {
+                    delete localeData.salons[salonId];
+                    await this.writeLocaleFile(lang, localeData);
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('Delete salon translations error:', error);
+            return false;
+        }
+    }
+
+    // Salon ma'lumotlarini qidirish (tilga qarab)
+    async searchSalonsByLanguage(searchTerm, language = 'uz') {
+        try {
+            const lang = this.supportedLanguages.includes(language) ? language : 'uz';
+            const allSalons = await this.getAllSalonsByLanguage(lang);
+            
+            const searchResults = {};
+            const searchLower = searchTerm.toLowerCase();
+
+            for (const [salonId, salonData] of Object.entries(allSalons)) {
+                // Salon nomida, tavsifida yoki joylashuvida qidirish
+                const searchableFields = [
+                    salonData.salon_name,
+                    salonData.salon_description,
+                    salonData.location,
+                    salonData.salon_title
+                ].filter(Boolean);
+
+                const found = searchableFields.some(field => 
+                    field.toLowerCase().includes(searchLower)
+                );
+
+                if (found) {
+                    searchResults[salonId] = salonData;
+                }
+            }
+
+            return searchResults;
+        } catch (error) {
+            console.error('Search salons by language error:', error);
+            return {};
+        }
+    }
+
+    // Statistika olish
+    async getTranslationStats() {
+        try {
+            const stats = {};
+            
+            for (const lang of this.supportedLanguages) {
+                const localeData = await this.readLocaleFile(lang);
+                stats[lang] = {
+                    salonCount: Object.keys(localeData.salons || {}).length,
+                    lastUpdated: new Date().toISOString()
+                };
+            }
+
+            return stats;
+        } catch (error) {
+            console.error('Get translation stats error:', error);
+            return {};
+        }
+    }
+}
+
+module.exports = new SalonTranslationService();

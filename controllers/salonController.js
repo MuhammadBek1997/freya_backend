@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { generateToken } = require('../middleware/authMiddleware');
 const pool = require('../config/database');
+const salonTranslationService = require('../services/salonTranslationService');
 
 // Create a new salon
 const createSalon = async (req, res) => {
@@ -100,6 +101,15 @@ const createSalon = async (req, res) => {
             salon.salon_comfort = [];
         }
 
+        // Salon ma'lumotlarini barcha tillarga tarjima qilish va saqlash
+        try {
+            await salonTranslationService.translateAndStoreSalon(salon, salon.id);
+            console.log('Salon translations stored successfully');
+        } catch (translationError) {
+            console.error('Translation error:', translationError);
+            // Tarjima xatosi bo'lsa ham salon yaratilganini qaytaramiz
+        }
+
         res.status(201).json({
             success: true,
             message: 'Salon muvaffaqiyatli yaratildi',
@@ -129,6 +139,10 @@ const getAllSalons = async (req, res) => {
         console.log('Database connection OK:', dbTest.rows[0]);
         
         const { page = 1, limit = 10, search = '' } = req.query;
+        console.log('req.language:', req.language);
+        console.log('req.query.language:', req.query.language);
+        const language = req.language || req.query.language || 'uz'; // Language middleware'dan olinadi
+        console.log('Final language for getAllSalons:', language);
         const offset = (page - 1) * limit;
 
         let query = `
@@ -157,7 +171,20 @@ const getAllSalons = async (req, res) => {
             pool.query(countQuery, search ? [`%${search}%`] : [])
         ]);
 
-        const salons = salonsResult.rows.map(salon => {
+        // Salonlarni tarjima qilingan holatda olish
+        console.log(`Processing ${salonsResult.rows.length} salons for language: ${language}`);
+        const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
+            console.log(`Processing salon ${salon.id} for language ${language}`);
+            // Avval tarjima qilingan ma'lumotni olishga harakat qilamiz
+            const translatedSalon = await salonTranslationService.getSalonByLanguage(salon.id, language);
+            
+            if (translatedSalon) {
+                // Tarjima mavjud bo'lsa, name va description'ni almashtirish
+                salon.name = translatedSalon.name;
+                salon.description = translatedSalon.description;
+            }
+
+            // Tarjima mavjud bo'lmasa, original ma'lumotni parse qilamiz
             // Helper function to safely parse JSON
             const safeJsonParse = (value, defaultValue) => {
                 if (!value || value === 'null' || value === '' || value === '{}' || value === '[]') {
@@ -189,7 +216,7 @@ const getAllSalons = async (req, res) => {
             salon.salon_comfort = safeJsonParse(salon.salon_comfort, []);
             
             return salon;
-        });
+        }));
 
         const totalCount = parseInt(countResult.rows[0].count);
         const totalPages = Math.ceil(totalCount / limit);
@@ -220,6 +247,7 @@ const getAllSalons = async (req, res) => {
 const getSalonById = async (req, res) => {
     try {
         const { id } = req.params;
+        const language = req.language || 'uz'; // Language middleware'dan olinadi
 
         const query = 'SELECT * FROM salons WHERE id = $1 AND is_active = true';
         const result = await pool.query(query, [id]);
@@ -231,9 +259,17 @@ const getSalonById = async (req, res) => {
             });
         }
 
-        const salon = result.rows[0];
+        let salon = result.rows[0];
+
+        // Tarjima qilingan ma'lumotni olishga harakat qilamiz
+        const translatedSalon = await salonTranslationService.getSalonByLanguage(id, language);
         
-        // Parse JSON fields safely
+        if (translatedSalon) {
+            // Tarjima mavjud bo'lsa, uni database ma'lumotlari bilan birlashtiraamiz
+            salon = { ...salon, ...translatedSalon };
+        }
+        
+        // JSON fields'ni parse qilamiz
         try {
             salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
             salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
@@ -337,6 +373,15 @@ const updateSalon = async (req, res) => {
         salon.salon_photos = JSON.parse(salon.salon_photos || '[]');
         salon.salon_comfort = JSON.parse(salon.salon_comfort || '[]');
 
+        // Yangilangan ma'lumotlarni tarjima qilish va saqlash
+        try {
+            await salonTranslationService.updateSalonTranslations(id, salon);
+            console.log('Salon translations updated successfully');
+        } catch (translationError) {
+            console.error('Translation update error:', translationError);
+            // Tarjima xatosi bo'lsa ham yangilanganini qaytaramiz
+        }
+
         res.json({
             success: true,
             message: 'Salon muvaffaqiyatli yangilandi',
@@ -372,6 +417,15 @@ const deleteSalon = async (req, res) => {
                 success: false,
                 message: 'Salon topilmadi'
             });
+        }
+
+        // Tarjima fayllaridan ham o'chirish
+        try {
+            await salonTranslationService.deleteSalonTranslations(id);
+            console.log('Salon translations deleted successfully');
+        } catch (translationError) {
+            console.error('Translation deletion error:', translationError);
+            // Tarjima o'chirishda xato bo'lsa ham davom etamiz
         }
 
         res.json({

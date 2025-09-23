@@ -10,8 +10,8 @@ const languageDetection = (req, res, next) => {
 
   try {
     // 1. Check for language in query parameters
-    if (req.query.lang || req.query.lng) {
-      detectedLanguage = req.query.lang || req.query.lng;
+    if (req.query.lang || req.query.lng || req.query.language) {
+      detectedLanguage = req.query.lang || req.query.lng || req.query.language;
     }
     // 2. Check for language in headers
     else if (req.headers['accept-language']) {

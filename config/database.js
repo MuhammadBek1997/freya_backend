@@ -4,7 +4,7 @@ require('dotenv').config();
 // PostgreSQL connection configuration
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
+  ssl: { rejectUnauthorized: false }
 });
 
 // Test database connection
@@ -113,6 +113,22 @@ async function initializeTables() {
       is_read BOOLEAN DEFAULT FALSE,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    // Salon translations table
+    await pool.query(`CREATE TABLE IF NOT EXISTS salon_translations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      salon_id UUID NOT NULL,
+      language VARCHAR(5) NOT NULL,
+      name VARCHAR(255),
+      description TEXT,
+      address TEXT,
+      salon_title VARCHAR(255),
+      salon_orient VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE,
+      UNIQUE(salon_id, language)
     )`);
 
     console.log('Database tables initialized');
