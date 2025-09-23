@@ -5,7 +5,17 @@ const employeeTranslationService = require('../services/employeeTranslationServi
 const getAllEmployees = async (req, res) => {
     try {
         console.log('🔍 getAllEmployees called with query:', req.query);
-        const { page = 1, limit = 10, search = '', salonId = '' } = req.query;
+        const { page = 1, limit = 10, search = '', salonId } = req.query;
+        
+        // salonId majburiy parametr
+        if (!salonId) {
+            return res.status(400).json({
+                success: false,
+                message: 'salonId parametri majburiy',
+                error: 'salonId parameter is required'
+            });
+        }
+        
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
         console.log('📊 Parameters:', { page, limit, search, salonId, language, offset });

@@ -67,12 +67,12 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
  *           type: string
  *         description: Qidiruv so'zi
  *       - in: query
- *         name: salonId
- *         required: false
- *         schema:
- *           type: string
- *           format: uuid
- *         description: Salon ID (ixtiyoriy filtrlash uchun)
+         name: salonId
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: Salon ID (majburiy)
  *     responses:
  *       200:
  *         description: Xodimlar ro'yxati
