@@ -30,6 +30,14 @@ const { languageDetection } = require('../middleware/languageMiddleware');
  *     tags: [Salons]
  *     parameters:
  *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -92,6 +100,14 @@ router.get('/', languageDetection, getAllSalons);
  *         schema:
  *           type: integer
  *         description: Salon ID
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
  *     responses:
  *       200:
  *         description: Salon ma'lumotlari

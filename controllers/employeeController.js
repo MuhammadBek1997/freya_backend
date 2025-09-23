@@ -1,39 +1,56 @@
 const { pool } = require('../config/database');
+const employeeTranslationService = require('../services/employeeTranslationService');
 
 // Get all employees
 const getAllEmployees = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT e.*, s.salon_name,
+            SELECT e.*, s.name as salon_name,
                    COUNT(c.id) as comment_count,
                    AVG(c.rating) as avg_rating
             FROM employees e
             LEFT JOIN salons s ON e.salon_id = s.id
             LEFT JOIN employee_comments c ON e.id = c.employee_id
-            WHERE e.deleted_at IS NULL
         `;
         
         const params = [];
         
         if (search) {
-            query += ` AND (e.name ILIKE $1 OR e.surname ILIKE $2 OR e.profession ILIKE $3)`;
+            query += ` WHERE (e.name ILIKE $1 OR e.surname ILIKE $2 OR e.profession ILIKE $3)`;
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
-        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` GROUP BY e.id, s.name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
         const employees = await pool.query(query, params);
         
+        // Xodimlarni tarjima qilingan holatda olish
+        const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
+            const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
+            
+            if (translatedEmployee) {
+                // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
+                employee.name = translatedEmployee.name;
+                employee.surname = translatedEmployee.surname;
+                employee.profession = translatedEmployee.profession;
+                employee.bio = translatedEmployee.bio;
+                employee.specialization = translatedEmployee.specialization;
+            }
+            
+            return employee;
+        }));
+        
         // Get total count
-        let countQuery = `SELECT COUNT(*) as total FROM employees WHERE deleted_at IS NULL`;
+        let countQuery = `SELECT COUNT(*) as total FROM employees`;
         const countParams = [];
         
         if (search) {
-            countQuery += ` AND (name ILIKE $1 OR surname ILIKE $2 OR profession ILIKE $3)`;
+            countQuery += ` WHERE (name ILIKE $1 OR surname ILIKE $2 OR profession ILIKE $3)`;
             countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
@@ -42,7 +59,7 @@ const getAllEmployees = async (req, res) => {
 
         res.json({
             success: true,
-            data: employees.rows,
+            data: translatedEmployees,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -64,30 +81,17 @@ const getEmployeesBySalonId = async (req, res) => {
     try {
         const { salonId } = req.params;
         const { page = 1, limit = 10, search = '' } = req.query;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
-        // Check if salon is private
-        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
+        // Check if salon exists
+        const salonQuery = 'SELECT id FROM salons WHERE id = $1';
         const salonResult = await pool.query(salonQuery, [salonId]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Salon topilmadi'
-            });
-        }
-        
-        // If salon is private, return empty employee list
-        if (salonResult.rows[0].private_salon) {
-            return res.json({
-                success: true,
-                data: [],
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total: 0,
-                    pages: 0
-                }
             });
         }
 
@@ -112,6 +116,22 @@ const getEmployeesBySalonId = async (req, res) => {
 
         const employees = await pool.query(query, params);
         
+        // Xodimlarni tarjima qilingan holatda olish
+        const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
+            const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
+            
+            if (translatedEmployee) {
+                // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
+                employee.name = translatedEmployee.name;
+                employee.surname = translatedEmployee.surname;
+                employee.profession = translatedEmployee.profession;
+                employee.bio = translatedEmployee.bio;
+                employee.specialization = translatedEmployee.specialization;
+            }
+            
+            return employee;
+        }));
+        
         // Get total count
         let countQuery = `SELECT COUNT(*) as total FROM employees WHERE salon_id = $1`;
         const countParams = [salonId];
@@ -126,7 +146,7 @@ const getEmployeesBySalonId = async (req, res) => {
 
         res.json({
             success: true,
-            data: employees.rows,
+            data: translatedEmployees,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -147,10 +167,11 @@ const getEmployeesBySalonId = async (req, res) => {
 const getEmployeeById = async (req, res) => {
     try {
         const { id } = req.params;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         
         // Get employee basic info
         const employeeQuery = `
-            SELECT e.*, s.salon_name as salon_name
+            SELECT e.*, s.name as salon_name
             FROM employees e
             LEFT JOIN salons s ON e.salon_id = s.id
             WHERE e.id = $1
@@ -164,7 +185,19 @@ const getEmployeeById = async (req, res) => {
             });
         }
         
-        const employee = employees.rows[0];
+        let employee = employees.rows[0];
+        
+        // Xodimni tarjima qilingan holatda olish
+        const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
+        
+        if (translatedEmployee) {
+            // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
+            employee.name = translatedEmployee.name;
+            employee.surname = translatedEmployee.surname;
+            employee.profession = translatedEmployee.profession;
+            employee.bio = translatedEmployee.bio;
+            employee.specialization = translatedEmployee.specialization;
+        }
         
         // Get comments
         const commentsQuery = `
@@ -228,22 +261,14 @@ const createEmployee = async (req, res) => {
             password
         } = req.body;
         
-        // Check if salon is private
-        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
+        // Check if salon exists
+        const salonQuery = 'SELECT id FROM salons WHERE id = $1';
         const salonResult = await pool.query(salonQuery, [salon_id]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Salon topilmadi'
-            });
-        }
-        
-        // If salon is private, don't allow creating employees
-        if (salonResult.rows[0].private_salon) {
-            return res.status(403).json({
-                success: false,
-                message: 'Private salonga xodim qo\'shish mumkin emas'
             });
         }
         

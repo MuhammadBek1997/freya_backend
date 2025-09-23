@@ -25,6 +25,14 @@ const { verifyAdmin } = require('../middleware/authMiddleware');
  *     tags: [Schedules]
  *     parameters:
  *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
+ *       - in: query
  *         name: page
  *         schema:
  *           type: integer
@@ -80,6 +88,14 @@ router.get('/schedules', getAllSchedules);
  *           type: string
  *           format: uuid
  *         description: Salon ID
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
  *       - in: query
  *         name: page
  *         schema:
@@ -143,6 +159,14 @@ router.get('/schedules/salon/:salonId', getSchedulesBySalonId);
  *           type: string
  *           format: uuid
  *         description: Jadval ID
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
  *     responses:
  *       200:
  *         description: Jadval ma'lumotlari

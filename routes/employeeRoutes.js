@@ -35,6 +35,34 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
  *         schema:
  *           type: integer
  *         description: Salon ID
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Qidiruv so'zi
  *     responses:
  *       200:
  *         description: Xodimlar ro'yxati
@@ -65,6 +93,35 @@ router.get('/salons/:salonId/employees', checkPrivateSalon, getEmployeesBySalonI
  *   get:
  *     summary: Barcha xodimlarni olish
  *     tags: [Employees]
+ *     parameters:
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         schema:
+ *           type: string
+ *         description: Qidiruv so'zi
  *     responses:
  *       200:
  *         description: Xodimlar ro'yxati
@@ -96,6 +153,14 @@ router.get('/employees/list', getAllEmployees);
  *         schema:
  *           type: string
  *         description: Xodim ID
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [uz, en, ru]
+ *           default: uz
+ *         description: Javob tili (uz, en, ru)
  *     responses:
  *       200:
  *         description: Xodim ma'lumotlari

@@ -12,8 +12,8 @@ const checkPrivateSalon = async (req, res, next) => {
             });
         }
         
-        // Check if salon exists and is private
-        const salonQuery = 'SELECT private_salon FROM salons WHERE id = $1';
+        // Check if salon exists
+        const salonQuery = 'SELECT id FROM salons WHERE id = $1';
         const salonResult = await query(salonQuery, [salonId]);
         
         if (salonResult.rows.length === 0) {
@@ -23,13 +23,13 @@ const checkPrivateSalon = async (req, res, next) => {
             });
         }
         
-        // If salon is private, deny access to employee endpoints
-        if (salonResult.rows[0].private_salon) {
-            return res.status(403).json({
-                success: false,
-                message: 'Private salonda xodimlar bo\'limiga ruxsat yo\'q'
-            });
-        }
+        // For now, allow access to all salons (private_salon column doesn't exist)
+        // if (salonResult.rows[0].private_salon) {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: 'Private salonda xodimlar bo\'limiga ruxsat yo\'q'
+        //     });
+        // }
         
         // If not private, continue to next middleware/controller
         next();

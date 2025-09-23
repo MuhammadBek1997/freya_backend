@@ -1,16 +1,18 @@
 const { pool } = require('../config/database');
+const scheduleTranslationService = require('../services/scheduleTranslationService');
 
 // Get all schedules
 const getAllSchedules = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT s.*, sa.salon_name
+            SELECT s.*, sa.name as salon_name
             FROM schedules s
             LEFT JOIN salons sa ON s.salon_id = sa.id
-            WHERE s.is_active = true
+            WHERE 1=1
         `;
         
         const params = [];
@@ -25,8 +27,22 @@ const getAllSchedules = async (req, res) => {
 
         const schedules = await pool.query(query, params);
         
+        // Schedule'larni tarjima qilingan holatda olish
+        const translatedSchedules = await Promise.all(schedules.rows.map(async (schedule) => {
+            const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, language);
+            
+            if (translatedSchedule) {
+                // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
+                schedule.name = translatedSchedule.name;
+                schedule.title = translatedSchedule.title;
+                schedule.description = translatedSchedule.description;
+            }
+            
+            return schedule;
+        }));
+        
         // Get total count
-        let countQuery = `SELECT COUNT(*) as total FROM schedules WHERE is_active = true`;
+        let countQuery = `SELECT COUNT(*) as total FROM schedules WHERE 1=1`;
         const countParams = [];
         
         if (search) {
@@ -39,7 +55,7 @@ const getAllSchedules = async (req, res) => {
 
         res.json({
             success: true,
-            data: schedules.rows,
+            data: translatedSchedules,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -61,12 +77,13 @@ const getSchedulesBySalonId = async (req, res) => {
     try {
         const { salonId } = req.params;
         const { page = 1, limit = 10, date_from, date_to } = req.query;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
             SELECT s.*
             FROM schedules s
-            WHERE s.salon_id = $1 AND s.is_active = true
+            WHERE s.salon_id = $1
         `;
         
         const params = [salonId];
@@ -86,8 +103,22 @@ const getSchedulesBySalonId = async (req, res) => {
 
         const schedules = await pool.query(query, params);
         
+        // Schedule'larni tarjima qilingan holatda olish
+        const translatedSchedules = await Promise.all(schedules.rows.map(async (schedule) => {
+            const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, language);
+            
+            if (translatedSchedule) {
+                // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
+                schedule.name = translatedSchedule.name;
+                schedule.title = translatedSchedule.title;
+                schedule.description = translatedSchedule.description;
+            }
+            
+            return schedule;
+        }));
+        
         // Get total count
-        let countQuery = `SELECT COUNT(*) as total FROM schedules WHERE salon_id = $1 AND is_active = true`;
+        let countQuery = `SELECT COUNT(*) as total FROM schedules WHERE salon_id = $1`;
         const countParams = [salonId];
         
         if (date_from) {
@@ -105,7 +136,7 @@ const getSchedulesBySalonId = async (req, res) => {
 
         res.json({
             success: true,
-            data: schedules.rows,
+            data: translatedSchedules,
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),
@@ -126,12 +157,13 @@ const getSchedulesBySalonId = async (req, res) => {
 const getScheduleById = async (req, res) => {
     try {
         const { id } = req.params;
+        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
         
         const query = `
-            SELECT s.*, sa.salon_name
+            SELECT s.*, sa.name as salon_name
             FROM schedules s
             LEFT JOIN salons sa ON s.salon_id = sa.id
-            WHERE s.id = $1 AND s.is_active = true
+            WHERE s.id = $1
         `;
         
         const schedule = await pool.query(query, [id]);
@@ -143,9 +175,21 @@ const getScheduleById = async (req, res) => {
             });
         }
         
+        let scheduleData = schedule.rows[0];
+        
+        // Schedule'ni tarjima qilingan holatda olish
+        const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(scheduleData.id, language);
+        
+        if (translatedSchedule) {
+            // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
+            scheduleData.name = translatedSchedule.name;
+            scheduleData.title = translatedSchedule.title;
+            scheduleData.description = translatedSchedule.description;
+        }
+        
         res.json({
             success: true,
-            data: schedule.rows[0]
+            data: scheduleData
         });
     } catch (error) {
         console.error('Error fetching schedule:', error);
@@ -237,7 +281,7 @@ const updateSchedule = async (req, res) => {
         
         // Check if schedule exists
         const existingSchedule = await pool.query(
-            'SELECT id FROM schedules WHERE id = $1 AND is_active = true',
+            'SELECT id FROM schedules WHERE id = $1',
             [id]
         );
         
@@ -256,7 +300,7 @@ const updateSchedule = async (req, res) => {
         const query = `
             UPDATE schedules 
             SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-            WHERE id = $1 AND is_active = true
+            WHERE id = $1
             RETURNING *
         `;
         
@@ -282,7 +326,7 @@ const deleteSchedule = async (req, res) => {
         const { id } = req.params;
         
         const result = await pool.query(
-            'UPDATE schedules SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND is_active = true RETURNING id',
+            'DELETE FROM schedules WHERE id = $1 RETURNING id',
             [id]
         );
         
