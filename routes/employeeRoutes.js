@@ -36,16 +36,6 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
            type: string
            format: uuid
          description: Salon ID
- *       - $ref: '#/components/parameters/LanguageParam'
- *       - $ref: '#/components/parameters/AcceptLanguageHeader'
- *       - in: query
- *         name: current_language
- *         required: false
- *         schema:
- *           type: string
- *           enum: [en, uz, ru]
- *           default: ru
- *         description: Javob tili (uz, en, ru)
  *       - in: query
  *         name: page
  *         required: false
@@ -101,19 +91,16 @@ router.get('/salons/:salonId/employees', checkPrivateSalon, getEmployeesBySalonI
  * @swagger
  * /api/employees/list:
  *   get:
- *     summary: Barcha xodimlarni olish
+ *     summary: Salon bo'yicha xodimlarni olish
  *     tags: [Employees]
  *     parameters:
- *       - $ref: '#/components/parameters/LanguageParam'
- *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
- *         name: current_language
- *         required: false
+ *         name: salonId
+ *         required: true
  *         schema:
  *           type: string
- *           enum: [en, uz, ru]
- *           default: ru
- *         description: Javob tili (uz, en, ru)
+ *           format: uuid
+ *         description: Salon ID (majburiy)
  *       - in: query
  *         name: page
  *         required: false
@@ -165,16 +152,6 @@ router.get('/employees/list', getAllEmployees);
  *         schema:
  *           type: string
  *         description: Xodim ID
- *       - $ref: '#/components/parameters/LanguageParam'
- *       - $ref: '#/components/parameters/AcceptLanguageHeader'
- *       - in: query
- *         name: current_language
- *         required: false
- *         schema:
- *           type: string
- *           enum: [en, uz, ru]
- *           default: ru
- *         description: Javob tili (uz, en, ru)
  *     responses:
  *       200:
  *         description: Xodim ma'lumotlari
