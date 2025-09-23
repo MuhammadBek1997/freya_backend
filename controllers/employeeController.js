@@ -5,7 +5,7 @@ const employeeTranslationService = require('../services/employeeTranslationServi
 const getAllEmployees = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
@@ -81,7 +81,7 @@ const getEmployeesBySalonId = async (req, res) => {
     try {
         const { salonId } = req.params;
         const { page = 1, limit = 10, search = '' } = req.query;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         // Check if salon exists
@@ -167,7 +167,7 @@ const getEmployeesBySalonId = async (req, res) => {
 const getEmployeeById = async (req, res) => {
     try {
         const { id } = req.params;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         
         // Get employee basic info
         const employeeQuery = `

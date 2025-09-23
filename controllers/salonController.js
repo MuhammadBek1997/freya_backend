@@ -141,7 +141,7 @@ const getAllSalons = async (req, res) => {
         const { page = 1, limit = 10, search = '' } = req.query;
         console.log('req.language:', req.language);
         console.log('req.query.language:', req.query.language);
-        const language = req.language || req.query.language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.language || 'ru'; // Language middleware'dan olinadi
         console.log('Final language for getAllSalons:', language);
         const offset = (page - 1) * limit;
 
@@ -247,7 +247,7 @@ const getAllSalons = async (req, res) => {
 const getSalonById = async (req, res) => {
     try {
         const { id } = req.params;
-        const language = req.language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || 'ru'; // Language middleware'dan olinadi
 
         const query = 'SELECT * FROM salons WHERE id = $1 AND is_active = true';
         const result = await pool.query(query, [id]);

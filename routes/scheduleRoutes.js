@@ -24,13 +24,15 @@ const { verifyAdmin } = require('../middleware/authMiddleware');
  *     summary: Barcha jadvallarni olish
  *     tags: [Schedules]
  *     parameters:
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
  *         name: current_language
  *         required: false
  *         schema:
  *           type: string
- *           enum: [uz, en, ru]
- *           default: uz
+ *           enum: [en, uz, ru]
+ *           default: ru
  *         description: Javob tili (uz, en, ru)
  *       - in: query
  *         name: page
@@ -88,13 +90,15 @@ router.get('/schedules', getAllSchedules);
  *           type: string
  *           format: uuid
  *         description: Salon ID
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
  *         name: current_language
  *         required: false
  *         schema:
  *           type: string
- *           enum: [uz, en, ru]
- *           default: uz
+ *           enum: [en, uz, ru]
+ *           default: ru
  *         description: Javob tili (uz, en, ru)
  *       - in: query
  *         name: page
@@ -159,13 +163,15 @@ router.get('/schedules/salon/:salonId', getSchedulesBySalonId);
  *           type: string
  *           format: uuid
  *         description: Jadval ID
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
  *         name: current_language
  *         required: false
  *         schema:
  *           type: string
- *           enum: [uz, en, ru]
- *           default: uz
+ *           enum: [en, uz, ru]
+ *           default: ru
  *         description: Javob tili (uz, en, ru)
  *     responses:
  *       200:

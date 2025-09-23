@@ -29,14 +29,16 @@ const { languageDetection } = require('../middleware/languageMiddleware');
  *     summary: Barcha salonlarni olish
  *     tags: [Salons]
  *     parameters:
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
  *         name: current_language
  *         required: false
  *         schema:
  *           type: string
- *           enum: [uz, en, ru]
- *           default: uz
- *         description: Javob tili (uz, en, ru)
+ *           enum: [en, uz, ru]
+ *           default: ru
+ *         description: Javob tili (en, uz, ru)
  *       - in: query
  *         name: page
  *         schema:
@@ -100,14 +102,16 @@ router.get('/', languageDetection, getAllSalons);
  *         schema:
  *           type: integer
  *         description: Salon ID
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
  *         name: current_language
  *         required: false
  *         schema:
  *           type: string
- *           enum: [uz, en, ru]
- *           default: uz
- *         description: Javob tili (uz, en, ru)
+ *           enum: [en, uz, ru]
+ *           default: ru
+ *         description: Javob tili (en, uz, ru)
  *     responses:
  *       200:
  *         description: Salon ma'lumotlari

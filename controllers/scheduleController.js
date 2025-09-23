@@ -5,7 +5,7 @@ const scheduleTranslationService = require('../services/scheduleTranslationServi
 const getAllSchedules = async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '' } = req.query;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
@@ -77,7 +77,7 @@ const getSchedulesBySalonId = async (req, res) => {
     try {
         const { salonId } = req.params;
         const { page = 1, limit = 10, date_from, date_to } = req.query;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
         let query = `
@@ -157,7 +157,7 @@ const getSchedulesBySalonId = async (req, res) => {
 const getScheduleById = async (req, res) => {
     try {
         const { id } = req.params;
-        const language = req.language || req.query.current_language || 'uz'; // Language middleware'dan olinadi
+        const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         
         const query = `
             SELECT s.*, sa.name as salon_name
