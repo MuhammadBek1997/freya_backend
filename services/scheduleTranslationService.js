@@ -1,4 +1,43 @@
-const { pool } = require('../config/database');
+const fs = require('fs').promises;
+const path = require('path');
+const pool = require('../config/database');
+
+// Sodda tarjima funksiyasi
+async function translateScheduleData(data, targetLanguage) {
+    const translations = {
+        'en': {
+            'Soch kesish': 'Haircut',
+            'Soch bo\'yash': 'Hair Coloring',
+            'Manikur': 'Manicure',
+            'Pedikur': 'Pedicure',
+            'Massaj': 'Massage',
+            'Kosmetik xizmat': 'Cosmetic Service',
+            'Yuz parvarishi': 'Facial Care',
+            'Professional xizmat': 'Professional Service',
+            'Sifatli xizmat': 'Quality Service'
+        },
+        'ru': {
+            'Soch kesish': 'Стрижка',
+            'Soch bo\'yash': 'Окрашивание волос',
+            'Manikur': 'Маникюр',
+            'Pedikur': 'Педикюр',
+            'Massaj': 'Массаж',
+            'Kosmetik xizmat': 'Косметическая услуга',
+            'Yuz parvarishi': 'Уход за лицом',
+            'Professional xizmat': 'Профессиональная услуга',
+            'Sifatli xizmat': 'Качественная услуга'
+        }
+    };
+
+    const langTranslations = translations[targetLanguage] || {};
+    
+    return {
+        title: langTranslations[data.title] || data.title,
+        description: langTranslations[data.description] || data.description,
+        service_name: langTranslations[data.service_name] || data.service_name,
+        notes: langTranslations[data.notes] || data.notes
+    };
+}
 
 // Schedule uchun tarjima olish
 const getScheduleByLanguage = async (scheduleId, language) => {
@@ -102,9 +141,103 @@ const updateScheduleTranslations = async () => {
     }
 };
 
-module.exports = {
-    getScheduleByLanguage,
-    saveScheduleTranslation,
-    translateAndStoreSchedule,
-    updateScheduleTranslations
-};
+class ScheduleTranslationService {
+    constructor() {
+        this.supportedLanguages = ['uz', 'en', 'ru'];
+    }
+
+    async readLocaleFile(language) {
+        try {
+            const filePath = path.join(__dirname, '..', 'locales', `${language}.json`);
+            const data = await fs.readFile(filePath, 'utf8');
+            return JSON.parse(data);
+        } catch (error) {
+            console.log(`Creating new locale file for ${language}`);
+            return { schedules: {} };
+        }
+    }
+
+    async writeLocaleFile(language, data) {
+        try {
+            const localesDir = path.join(__dirname, '..', 'locales');
+            await fs.mkdir(localesDir, { recursive: true });
+            
+            const filePath = path.join(localesDir, `${language}.json`);
+            await fs.writeFile(filePath, JSON.stringify(data, null, 2), 'utf8');
+        } catch (error) {
+            console.error(`Error writing locale file for ${language}:`, error);
+        }
+    }
+
+    async translateAndStoreSchedule(scheduleData, scheduleId) {
+        try {
+            const translations = {};
+
+            for (const lang of this.supportedLanguages) {
+                let translatedData;
+                
+                if (lang === 'uz') {
+                    translatedData = {
+                        title: scheduleData.title,
+                        description: scheduleData.description,
+                        service_name: scheduleData.service_name,
+                        notes: scheduleData.notes
+                    };
+                } else {
+                    translatedData = await translateScheduleData(scheduleData, lang);
+                }
+
+                translations[lang] = translatedData;
+
+                await saveScheduleTranslation(scheduleId, lang, translatedData.title, translatedData.description, translatedData.service_name, translatedData.notes);
+
+                const localeData = await this.readLocaleFile(lang);
+                if (!localeData.schedules) {
+                    localeData.schedules = {};
+                }
+                localeData.schedules[scheduleId] = translatedData;
+                await this.writeLocaleFile(lang, localeData);
+            }
+
+            return translations;
+        } catch (error) {
+            console.error('Translation and storage error:', error);
+            throw error;
+        }
+    }
+
+    async getScheduleByLanguage(scheduleId, language = 'uz') {
+        try {
+            const lang = this.supportedLanguages.includes(language) ? language : 'uz';
+            
+            const query = `
+                SELECT title, description, service_name, notes 
+                FROM schedule_translations 
+                WHERE schedule_id = $1 AND language = $2
+            `;
+            
+            const result = await pool.query(query, [scheduleId, lang]);
+            
+            if (result.rows.length > 0) {
+                return result.rows[0];
+            }
+            
+            const localeData = await this.readLocaleFile(lang);
+            return localeData.schedules[scheduleId] || null;
+        } catch (error) {
+            console.error('Get schedule by language error:', error);
+            return null;
+        }
+    }
+
+    async updateScheduleTranslations(scheduleId, scheduleData) {
+        try {
+            return await this.translateAndStoreSchedule(scheduleData, scheduleId);
+        } catch (error) {
+            console.error('Update schedule translations error:', error);
+            throw error;
+        }
+    }
+}
+
+module.exports = new ScheduleTranslationService();

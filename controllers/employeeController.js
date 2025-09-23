@@ -4,12 +4,14 @@ const employeeTranslationService = require('../services/employeeTranslationServi
 // Get all employees
 const getAllEmployees = async (req, res) => {
     try {
+        console.log('🔍 getAllEmployees called with query:', req.query);
         const { page = 1, limit = 10, search = '' } = req.query;
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
+        console.log('📊 Parameters:', { page, limit, search, language, offset });
 
         let query = `
-            SELECT e.*, s.name as salon_name,
+            SELECT e.*, s.salon_name,
                    COUNT(c.id) as comment_count,
                    AVG(c.rating) as avg_rating
             FROM employees e
@@ -24,25 +26,96 @@ const getAllEmployees = async (req, res) => {
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
-        query += ` GROUP BY e.id, s.name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
+        console.log('🗃️ Executing query:', query);
+        console.log('📝 Query params:', params);
         const employees = await pool.query(query, params);
+        console.log('✅ Query result count:', employees.rows.length);
         
-        // Xodimlarni tarjima qilingan holatda olish
+        // Xodimlarni 3 ta tilda ma'lumot bilan olish
         const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
-            const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
-            
-            if (translatedEmployee) {
-                // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
-                employee.name = translatedEmployee.name;
-                employee.surname = translatedEmployee.surname;
-                employee.profession = translatedEmployee.profession;
-                employee.bio = translatedEmployee.bio;
-                employee.specialization = translatedEmployee.specialization;
+            try {
+                // Barcha tillar uchun tarjimalarni olish
+                const translations = {};
+                const languages = ['uz', 'en', 'ru'];
+                
+                for (const lang of languages) {
+                    try {
+                        const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, lang);
+                        if (translatedEmployee) {
+                            translations[lang] = {
+                                name: translatedEmployee.name || employee.name,
+                                surname: translatedEmployee.surname || employee.surname,
+                                profession: translatedEmployee.profession || employee.profession,
+                                bio: translatedEmployee.bio || employee.bio,
+                                specialization: translatedEmployee.specialization || ''
+                            };
+                        } else {
+                            // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                            translations[lang] = {
+                                name: employee.name || '',
+                                surname: employee.surname || '',
+                                profession: employee.profession || '',
+                                bio: employee.bio || '',
+                                specialization: ''
+                            };
+                        }
+                    } catch (langError) {
+                        console.error(`Error getting translation for language ${lang}:`, langError);
+                        translations[lang] = {
+                            name: employee.name || '',
+                            surname: employee.surname || '',
+                            profession: employee.profession || '',
+                            bio: employee.bio || '',
+                            specialization: ''
+                        };
+                    }
+                }
+                
+                // Employee ma'lumotlariga tarjimalarni qo'shamiz
+                employee.name_uz = translations.uz.name;
+                employee.name_en = translations.en.name;
+                employee.name_ru = translations.ru.name;
+                
+                employee.surname_uz = translations.uz.surname;
+                employee.surname_en = translations.en.surname;
+                employee.surname_ru = translations.ru.surname;
+                
+                employee.profession_uz = translations.uz.profession;
+                employee.profession_en = translations.en.profession;
+                employee.profession_ru = translations.ru.profession;
+                
+                employee.bio_uz = translations.uz.bio;
+                employee.bio_en = translations.en.bio;
+                employee.bio_ru = translations.ru.bio;
+                
+                employee.specialization_uz = translations.uz.specialization;
+                employee.specialization_en = translations.en.specialization;
+                employee.specialization_ru = translations.ru.specialization;
+                
+                return employee;
+            } catch (employeeError) {
+                console.error(`Error processing employee ${employee.id}:`, employeeError);
+                // Xatolik bo'lsa, original ma'lumotlarni qaytaramiz
+                employee.name_uz = employee.name || '';
+                employee.name_en = employee.name || '';
+                employee.name_ru = employee.name || '';
+                employee.surname_uz = employee.surname || '';
+                employee.surname_en = employee.surname || '';
+                employee.surname_ru = employee.surname || '';
+                employee.profession_uz = employee.profession || '';
+                employee.profession_en = employee.profession || '';
+                employee.profession_ru = employee.profession || '';
+                employee.bio_uz = employee.bio || '';
+                employee.bio_en = employee.bio || '';
+                employee.bio_ru = employee.bio || '';
+                employee.specialization_uz = '';
+                employee.specialization_en = '';
+                employee.specialization_ru = '';
+                return employee;
             }
-            
-            return employee;
         }));
         
         // Get total count
@@ -116,18 +189,54 @@ const getEmployeesBySalonId = async (req, res) => {
 
         const employees = await pool.query(query, params);
         
-        // Xodimlarni tarjima qilingan holatda olish
+        // Xodimlarni 3 ta tilda ma'lumot bilan olish
         const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
-            const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
+            // Barcha tillar uchun tarjimalarni olish
+            const translations = {};
+            const languages = ['uz', 'en', 'ru'];
             
-            if (translatedEmployee) {
-                // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
-                employee.name = translatedEmployee.name;
-                employee.surname = translatedEmployee.surname;
-                employee.profession = translatedEmployee.profession;
-                employee.bio = translatedEmployee.bio;
-                employee.specialization = translatedEmployee.specialization;
+            for (const lang of languages) {
+                const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, lang);
+                if (translatedEmployee) {
+                    translations[lang] = {
+                        name: translatedEmployee.name,
+                        surname: translatedEmployee.surname,
+                        profession: translatedEmployee.profession,
+                        bio: translatedEmployee.bio,
+                        specialization: translatedEmployee.specialization
+                    };
+                } else {
+                    // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                    translations[lang] = {
+                        name: employee.name,
+                        surname: employee.surname,
+                        profession: employee.profession,
+                        bio: employee.bio,
+                        specialization: employee.specialization
+                    };
+                }
             }
+            
+            // Employee ma'lumotlariga tarjimalarni qo'shamiz
+            employee.name_uz = translations.uz.name;
+            employee.name_en = translations.en.name;
+            employee.name_ru = translations.ru.name;
+            
+            employee.surname_uz = translations.uz.surname;
+            employee.surname_en = translations.en.surname;
+            employee.surname_ru = translations.ru.surname;
+            
+            employee.profession_uz = translations.uz.profession;
+            employee.profession_en = translations.en.profession;
+            employee.profession_ru = translations.ru.profession;
+            
+            employee.bio_uz = translations.uz.bio;
+            employee.bio_en = translations.en.bio;
+            employee.bio_ru = translations.ru.bio;
+            
+            employee.specialization_uz = translations.uz.specialization;
+            employee.specialization_en = translations.en.specialization;
+            employee.specialization_ru = translations.ru.specialization;
             
             return employee;
         }));
@@ -187,17 +296,52 @@ const getEmployeeById = async (req, res) => {
         
         let employee = employees.rows[0];
         
-        // Xodimni tarjima qilingan holatda olish
-        const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, language);
+        // Barcha tillar uchun tarjimalarni olish
+        const translations = {};
+        const languages = ['uz', 'en', 'ru'];
         
-        if (translatedEmployee) {
-            // Tarjima mavjud bo'lsa, name, surname, profession'ni almashtirish
-            employee.name = translatedEmployee.name;
-            employee.surname = translatedEmployee.surname;
-            employee.profession = translatedEmployee.profession;
-            employee.bio = translatedEmployee.bio;
-            employee.specialization = translatedEmployee.specialization;
+        for (const lang of languages) {
+            const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, lang);
+            if (translatedEmployee) {
+                translations[lang] = {
+                    name: translatedEmployee.name,
+                    surname: translatedEmployee.surname,
+                    profession: translatedEmployee.profession,
+                    bio: translatedEmployee.bio,
+                    specialization: translatedEmployee.specialization
+                };
+            } else {
+                // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                translations[lang] = {
+                    name: employee.name,
+                    surname: employee.surname,
+                    profession: employee.profession,
+                    bio: employee.bio,
+                    specialization: employee.specialization
+                };
+            }
         }
+        
+        // Employee ma'lumotlariga tarjimalarni qo'shamiz
+        employee.name_uz = translations.uz.name;
+        employee.name_en = translations.en.name;
+        employee.name_ru = translations.ru.name;
+        
+        employee.surname_uz = translations.uz.surname;
+        employee.surname_en = translations.en.surname;
+        employee.surname_ru = translations.ru.surname;
+        
+        employee.profession_uz = translations.uz.profession;
+        employee.profession_en = translations.en.profession;
+        employee.profession_ru = translations.ru.profession;
+        
+        employee.bio_uz = translations.uz.bio;
+        employee.bio_en = translations.en.bio;
+        employee.bio_ru = translations.ru.bio;
+        
+        employee.specialization_uz = translations.uz.specialization;
+        employee.specialization_en = translations.en.specialization;
+        employee.specialization_ru = translations.ru.specialization;
         
         // Get comments
         const commentsQuery = `
@@ -295,11 +439,28 @@ const createEmployee = async (req, res) => {
             salon_id, name, surname, phone, email, profession, username, password, true
         ]);
         
+        const employeeId = result.rows[0].id;
+        
+        // Employee ma'lumotlarini barcha tillarga tarjima qilish va saqlash
+        try {
+            await employeeTranslationService.translateAndStoreEmployee({
+                name,
+                surname,
+                profession,
+                bio: '', // Default bio
+                position: profession
+            }, employeeId);
+            console.log('Employee translations stored successfully');
+        } catch (translationError) {
+            console.error('Employee translation error:', translationError);
+            // Tarjima xatosi bo'lsa ham employee yaratilganini qaytaramiz
+        }
+        
         res.status(201).json({
             success: true,
             message: 'Xodim muvaffaqiyatli yaratildi',
             data: {
-                id: result.rows[0].id,
+                id: employeeId,
                 salon_id,
                 name,
                 surname,

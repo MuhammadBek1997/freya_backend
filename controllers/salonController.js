@@ -103,7 +103,12 @@ const createSalon = async (req, res) => {
 
         // Salon ma'lumotlarini barcha tillarga tarjima qilish va saqlash
         try {
-            await salonTranslationService.translateAndStoreSalon(salon, salon.id);
+            const salonData = {
+                name: salon.salon_name,
+                description: salon.salon_description,
+                salon_title: salon.salon_title
+            };
+            await salonTranslationService.translateAndStoreSalon(salonData, salon.id);
             console.log('Salon translations stored successfully');
         } catch (translationError) {
             console.error('Translation error:', translationError);
@@ -171,18 +176,49 @@ const getAllSalons = async (req, res) => {
             pool.query(countQuery, search ? [`%${search}%`] : [])
         ]);
 
-        // Salonlarni tarjima qilingan holatda olish
-        console.log(`Processing ${salonsResult.rows.length} salons for language: ${language}`);
+        // Salonlarni 3 ta tilda ma'lumot bilan olish
+        console.log(`Processing ${salonsResult.rows.length} salons for all languages`);
         const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
-            console.log(`Processing salon ${salon.id} for language ${language}`);
-            // Avval tarjima qilingan ma'lumotni olishga harakat qilamiz
-            const translatedSalon = await salonTranslationService.getSalonByLanguage(salon.id, language);
+            console.log(`Processing salon ${salon.id} for all languages`);
             
-            if (translatedSalon) {
-                // Tarjima mavjud bo'lsa, name va description'ni almashtirish
-                salon.name = translatedSalon.name;
-                salon.description = translatedSalon.description;
+            // Barcha tillar uchun tarjimalarni olish
+            const translations = {};
+            const languages = ['uz', 'en', 'ru'];
+            
+            for (const lang of languages) {
+                const translatedSalon = await salonTranslationService.getSalonByLanguage(salon.id, lang);
+                if (translatedSalon) {
+                    translations[lang] = {
+                        name: translatedSalon.name,
+                        description: translatedSalon.description,
+                        address: translatedSalon.address,
+                        salon_title: translatedSalon.salon_title,
+                        salon_orient: translatedSalon.salon_orient
+                    };
+                } else {
+                    // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                    translations[lang] = {
+                        name: salon.salon_name,
+                        description: salon.salon_description,
+                        address: salon.address,
+                        salon_title: salon.salon_title,
+                        salon_orient: salon.salon_orient
+                    };
+                }
             }
+            
+            // Salon ma'lumotlariga tarjimalarni qo'shamiz
+            salon.salon_name_uz = translations.uz.name;
+            salon.salon_name_en = translations.en.name;
+            salon.salon_name_ru = translations.ru.name;
+            
+            salon.salon_description_uz = translations.uz.description;
+            salon.salon_description_en = translations.en.description;
+            salon.salon_description_ru = translations.ru.description;
+            
+            salon.salon_title_uz = translations.uz.salon_title;
+            salon.salon_title_en = translations.en.salon_title;
+            salon.salon_title_ru = translations.ru.salon_title;
 
             // Tarjima mavjud bo'lmasa, original ma'lumotni parse qilamiz
             // Helper function to safely parse JSON
@@ -261,13 +297,44 @@ const getSalonById = async (req, res) => {
 
         let salon = result.rows[0];
 
-        // Tarjima qilingan ma'lumotni olishga harakat qilamiz
-        const translatedSalon = await salonTranslationService.getSalonByLanguage(id, language);
+        // Barcha tillar uchun tarjimalarni olish
+        const translations = {};
+        const languages = ['uz', 'en', 'ru'];
         
-        if (translatedSalon) {
-            // Tarjima mavjud bo'lsa, uni database ma'lumotlari bilan birlashtiraamiz
-            salon = { ...salon, ...translatedSalon };
+        for (const lang of languages) {
+            const translatedSalon = await salonTranslationService.getSalonByLanguage(id, lang);
+            if (translatedSalon) {
+                translations[lang] = {
+                    name: translatedSalon.name,
+                    description: translatedSalon.description,
+                    address: translatedSalon.address,
+                    salon_title: translatedSalon.salon_title,
+                    salon_orient: translatedSalon.salon_orient
+                };
+            } else {
+                // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                translations[lang] = {
+                    name: salon.salon_name,
+                    description: salon.salon_description,
+                    address: salon.address,
+                    salon_title: salon.salon_title,
+                    salon_orient: salon.salon_orient
+                };
+            }
         }
+        
+        // Salon ma'lumotlariga tarjimalarni qo'shamiz
+        salon.salon_name_uz = translations.uz.name;
+        salon.salon_name_en = translations.en.name;
+        salon.salon_name_ru = translations.ru.name;
+        
+        salon.salon_description_uz = translations.uz.description;
+        salon.salon_description_en = translations.en.description;
+        salon.salon_description_ru = translations.ru.description;
+        
+        salon.salon_title_uz = translations.uz.salon_title;
+        salon.salon_title_en = translations.en.salon_title;
+        salon.salon_title_ru = translations.ru.salon_title;
         
         // JSON fields'ni parse qilamiz
         try {

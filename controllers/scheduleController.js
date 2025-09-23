@@ -9,7 +9,7 @@ const getAllSchedules = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT s.*, sa.name as salon_name
+            SELECT s.*, sa.salon_name as salon_name
             FROM schedules s
             LEFT JOIN salons sa ON s.salon_id = sa.id
             WHERE 1=1
@@ -27,16 +27,42 @@ const getAllSchedules = async (req, res) => {
 
         const schedules = await pool.query(query, params);
         
-        // Schedule'larni tarjima qilingan holatda olish
+        // Schedule'larni 3 ta tilda ma'lumot bilan olish
         const translatedSchedules = await Promise.all(schedules.rows.map(async (schedule) => {
-            const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, language);
+            // Barcha tillar uchun tarjimalarni olish
+            const translations = {};
+            const languages = ['uz', 'en', 'ru'];
             
-            if (translatedSchedule) {
-                // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
-                schedule.name = translatedSchedule.name;
-                schedule.title = translatedSchedule.title;
-                schedule.description = translatedSchedule.description;
+            for (const lang of languages) {
+                const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, lang);
+                if (translatedSchedule) {
+                    translations[lang] = {
+                        name: translatedSchedule.name,
+                        title: translatedSchedule.title,
+                        description: translatedSchedule.description
+                    };
+                } else {
+                    // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                    translations[lang] = {
+                        name: schedule.name,
+                        title: schedule.title,
+                        description: schedule.description
+                    };
+                }
             }
+            
+            // Schedule ma'lumotlariga tarjimalarni qo'shamiz
+            schedule.name_uz = translations.uz.name;
+            schedule.name_en = translations.en.name;
+            schedule.name_ru = translations.ru.name;
+            
+            schedule.title_uz = translations.uz.title;
+            schedule.title_en = translations.en.title;
+            schedule.title_ru = translations.ru.title;
+            
+            schedule.description_uz = translations.uz.description;
+            schedule.description_en = translations.en.description;
+            schedule.description_ru = translations.ru.description;
             
             return schedule;
         }));
@@ -103,16 +129,42 @@ const getSchedulesBySalonId = async (req, res) => {
 
         const schedules = await pool.query(query, params);
         
-        // Schedule'larni tarjima qilingan holatda olish
+        // Schedule'larni 3 ta tilda ma'lumot bilan olish
         const translatedSchedules = await Promise.all(schedules.rows.map(async (schedule) => {
-            const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, language);
+            // Barcha tillar uchun tarjimalarni olish
+            const translations = {};
+            const languages = ['uz', 'en', 'ru'];
             
-            if (translatedSchedule) {
-                // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
-                schedule.name = translatedSchedule.name;
-                schedule.title = translatedSchedule.title;
-                schedule.description = translatedSchedule.description;
+            for (const lang of languages) {
+                const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(schedule.id, lang);
+                if (translatedSchedule) {
+                    translations[lang] = {
+                        name: translatedSchedule.name,
+                        title: translatedSchedule.title,
+                        description: translatedSchedule.description
+                    };
+                } else {
+                    // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                    translations[lang] = {
+                        name: schedule.name,
+                        title: schedule.title,
+                        description: schedule.description
+                    };
+                }
             }
+            
+            // Schedule ma'lumotlariga tarjimalarni qo'shamiz
+            schedule.name_uz = translations.uz.name;
+            schedule.name_en = translations.en.name;
+            schedule.name_ru = translations.ru.name;
+            
+            schedule.title_uz = translations.uz.title;
+            schedule.title_en = translations.en.title;
+            schedule.title_ru = translations.ru.title;
+            
+            schedule.description_uz = translations.uz.description;
+            schedule.description_en = translations.en.description;
+            schedule.description_ru = translations.ru.description;
             
             return schedule;
         }));
@@ -160,7 +212,7 @@ const getScheduleById = async (req, res) => {
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         
         const query = `
-            SELECT s.*, sa.name as salon_name
+            SELECT s.*, sa.salon_name as salon_name
             FROM schedules s
             LEFT JOIN salons sa ON s.salon_id = sa.id
             WHERE s.id = $1
@@ -177,15 +229,40 @@ const getScheduleById = async (req, res) => {
         
         let scheduleData = schedule.rows[0];
         
-        // Schedule'ni tarjima qilingan holatda olish
-        const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(scheduleData.id, language);
+        // Schedule'ni 3 ta tilda ma'lumot bilan olish
+        const translations = {};
+        const languages = ['uz', 'en', 'ru'];
         
-        if (translatedSchedule) {
-            // Tarjima mavjud bo'lsa, name, title, description'ni almashtirish
-            scheduleData.name = translatedSchedule.name;
-            scheduleData.title = translatedSchedule.title;
-            scheduleData.description = translatedSchedule.description;
+        for (const lang of languages) {
+            const translatedSchedule = await scheduleTranslationService.getScheduleByLanguage(scheduleData.id, lang);
+            if (translatedSchedule) {
+                translations[lang] = {
+                    name: translatedSchedule.name,
+                    title: translatedSchedule.title,
+                    description: translatedSchedule.description
+                };
+            } else {
+                // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
+                translations[lang] = {
+                    name: scheduleData.name,
+                    title: scheduleData.title,
+                    description: scheduleData.description
+                };
+            }
         }
+        
+        // Schedule ma'lumotlariga tarjimalarni qo'shamiz
+        scheduleData.name_uz = translations.uz.name;
+        scheduleData.name_en = translations.en.name;
+        scheduleData.name_ru = translations.ru.name;
+        
+        scheduleData.title_uz = translations.uz.title;
+        scheduleData.title_en = translations.en.title;
+        scheduleData.title_ru = translations.ru.title;
+        
+        scheduleData.description_uz = translations.uz.description;
+        scheduleData.description_en = translations.en.description;
+        scheduleData.description_ru = translations.ru.description;
         
         res.json({
             success: true,
@@ -246,6 +323,22 @@ const createSchedule = async (req, res) => {
             salon_id, name, title, date, repeat, repeat_value,
             employee_list, price, full_pay, deposit
         ]);
+        
+        const scheduleId = result.rows[0].id;
+        
+        // Schedule ma'lumotlarini barcha tillarga tarjima qilish va saqlash
+        try {
+            await scheduleTranslationService.translateAndStoreSchedule({
+                title: title || name,
+                description: '', // Default description
+                service_name: name,
+                notes: '' // Default notes
+            }, scheduleId);
+            console.log('Schedule translations stored successfully');
+        } catch (translationError) {
+            console.error('Schedule translation error:', translationError);
+            // Tarjima xatosi bo'lsa ham schedule yaratilganini qaytaramiz
+        }
         
         res.status(201).json({
             success: true,

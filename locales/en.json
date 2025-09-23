@@ -59,6 +59,95 @@
     "6f6539f9-67a6-444d-81a9-7af2bf2bd9f6": {
       "name": "Yangi Go'zallik Saloni",
       "description": "This yangi va zamonaviy go'zallik hall"
+    },
+    "fed0ecf2-f80c-41ef-980a-9e11cf345d23": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "54e67f1d-7d77-4aac-bc6a-f0a249380838": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "fee31c29-dc38-4a9e-b676-55d05764150a": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "838a47d0-d8fa-4f33-8e87-ebf7f99bd20d": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "c988950f-3141-447d-bff7-0d8583f9ebf5": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "c306f661-41ab-4049-830a-f0c8dcfdde41": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "48ee05e8-4e8f-460c-a6dc-7bc31b4e23fe": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "dc7ddbf1-fb41-46ab-a7c3-5d4137e6d5e6": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "d80273aa-dbaf-4a5e-926c-902986c3e238": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "0eb21bb5-ef95-44ab-ac82-5375a9054aa3": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "08ba8faf-0f4c-4f5c-a1dd-4ca0922ab59a": {
+      "name": "Test Salon",
+      "description": "Test salon description"
+    },
+    "b02f3c03-f063-4b03-b559-be2b0258f9df": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "34bdeab3-1c6a-4792-ab08-ad0b4ca6c420": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "4d049e16-b06a-46ce-9c0d-292d49604744": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "9b92a404-3c12-4892-a58d-718a0fa33625": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "89da993d-0f7f-4580-a3d2-44b11347bc57": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "3df56a77-3841-445b-adb3-bc08256feba8": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "7b507c1f-7111-4dae-851f-58ce474ac5c9": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "cd6f0242-df0f-4be1-9620-07b1d6b8a328": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
+    },
+    "2cd0bc3b-491c-4eb9-a2c1-48512014190c": {
+      "name": "Test Debug Salon",
+      "description": "Bu debug uchun test salon",
+      "salon_title": "Debug Test Salon"
     }
   },
   "common": {
@@ -74,5 +163,29 @@
     "not_found": "Salon not found",
     "updated_successfully": "Salon updated successfully",
     "deleted_successfully": "Salon deleted successfully"
+  },
+  "schedules": {
+    "e444112f-d081-4d08-a3b9-060b5890c0e9": {
+      "title": "Test Title"
+    },
+    "3dd2740d-0617-4107-b3b3-7fe319e68568": {
+      "title": "Test Title"
+    },
+    "7d853540-8658-4079-a07f-2a97ded112a4": {
+      "title": "Test Title"
+    },
+    "8a3c8e72-9d5e-4af4-bcc6-18fe7ba69a31": {
+      "title": "Test Title"
+    },
+    "36412bda-9842-47b2-b7f6-362c0154fd70": {
+      "title": "Test Title"
+    },
+    "9830c14f-a69a-4f57-ac1b-74f2f475176c": {
+      "title": "Test Title"
+    },
+    "5925baed-0e7f-4020-9364-4de4253cdc1b": {
+      "title": "Test Title"
+    },
+    "[object Object]": {}
   }
 }

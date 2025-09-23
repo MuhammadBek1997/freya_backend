@@ -1,7 +1,36 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { translateSalonData } = require('../config/deepl');
 const pool = require('../config/database');
+
+// Sodda tarjima funksiyasi
+async function translateSalonData(data, targetLanguage) {
+    const translations = {
+        'en': {
+            'Freya Beauty Salon': 'Freya Beauty Salon',
+            'Go\'zallik saloni': 'Beauty Salon',
+            'Zamonaviy go\'zallik saloni': 'Modern Beauty Salon',
+            'Professional xizmatlar': 'Professional Services',
+            'Sifatli xizmat': 'Quality Service',
+            'Eng yaxshi mutaxassislar': 'Best Specialists'
+        },
+        'ru': {
+            'Freya Beauty Salon': 'Салон красоты Freya',
+            'Go\'zallik saloni': 'Салон красоты',
+            'Zamonaviy go\'zallik saloni': 'Современный салон красоты',
+            'Professional xizmatlar': 'Профессиональные услуги',
+            'Sifatli xizmat': 'Качественный сервис',
+            'Eng yaxshi mutaxassislar': 'Лучшие специалисты'
+        }
+    };
+
+    const langTranslations = translations[targetLanguage] || {};
+    
+    return {
+        name: langTranslations[data.name] || data.name,
+        description: langTranslations[data.description] || data.description,
+        salon_title: langTranslations[data.salon_title] || data.salon_title
+    };
+}
 
 class SalonTranslationService {
     constructor() {
@@ -46,20 +75,22 @@ class SalonTranslationService {
                     // Uzbek uchun original ma'lumotni saqlaymiz
                     translatedData = {
                         name: salonData.name || salonData.salon_name,
-                        description: salonData.description || salonData.salon_description
+                        description: salonData.description || salonData.salon_description,
+                        salon_title: salonData.salon_title
                     };
                 } else {
                     // Boshqa tillar uchun tarjima qilamiz
                     translatedData = await translateSalonData({
                         name: salonData.name || salonData.salon_name,
-                        description: salonData.description || salonData.salon_description
+                        description: salonData.description || salonData.salon_description,
+                        salon_title: salonData.salon_title
                     }, lang);
                 }
 
                 translations[lang] = translatedData;
 
                 // Database'ga saqlash
-                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description);
+                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title);
 
                 // JSON faylga ham saqlash (backup uchun)
                 const localeData = await this.readLocaleFile(lang);
@@ -75,19 +106,20 @@ class SalonTranslationService {
     }
 
     // Database'ga tarjima saqlash
-    async saveSalonTranslation(salonId, language, name, description) {
+    async saveSalonTranslation(salonId, language, name, description, salon_title) {
         try {
             const query = `
-                INSERT INTO salon_translations (salon_id, language, name, description)
-                VALUES ($1, $2, $3, $4)
+                INSERT INTO salon_translations (salon_id, language, name, description, salon_title)
+                VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (salon_id, language) 
                 DO UPDATE SET 
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
+                    salon_title = EXCLUDED.salon_title,
                     updated_at = CURRENT_TIMESTAMP
             `;
             
-            await pool.query(query, [salonId, language, name, description]);
+            await pool.query(query, [salonId, language, name, description, salon_title]);
             console.log(`Translation saved for salon ${salonId} in ${language}`);
         } catch (error) {
             console.error('Error saving salon translation:', error);
@@ -105,7 +137,7 @@ class SalonTranslationService {
             
             // Database'dan tarjimani olish
             const query = `
-                SELECT name, description 
+                SELECT name, description, salon_title 
                 FROM salon_translations 
                 WHERE salon_id = $1 AND language = $2
             `;

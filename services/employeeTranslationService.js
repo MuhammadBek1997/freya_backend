@@ -1,4 +1,40 @@
+const fs = require('fs').promises;
+const path = require('path');
 const { pool } = require('../config/database');
+
+// Sodda tarjima funksiyasi
+async function translateEmployeeData(data, targetLanguage) {
+    const translations = {
+        'en': {
+            'Sartarosh': 'Hairdresser',
+            'Stilist': 'Stylist',
+            'Kosmetolog': 'Cosmetologist',
+            'Massajchi': 'Masseur',
+            'Manikurchi': 'Manicurist',
+            'Mutaxassis': 'Specialist',
+            'Professional xodim': 'Professional Employee',
+            'Tajribali mutaxassis': 'Experienced Specialist'
+        },
+        'ru': {
+            'Sartarosh': 'Парикмахер',
+            'Stilist': 'Стилист',
+            'Kosmetolog': 'Косметолог',
+            'Massajchi': 'Массажист',
+            'Manikurchi': 'Мастер маникюра',
+            'Mutaxassis': 'Специалист',
+            'Professional xodim': 'Профессиональный сотрудник',
+            'Tajribali mutaxassis': 'Опытный специалист'
+        }
+    };
+
+    const langTranslations = translations[targetLanguage] || {};
+    
+    return {
+        full_name: data.full_name, // Ismlar odatda tarjima qilinmaydi
+        position: langTranslations[data.position] || data.position,
+        bio: langTranslations[data.bio] || data.bio
+    };
+}
 
 class EmployeeTranslationService {
     constructor() {
@@ -8,9 +44,7 @@ class EmployeeTranslationService {
     // Employee ma'lumotlarini tilga qarab olish
     async getEmployeeByLanguage(employeeId, language = 'uz') {
         try {
-            console.log(`Getting translation for employee ${employeeId} in language ${language}`);
             const lang = this.supportedLanguages.includes(language) ? language : 'uz';
-            console.log(`Final language to use: ${lang}`);
             
             // Database'dan tarjimani olish
             const query = `
@@ -19,13 +53,9 @@ class EmployeeTranslationService {
                 WHERE employee_id = $1 AND language = $2
             `;
             
-            console.log(`Executing query with params: [${employeeId}, ${lang}]`);
             const result = await pool.query(query, [employeeId, lang]);
             
-            console.log(`Database query result for employee ${employeeId}:`, result.rows);
-            
             if (result.rows.length > 0) {
-                console.log(`Found translation in database:`, result.rows[0]);
                 return result.rows[0];
             }
             
@@ -118,8 +148,8 @@ class EmployeeTranslationService {
                     // Uzbek uchun original ma'lumotni saqlaymiz
                     translatedData = {
                         name: employeeData.name,
-                        surname: employeeData.surname,
-                        profession: employeeData.profession,
+                        surname: employeeData.surname || '',
+                        profession: employeeData.profession || '',
                         bio: employeeData.bio || '',
                         specialization: employeeData.specialization || ''
                     };
@@ -127,8 +157,8 @@ class EmployeeTranslationService {
                     // Boshqa tillar uchun manual tarjima
                     translatedData = {
                         name: employeeData.name, // Ismlar odatda tarjima qilinmaydi
-                        surname: employeeData.surname,
-                        profession: manualTranslations[employeeData.profession]?.[lang] || employeeData.profession,
+                        surname: employeeData.surname || '',
+                        profession: manualTranslations[employeeData.profession]?.[lang] || employeeData.profession || '',
                         bio: employeeData.bio || '',
                         specialization: employeeData.specialization || ''
                     };
