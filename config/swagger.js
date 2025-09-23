@@ -10,8 +10,12 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3001',
+      url: 'http://localhost:3002',
       description: 'Development server (Current)'
+    },
+    {
+      url: 'http://localhost:3001',
+      description: 'Development server'
     },
     {
       url: 'http://localhost:4444',
@@ -388,7 +392,7 @@ const options = {
 
 const specs = swaggerJSDoc(options);
 
-// Swagger UI konfiguratsiyasi (yaxshilangan)
+// Swagger UI konfiguratsiyasi (Heroku uchun yaxshilangan)
 const swaggerUiOptions = {
   explorer: true,
   customCss: '.swagger-ui .topbar { display: none }',
@@ -401,6 +405,13 @@ const swaggerUiOptions = {
           headers: req.headers,
           body: req.body
         });
+        
+        // CORS headers qo'shish
+        req.headers = req.headers || {};
+        req.headers['Access-Control-Allow-Origin'] = '*';
+        req.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH';
+        req.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin';
+        
         if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
           req.headers['Content-Type'] = 'application/json';
         }

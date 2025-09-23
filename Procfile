@@ -1,1 +1,1 @@
-web: node server.js
+web: NODE_ENV=production node heroku-deploy.js

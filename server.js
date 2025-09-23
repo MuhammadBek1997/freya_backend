@@ -34,16 +34,16 @@ const PORT = process.env.PORT || 5000;
 // Initialize Socket.io
 const io = initializeSocket(server);
 
-// Middleware - CSP sozlamalari Swagger UI uchun (yangilangan)
+// Middleware - CSP sozlamalari Swagger UI uchun (Heroku uchun yangilangan)
 app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-            imgSrc: ["'self'", "data:", "https:", "https://unpkg.com", "https://cdn.jsdelivr.net"],
-            connectSrc: ["'self'", "https://freya-backend-1.onrender.com", "https://*.onrender.com", "https://cdn.jsdelivr.net", "https://unpkg.com"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://*.herokuapp.com"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://*.herokuapp.com"],
+            imgSrc: ["'self'", "data:", "https:", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://*.herokuapp.com"],
+            connectSrc: ["'self'", "https://freya-backend-1.onrender.com", "https://*.onrender.com", "https://cdn.jsdelivr.net", "https://unpkg.com", "https://*.herokuapp.com", "https://freya-salon-backend-cc373ce6622a.herokuapp.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://*.herokuapp.com"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
             frameSrc: ["'none'"],
@@ -55,16 +55,39 @@ app.use(helmet({
 // CORS Proxy Middleware (birinchi)
 app.use(corsProxy);
 
-// CORS konfiguratsiyasi (Barcha originlarga ruxsat)
-app.use(cors({
-    origin: true, // Barcha originlarga ruxsat
+// CORS konfiguratsiyasi (Production va Development uchun)
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Production'da faqat ma'lum domainlarga ruxsat
+        if (process.env.NODE_ENV === 'production') {
+            const allowedOrigins = [
+                'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
+                'https://your-frontend-domain.com',
+                'https://*.herokuapp.com'
+            ];
+            
+            // Origin yo'q bo'lsa (masalan, Postman) yoki ruxsat etilgan origin bo'lsa
+            if (!origin || allowedOrigins.some(allowed => 
+                allowed.includes('*') ? origin.includes(allowed.replace('*', '')) : origin === allowed
+            )) {
+                callback(null, true);
+            } else {
+                callback(new Error('CORS policy tomonidan rad etildi'), false);
+            }
+        } else {
+            // Development'da barcha originlarga ruxsat
+            callback(null, true);
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
     credentials: true,
     exposedHeaders: ['Content-Length', 'X-Foo', 'X-Bar'],
     preflightContinue: false,
     optionsSuccessStatus: 200
-}));
+};
+
+app.use(cors(corsOptions));
 
 // OPTIONS handler for preflight requests (Barcha originlarga ruxsat)
 app.options('*', (req, res) => {
@@ -93,8 +116,27 @@ app.use(languageDetection);
 app.use(responseLocalization);
 app.use(setLanguageCookie);
 
-// Swagger UI middleware
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
+// Swagger UI middleware with enhanced CORS for Heroku
+app.use('/api-docs', (req, res, next) => {
+    // CORS headers for Swagger UI
+    const origin = req.headers.origin;
+    res.header('Access-Control-Allow-Origin', origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    
+    // CSP headers for Swagger UI
+    res.header('Content-Security-Policy', 
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://*.herokuapp.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://*.herokuapp.com; " +
+        "font-src 'self' https://fonts.gstatic.com https://unpkg.com https://cdn.jsdelivr.net https://*.herokuapp.com; " +
+        "img-src 'self' data: https: https://unpkg.com https://cdn.jsdelivr.net https://*.herokuapp.com; " +
+        "connect-src 'self' https://*.herokuapp.com https://freya-salon-backend-cc373ce6622a.herokuapp.com https://unpkg.com https://cdn.jsdelivr.net;"
+    );
+    
+    next();
+}, swaggerUi.serve, swaggerUi.setup(specs, swaggerUiOptions));
 
 
 
@@ -116,7 +158,7 @@ app.get('/api/swagger.json', (req, res) => {
 app.use('/api', (req, res, next) => {
     res.header('Content-Security-Policy', 
         "default-src 'self'; " +
-        "connect-src 'self' https://freya-backend-1.onrender.com https://*.onrender.com; " +
+        "connect-src 'self' https://freya-backend-1.onrender.com https://*.onrender.com https://*.herokuapp.com https://freya-salon-backend-cc373ce6622a.herokuapp.com; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data: https:;"
