@@ -16,7 +16,7 @@ const authMiddleware = {
       // Check if admin exists and is active
       const result = await query(
         'SELECT * FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
-        [decoded.adminId, decoded.role]
+        [decoded.id, decoded.role]
       );
 
       if (result.rows.length === 0) {
@@ -41,12 +41,16 @@ const authMiddleware = {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('verifyAdmin - Decoded token:', decoded);
       
       // Check if admin exists and is active
       const result = await query(
         'SELECT * FROM admins WHERE id = $1 AND role IN ($2, $3) AND is_active = true',
-        [decoded.adminId, 'admin', 'superadmin']
+        [decoded.id, 'admin', 'superadmin']
       );
+
+      console.log('verifyAdmin - Database query result:', result.rows.length);
+      console.log('verifyAdmin - Query params:', decoded.id, 'admin', 'superadmin');
 
       if (result.rows.length === 0) {
         return res.status(401).json({ message: 'Admin huquqi talab qilinadi' });
