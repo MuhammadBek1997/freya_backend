@@ -135,8 +135,48 @@ class EmployeeTranslationService {
                 },
                 'Barber': {
                     en: 'Barber',
-                    ru: 'Барбер',
-                    uz: 'Barber'
+                    ru: 'Парикмахер',
+                    uz: 'Sartarosh'
+                },
+                'Mutaxassis': {
+                    en: 'Specialist',
+                    ru: 'Специалист',
+                    uz: 'Mutaxassis'
+                },
+                'Ustoz': {
+                    en: 'Master',
+                    ru: 'Мастер',
+                    uz: 'Ustoz'
+                },
+                'Konsultant': {
+                    en: 'Consultant',
+                    ru: 'Консультант',
+                    uz: 'Konsultant'
+                },
+                'Terapeut': {
+                    en: 'Therapist',
+                    ru: 'Терапевт',
+                    uz: 'Terapeut'
+                },
+                'Estetik': {
+                    en: 'Aesthetician',
+                    ru: 'Эстетист',
+                    uz: 'Estetik'
+                },
+                'Nail Artist': {
+                    en: 'Nail Artist',
+                    ru: 'Нейл-мастер',
+                    uz: 'Tirnoq ustasi'
+                },
+                'Lash Master': {
+                    en: 'Lash Master',
+                    ru: 'Лэшмейкер',
+                    uz: 'Kiprik ustasi'
+                },
+                'Brow Master': {
+                    en: 'Brow Master',
+                    ru: 'Бровист',
+                    uz: 'Qosh ustasi'
                 }
             };
 

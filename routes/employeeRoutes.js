@@ -33,8 +33,9 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
  *         name: salonId
  *         required: true
  *         schema:
- *           type: integer
- *         description: Salon ID
+           type: string
+           format: uuid
+         description: Salon ID
  *       - $ref: '#/components/parameters/LanguageParam'
  *       - $ref: '#/components/parameters/AcceptLanguageHeader'
  *       - in: query
@@ -65,6 +66,13 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
  *         schema:
  *           type: string
  *         description: Qidiruv so'zi
+ *       - in: query
+ *         name: salonId
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID (ixtiyoriy filtrlash uchun)
  *     responses:
  *       200:
  *         description: Xodimlar ro'yxati

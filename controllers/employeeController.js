@@ -5,10 +5,10 @@ const employeeTranslationService = require('../services/employeeTranslationServi
 const getAllEmployees = async (req, res) => {
     try {
         console.log('🔍 getAllEmployees called with query:', req.query);
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 10, search = '', salonId = '' } = req.query;
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
-        console.log('📊 Parameters:', { page, limit, search, language, offset });
+        console.log('📊 Parameters:', { page, limit, search, salonId, language, offset });
 
         let query = `
             SELECT e.*, s.salon_name,
@@ -20,10 +20,20 @@ const getAllEmployees = async (req, res) => {
         `;
         
         const params = [];
+        const conditions = [];
         
         if (search) {
-            query += ` WHERE (e.name ILIKE $1 OR e.surname ILIKE $2 OR e.profession ILIKE $3)`;
+            conditions.push(`(e.name ILIKE $${params.length + 1} OR e.surname ILIKE $${params.length + 2} OR e.profession ILIKE $${params.length + 3})`);
             params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        
+        if (salonId) {
+            conditions.push(`e.salon_id = $${params.length + 1}`);
+            params.push(salonId);
+        }
+        
+        if (conditions.length > 0) {
+            query += ` WHERE ${conditions.join(' AND ')}`;
         }
         
         query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
@@ -121,10 +131,20 @@ const getAllEmployees = async (req, res) => {
         // Get total count
         let countQuery = `SELECT COUNT(*) as total FROM employees`;
         const countParams = [];
+        const countConditions = [];
         
         if (search) {
-            countQuery += ` WHERE (name ILIKE $1 OR surname ILIKE $2 OR profession ILIKE $3)`;
+            countConditions.push(`(name ILIKE $${countParams.length + 1} OR surname ILIKE $${countParams.length + 2} OR profession ILIKE $${countParams.length + 3})`);
             countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        }
+        
+        if (salonId) {
+            countConditions.push(`salon_id = $${countParams.length + 1}`);
+            countParams.push(salonId);
+        }
+        
+        if (countConditions.length > 0) {
+            countQuery += ` WHERE ${countConditions.join(' AND ')}`;
         }
         
         const totalResult = await pool.query(countQuery, countParams);
@@ -156,6 +176,15 @@ const getEmployeesBySalonId = async (req, res) => {
         const { page = 1, limit = 10, search = '' } = req.query;
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
+
+        // UUID formatini tekshirish
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(salonId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Noto\'g\'ri salon ID formati'
+            });
+        }
 
         // Check if salon exists
         const salonQuery = 'SELECT id FROM salons WHERE id = $1';
