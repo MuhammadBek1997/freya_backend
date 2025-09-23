@@ -18,15 +18,22 @@ const createSalon = async (req, res) => {
             salon_description,
             salon_types = [],
             private_salon = false,
+            is_private = false,
             work_schedule = [],
             salon_title,
             salon_additionals = [],
             sale_percent = 0,
             sale_limit = 0,
-            location,
+            location = { lat: 41, long: 64 },
             salon_orient,
             salon_photos = [],
-            salon_comfort = []
+            salon_comfort = [],
+            description_uz,
+            description_ru,
+            description_en,
+            address_uz,
+            address_ru,
+            address_en
         } = req.body;
 
         // Validate required fields
@@ -41,9 +48,11 @@ const createSalon = async (req, res) => {
             INSERT INTO salons (
                 salon_name, salon_phone, salon_add_phone, salon_instagram,
                 salon_rating, comments, salon_payment, salon_description, salon_types,
-                private_salon, work_schedule, salon_title, salon_additionals, sale_percent,
-                sale_limit, location, salon_orient, salon_photos, salon_comfort
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                private_salon, is_private, work_schedule, salon_title, salon_additionals, sale_percent,
+                sale_limit, location, salon_orient, salon_photos, salon_comfort,
+                description_uz, description_ru, description_en,
+                address_uz, address_ru, address_en
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
             RETURNING *
         `;
 
@@ -58,6 +67,7 @@ const createSalon = async (req, res) => {
             salon_description,
             JSON.stringify(salon_types),
             private_salon,
+            is_private,
             JSON.stringify(work_schedule),
             salon_title,
             JSON.stringify(salon_additionals),
@@ -66,7 +76,13 @@ const createSalon = async (req, res) => {
             JSON.stringify(location),
             JSON.stringify(salon_orient),
             JSON.stringify(salon_photos),
-            JSON.stringify(salon_comfort)
+            JSON.stringify(salon_comfort),
+            description_uz || salon_description || 'Salon haqida malumot',
+            description_ru || salon_description || 'Информация о салоне',
+            description_en || salon_description || 'Salon information',
+            address_uz || 'Toshkent shahri',
+            address_ru || 'Город Ташкент',
+            address_en || 'Tashkent city'
         ];
 
         console.log('Executing database query...');
@@ -199,8 +215,8 @@ const getAllSalons = async (req, res) => {
                     // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
                     translations[lang] = {
                         name: salon.salon_name,
-                        description: salon.salon_description,
-                        address: salon.address,
+                        description: salon[`description_${lang}`] || salon.salon_description || 'Salon haqida malumot',
+                        address: salon[`address_${lang}`] || 'Manzil',
                         salon_title: salon.salon_title,
                         salon_orient: salon.salon_orient
                     };
@@ -315,8 +331,8 @@ const getSalonById = async (req, res) => {
                 // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
                 translations[lang] = {
                     name: salon.salon_name,
-                    description: salon.salon_description,
-                    address: salon.address,
+                    description: salon[`description_${lang}`] || salon.salon_description || 'Salon haqida malumot',
+                    address: salon[`address_${lang}`] || 'Manzil',
                     salon_title: salon.salon_title,
                     salon_orient: salon.salon_orient
                 };

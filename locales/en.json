@@ -148,6 +148,10 @@
       "name": "Test Debug Salon",
       "description": "Bu debug uchun test salon",
       "salon_title": "Debug Test Salon"
+    },
+    "c93e64e9-1b9e-4742-8806-10ba46e6a28e": {
+      "name": "Test Private Salon",
+      "salon_title": null
     }
   },
   "common": {

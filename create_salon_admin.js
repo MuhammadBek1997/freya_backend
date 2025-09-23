@@ -9,7 +9,7 @@ const pool = new Pool({
 
 async function createSalonAdmin() {
     try {
-        const salonId = '8769c6df-a5f1-4e66-99e3-e4a915619187';
+        const salonId = 'b02f3c03-f063-4b03-b559-be2b0258f9df';
         
         console.log('🔧 Salon admin yaratish boshlandi...');
         console.log('Salon ID:', salonId);
@@ -23,7 +23,7 @@ async function createSalonAdmin() {
         }
 
         const salon = salonCheck.rows[0];
-        console.log('✅ Salon topildi:', salon.name);
+        console.log('✅ Salon topildi:', salon.salon_name);
 
         // Bu salon uchun admin mavjudligini tekshirish
         const adminCheck = await pool.query('SELECT * FROM admins WHERE salon_id = $1', [salonId]);
@@ -48,7 +48,7 @@ async function createSalonAdmin() {
         }
 
         // Yangi admin yaratish
-        const username = `salon_${salon.name.toLowerCase().replace(/\s+/g, '_')}_admin`;
+        const username = `salon_${salon.salon_name.toLowerCase().replace(/\s+/g, '_')}_admin`;
         const email = `admin_${salonId.substring(0, 8)}@freya.uz`;
         const password = `salon${salonId.substring(0, 8)}`;
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,7 +57,7 @@ async function createSalonAdmin() {
             INSERT INTO admins (username, email, password_hash, full_name, role, salon_id)
             VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
-        `, [username, email, hashedPassword, `${salon.name} Administrator`, 'admin', salonId]);
+        `, [username, email, hashedPassword, `${salon.salon_name} Administrator`, 'admin', salonId]);
 
         console.log('✅ Yangi admin yaratildi!');
         console.log('\n🔐 LOGIN MA\'LUMOTLARI:');
