@@ -15,6 +15,32 @@ const getAllEmployees = async (req, res) => {
                 error: 'salonId parameter is required'
             });
         }
+
+        // Salon is_personal ekanligini tekshirish
+        const salonCheckQuery = 'SELECT is_personal FROM salons WHERE id = $1';
+        const salonCheckResult = await pool.query(salonCheckQuery, [salonId]);
+        
+        if (salonCheckResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        // Agar salon is_personal bo'lsa, hodimlar ro'yxatini bo'sh qaytaramiz
+        if (salonCheckResult.rows[0].is_personal) {
+            return res.json({
+                success: true,
+                data: [],
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: 0,
+                    pages: 0
+                },
+                message: 'Bu shaxsiy salon - hodimlar mavjud emas'
+            });
+        }
         
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
@@ -196,14 +222,29 @@ const getEmployeesBySalonId = async (req, res) => {
             });
         }
 
-        // Check if salon exists
-        const salonQuery = 'SELECT id FROM salons WHERE id = $1';
+        // Check if salon exists and get is_personal status
+        const salonQuery = 'SELECT id, is_personal FROM salons WHERE id = $1';
         const salonResult = await pool.query(salonQuery, [salonId]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Salon topilmadi'
+            });
+        }
+
+        // Agar salon is_personal bo'lsa, hodimlar ro'yxatini bo'sh qaytaramiz
+        if (salonResult.rows[0].is_personal) {
+            return res.json({
+                success: true,
+                data: [],
+                pagination: {
+                    page: parseInt(page),
+                    limit: parseInt(limit),
+                    total: 0,
+                    pages: 0
+                },
+                message: 'Bu shaxsiy salon - hodimlar mavjud emas'
             });
         }
 
