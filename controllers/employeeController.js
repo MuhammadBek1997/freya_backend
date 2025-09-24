@@ -32,7 +32,7 @@ const getAllEmployees = async (req, res) => {
         console.log('📊 Parameters:', { page, limit, search, salonId, language, offset });
 
         let query = `
-            SELECT e.*, s.salon_name,
+            SELECT e.*, s.name as salon_name,
                    COUNT(c.id) as comment_count,
                    AVG(c.rating) as avg_rating
             FROM employees e
@@ -57,7 +57,7 @@ const getAllEmployees = async (req, res) => {
             query += ` WHERE ${conditions.join(' AND ')}`;
         }
         
-        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` GROUP BY e.id, s.name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
         console.log('🗃️ Executing query:', query);
