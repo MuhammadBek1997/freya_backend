@@ -8,6 +8,26 @@ const createSalon = async (req, res) => {
     console.log('CreateSalon function called with body:', req.body);
     try {
         const {
+            salon_name,
+            salon_phone,
+            salon_add_phone,
+            salon_instagram,
+            salon_rating = 0,
+            comments = [],
+            salon_payment = {},
+            salon_description,
+            salon_types,
+            private_salon = false,
+            work_schedule = [],
+            salon_title,
+            salon_additionals = [],
+            sale_percent = 0,
+            sale_limit = 0,
+            location,
+            salon_orient,
+            salon_photos = [],
+            salon_comfort,
+            // Legacy fields for backward compatibility
             name,
             phone,
             email,
@@ -16,16 +36,21 @@ const createSalon = async (req, res) => {
             working_hours = {}
         } = req.body;
 
+        // Use salon_name if provided, otherwise fallback to name
+        const salonName = salon_name || name;
+        const salonPhone = salon_phone || phone;
+        const salonDescription = salon_description || description;
+
         // Validate required fields
-        console.log('Validation check - name:', name, 'type:', typeof name);
-        if (!name || name.trim() === '') {
-            console.log('Validation failed - name is empty or undefined');
+        console.log('Validation check - salon_name:', salonName, 'type:', typeof salonName);
+        if (!salonName || salonName.trim() === '') {
+            console.log('Validation failed - salon_name is empty or undefined');
             return res.status(400).json({
                 success: false,
-                message: 'Salon nomi majburiy'
+                message: 'Salon nomi (salon_name) majburiy'
             });
         }
-        console.log('Validation passed - name is valid');
+        console.log('Validation passed - salon_name is valid');
 
         // Default qiymatlar
         const defaultSalonTypes = [
@@ -60,16 +85,16 @@ const createSalon = async (req, res) => {
         `;
 
         const values = [
-            name,
-            phone,
-            email,
-            description,
-            address,
+            salonName,
+            salonPhone || null,
+            email || null,
+            salonDescription || null,
+            address || null,
             JSON.stringify(working_hours),
-            JSON.stringify(defaultSalonTypes),
-            JSON.stringify(defaultLocation),
-            JSON.stringify(defaultSalonOrient),
-            JSON.stringify(defaultSalonComfort)
+            JSON.stringify(salon_types || defaultSalonTypes),
+            JSON.stringify(location || defaultLocation),
+            JSON.stringify(salon_orient || defaultSalonOrient),
+            JSON.stringify(salon_comfort || defaultSalonComfort)
         ];
 
         console.log('Executing database query...');
