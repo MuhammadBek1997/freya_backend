@@ -24,7 +24,7 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
 
 /**
  * @swagger
- * /api/salons/{salonId}/employees:
+ * /api/employees/salon/{salonId}:
  *   get:
  *     summary: Salon bo'yicha xodimlarni olish
  *     tags: [Employees]
@@ -59,7 +59,7 @@ const { checkPrivateSalon } = require('../middleware/privateSalonMiddleware');
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.get('/salons/:salonId/employees', checkPrivateSalon, getEmployeesBySalonId);
+router.get('/employees/salon/:salonId', checkPrivateSalon, getEmployeesBySalonId);
 
 /**
  * @swagger
