@@ -308,52 +308,219 @@ const swaggerDefinition = {
           id: {
             type: 'string',
             format: 'uuid',
-            description: 'Xodim ID si'
+            description: 'Xodim ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
           },
           salon_id: {
             type: 'string',
             format: 'uuid',
-            description: 'Salon ID si'
+            description: 'Salon ID si',
+            example: '987fcdeb-51a2-43d1-9f12-123456789abc'
           },
           name: {
             type: 'string',
-            description: 'Xodim ismi'
+            description: 'Xodim ismi',
+            example: 'Aziza Karimova'
           },
           position: {
             type: 'string',
-            description: 'Lavozimi'
+            description: 'Lavozimi',
+            example: 'Sartarosh'
           },
           phone: {
             type: 'string',
-            description: 'Telefon raqami'
+            description: 'Telefon raqami',
+            example: '+998901234567'
           },
           email: {
             type: 'string',
             format: 'email',
-            description: 'Email manzili'
+            description: 'Email manzili',
+            example: 'aziza@salon.com'
           },
           specialization: {
             type: 'array',
             items: {
               type: 'string'
             },
-            description: 'Mutaxassisligi'
+            description: 'Mutaxassisligi',
+            example: ['Soch kesish', 'Soch bo\'yash', 'Manikur']
           },
           rating: {
             type: 'number',
             format: 'float',
             minimum: 0,
             maximum: 5,
-            description: 'Reyting'
+            description: 'Reyting',
+            example: 4.5
           },
           is_active: {
             type: 'boolean',
-            description: 'Faol holati'
+            description: 'Faol holati',
+            example: true
+          },
+          is_waiting: {
+            type: 'boolean',
+            description: 'Kutish holati',
+            example: false
+          },
+          avatar_url: {
+            type: 'string',
+            format: 'uri',
+            description: 'Avatar rasm URL manzili',
+            example: 'https://example.com/avatar.jpg'
+          },
+          bio: {
+            type: 'string',
+            description: 'Qisqacha ma\'lumot',
+            example: 'Professional sartarosh, 5 yillik tajriba'
+          },
+          work_schedule: {
+            type: 'object',
+            description: 'Ish jadvali',
+            example: {
+              monday: '09:00-18:00',
+              tuesday: '09:00-18:00',
+              wednesday: '09:00-18:00',
+              thursday: '09:00-18:00',
+              friday: '09:00-18:00',
+              saturday: '10:00-16:00',
+              sunday: 'off'
+            }
+          },
+          services: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid'
+                },
+                name: {
+                  type: 'string'
+                },
+                price: {
+                  type: 'number',
+                  format: 'float'
+                },
+                duration: {
+                  type: 'integer',
+                  description: 'Davomiyligi (daqiqalarda)'
+                }
+              }
+            },
+            description: 'Xodim xizmatlari'
+          },
+          comments: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid'
+                },
+                comment: {
+                  type: 'string'
+                },
+                rating: {
+                  type: 'number',
+                  format: 'float',
+                  minimum: 1,
+                  maximum: 5
+                },
+                created_at: {
+                  type: 'string',
+                  format: 'date-time'
+                }
+              }
+            },
+            description: 'Xodim haqidagi izohlar'
+          },
+          posts: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: {
+                  type: 'string',
+                  format: 'uuid'
+                },
+                title: {
+                  type: 'string'
+                },
+                content: {
+                  type: 'string'
+                },
+                image_url: {
+                  type: 'string',
+                  format: 'uri'
+                },
+                created_at: {
+                  type: 'string',
+                  format: 'date-time'
+                }
+              }
+            },
+            description: 'Xodim postlari'
+          },
+          name_uz: {
+            type: 'string',
+            description: 'Xodim ismi (o\'zbek tilida)',
+            example: 'Aziza Karimova'
+          },
+          name_en: {
+            type: 'string',
+            description: 'Xodim ismi (ingliz tilida)',
+            example: 'Aziza Karimova'
+          },
+          name_ru: {
+            type: 'string',
+            description: 'Xodim ismi (rus tilida)',
+            example: 'Азиза Каримова'
+          },
+          position_uz: {
+            type: 'string',
+            description: 'Lavozimi (o\'zbek tilida)',
+            example: 'Sartarosh'
+          },
+          position_en: {
+            type: 'string',
+            description: 'Lavozimi (ingliz tilida)',
+            example: 'Hairdresser'
+          },
+          position_ru: {
+            type: 'string',
+            description: 'Lavozimi (rus tilida)',
+            example: 'Парикмахер'
+          },
+          bio_uz: {
+            type: 'string',
+            description: 'Qisqacha ma\'lumot (o\'zbek tilida)',
+            example: 'Professional sartarosh, 5 yillik tajriba'
+          },
+          bio_en: {
+            type: 'string',
+            description: 'Qisqacha ma\'lumot (ingliz tilida)',
+            example: 'Professional hairdresser with 5 years experience'
+          },
+          bio_ru: {
+            type: 'string',
+            description: 'Qisqacha ma\'lumot (rus tilida)',
+            example: 'Профессиональный парикмахер с 5-летним опытом'
           },
           created_at: {
             type: 'string',
             format: 'date-time',
-            description: 'Yaratilgan vaqt'
+            description: 'Yaratilgan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
           }
         },
         required: ['id', 'salon_id', 'name', 'position']
