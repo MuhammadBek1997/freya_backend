@@ -69,6 +69,11 @@ async function initializeTables() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Employees table
+    await pool.query(`CREATE TABLE IF NOT EXISTS employees (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
       phone VARCHAR(20),
       email VARCHAR(255),
       position VARCHAR(255),
