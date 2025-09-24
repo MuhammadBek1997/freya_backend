@@ -519,6 +519,8 @@ const createEmployee = async (req, res) => {
         const employeeId = result.rows[0].id;
         
         // Employee ma'lumotlarini barcha tillarga tarjima qilish va saqlash
+        // Vaqtincha o'chirildi - username ustuni muammosi tufayli
+        /*
         try {
             await employeeTranslationService.translateAndStoreEmployee({
                 name,
@@ -532,6 +534,7 @@ const createEmployee = async (req, res) => {
             console.error('Employee translation error:', translationError);
             // Tarjima xatosi bo'lsa ham employee yaratilganini qaytaramiz
         }
+        */
         
         res.status(201).json({
             success: true,
