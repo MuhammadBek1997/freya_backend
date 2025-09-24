@@ -7,24 +7,17 @@ const getAllEmployees = async (req, res) => {
         console.log('🔍 getAllEmployees called with query:', req.query);
         const { page = 1, limit = 10, search = '', salonId } = req.query;
         
-        // salonId majburiy parametr
-        if (!salonId) {
-            return res.status(400).json({
-                success: false,
-                message: 'salonId parametri majburiy',
-                error: 'salonId parameter is required'
-            });
-        }
-
-        // Salon mavjudligini tekshirish
-        const salonCheckQuery = 'SELECT id FROM salons WHERE id = $1';
-        const salonCheckResult = await pool.query(salonCheckQuery, [salonId]);
-        
-        if (salonCheckResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Salon topilmadi'
-            });
+        // Agar salonId berilgan bo'lsa, salon mavjudligini tekshirish
+        if (salonId) {
+            const salonCheckQuery = 'SELECT id FROM salons WHERE id = $1';
+            const salonCheckResult = await pool.query(salonCheckQuery, [salonId]);
+            
+            if (salonCheckResult.rows.length === 0) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Salon topilmadi'
+                });
+            }
         }
         
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
