@@ -425,7 +425,7 @@ const getEmployeeById = async (req, res) => {
         
         // Get comments
         const commentsQuery = `
-            SELECT c.*, u.username, u.full_name
+            SELECT c.*, u.full_name
             FROM employee_comments c
             LEFT JOIN users u ON c.user_id = u.id
             WHERE c.employee_id = $1
@@ -477,12 +477,9 @@ const createEmployee = async (req, res) => {
         const {
             salon_id,
             name,
-            surname,
             phone,
             email,
-            profession,
-            username,
-            password
+            position
         } = req.body;
         
         // Check if salon exists
@@ -496,27 +493,27 @@ const createEmployee = async (req, res) => {
             });
         }
         
-        // Check if username or email already exists
+        // Check if phone or email already exists
         const existingEmployee = await pool.query(
-            'SELECT id FROM employees WHERE username = $1 OR email = $2',
-            [username, email]
+            'SELECT id FROM employees WHERE phone = $1 OR email = $2',
+            [phone, email]
         );
         
         if (existingEmployee.rows.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Username yoki email allaqachon mavjud'
+                message: 'Telefon raqam yoki email allaqachon mavjud'
             });
         }
         
         const query = `
-            INSERT INTO employees (salon_id, name, surname, phone, email, profession, username, password, is_waiting)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO employees (salon_id, name, phone, email, position, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING id
         `;
         
         const result = await pool.query(query, [
-            salon_id, name, surname, phone, email, profession, username, password, true
+            salon_id, name, phone, email, position, true
         ]);
         
         const employeeId = result.rows[0].id;
@@ -525,10 +522,10 @@ const createEmployee = async (req, res) => {
         try {
             await employeeTranslationService.translateAndStoreEmployee({
                 name,
-                surname,
-                profession,
+                surname: '', // Default surname
+                profession: position,
                 bio: '', // Default bio
-                position: profession
+                position: position
             }, employeeId);
             console.log('Employee translations stored successfully');
         } catch (translationError) {
@@ -543,11 +540,9 @@ const createEmployee = async (req, res) => {
                 id: employeeId,
                 salon_id,
                 name,
-                surname,
                 phone,
                 email,
-                profession,
-                username
+                position
             }
         });
     } catch (error) {
@@ -568,8 +563,7 @@ const updateEmployee = async (req, res) => {
             surname,
             phone,
             email,
-            profession,
-            username
+            profession
         } = req.body;
         
         // Check if employee exists
@@ -581,26 +575,26 @@ const updateEmployee = async (req, res) => {
             });
         }
         
-        // Check if username or email already exists for other employees
+        // Check if email already exists for other employees
         const duplicateCheck = await pool.query(
-            'SELECT id FROM employees WHERE (username = $1 OR email = $2) AND id != $3',
-            [username, email, id]
+            'SELECT id FROM employees WHERE email = $1 AND id != $2',
+            [email, id]
         );
         
         if (duplicateCheck.rows.length > 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Username yoki email allaqachon mavjud'
+                message: 'Email allaqachon mavjud'
             });
         }
         
         const query = `
             UPDATE employees 
-            SET name = $1, surname = $2, phone = $3, email = $4, profession = $5, username = $6
-            WHERE id = $7
+            SET name = $1, phone = $2, email = $3, position = $4
+            WHERE id = $5
         `;
         
-        await pool.query(query, [name, surname, phone, email, profession, username, id]);
+        await pool.query(query, [name, phone, email, profession, id]);
         
         res.json({
             success: true,

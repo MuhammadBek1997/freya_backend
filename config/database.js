@@ -24,74 +24,30 @@ pool.connect((err, client, release) => {
 // Initialize database tables
 async function initializeTables() {
   try {
-    // Users table
-    await pool.query(`CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      phone VARCHAR(20) UNIQUE NOT NULL,
-      email VARCHAR(100) UNIQUE,
-      password_hash VARCHAR(255) NOT NULL,
-      full_name VARCHAR(100),
-      first_name VARCHAR(50),
-      last_name VARCHAR(50),
-      username VARCHAR(50) UNIQUE,
-      registration_step INTEGER DEFAULT 1,
-      verification_code VARCHAR(10),
-      verification_expires_at TIMESTAMP,
-      is_verified BOOLEAN DEFAULT false,
-      is_active BOOLEAN DEFAULT true,
-      phone_verified BOOLEAN DEFAULT false,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    // Employees table
-    await pool.query(`CREATE TABLE IF NOT EXISTS employees (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      name VARCHAR(255) NOT NULL,
-      phone VARCHAR(20) UNIQUE,
-      email VARCHAR(255),
-      position VARCHAR(255),
-      salon_id UUID,
-      is_active BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
-
-    // User chats table
-    await pool.query(`CREATE TABLE IF NOT EXISTS user_chats (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      sender_id UUID NOT NULL,
-      sender_type VARCHAR(20) NOT NULL,
-      receiver_id UUID NOT NULL,
-      receiver_type VARCHAR(20) NOT NULL,
-      message_text TEXT NOT NULL,
-      message_type VARCHAR(20) DEFAULT 'text',
-      is_read BOOLEAN DEFAULT FALSE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )`);
+    // Enable UUID extension
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 
     // Salons table
     await pool.query(`CREATE TABLE IF NOT EXISTS salons (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      salon_logo VARCHAR(255),
-      salon_name VARCHAR(200) NOT NULL,
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      salon_name VARCHAR(255) NOT NULL,
       salon_phone VARCHAR(20),
       salon_add_phone VARCHAR(20),
       salon_instagram VARCHAR(100),
       salon_rating DECIMAL(3,2) DEFAULT 0,
       comments JSONB DEFAULT '[]',
-      salon_payment JSONB,
+      salon_payment JSONB DEFAULT '[]',
       salon_description TEXT,
       salon_types JSONB DEFAULT '[]',
       private_salon BOOLEAN DEFAULT false,
+      is_private BOOLEAN DEFAULT false,
       work_schedule JSONB DEFAULT '[]',
-      salon_title VARCHAR(200),
+      salon_title VARCHAR(255),
       salon_additionals JSONB DEFAULT '[]',
       sale_percent INTEGER DEFAULT 0,
       sale_limit INTEGER DEFAULT 0,
-      location JSONB,
-      salon_orient JSONB,
+      location JSONB DEFAULT '{"lat": 41, "long": 64}',
+      salon_orient VARCHAR(255),
       salon_photos JSONB DEFAULT '[]',
       salon_comfort JSONB DEFAULT '[]',
       is_active BOOLEAN DEFAULT true,
@@ -99,40 +55,46 @@ async function initializeTables() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
+    // Admins table
+    await pool.query(`CREATE TABLE IF NOT EXISTS admins (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
+      username VARCHAR(100) UNIQUE NOT NULL,
+      password VARCHAR(255) NOT NULL,
+      full_name VARCHAR(255) NOT NULL,
+      phone VARCHAR(20),
+      email VARCHAR(100),
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+      phone VARCHAR(20),
+      email VARCHAR(255),
+      position VARCHAR(255),
+      is_waiting BOOLEAN DEFAULT false,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     // Schedules table
     await pool.query(`CREATE TABLE IF NOT EXISTS schedules (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      employee_id UUID NOT NULL,
-      salon_id UUID NOT NULL,
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+      salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
       date DATE NOT NULL,
       start_time TIME NOT NULL,
       end_time TIME NOT NULL,
-      is_available BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (employee_id) REFERENCES employees(id),
-      FOREIGN KEY (salon_id) REFERENCES salons(id)
-    )`);
-
-    // Messages table
-    await pool.query(`CREATE TABLE IF NOT EXISTS messages (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      sender_id UUID NOT NULL,
-      sender_type VARCHAR(20) NOT NULL,
-      receiver_id UUID NOT NULL,
-      receiver_type VARCHAR(20) NOT NULL,
-      content TEXT NOT NULL,
-      message_type VARCHAR(20) DEFAULT 'text',
-      file_url TEXT,
-      is_read BOOLEAN DEFAULT FALSE,
+      is_available BOOLEAN DEFAULT true,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
 
     // Salon translations table
     await pool.query(`CREATE TABLE IF NOT EXISTS salon_translations (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      salon_id UUID NOT NULL,
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
       language VARCHAR(5) NOT NULL,
       name VARCHAR(255),
       description TEXT,
@@ -141,8 +103,19 @@ async function initializeTables() {
       salon_orient VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (salon_id) REFERENCES salons(id) ON DELETE CASCADE,
       UNIQUE(salon_id, language)
+    )`);
+
+    // Employee translations table
+    await pool.query(`CREATE TABLE IF NOT EXISTS employee_translations (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
+      language VARCHAR(5) NOT NULL,
+      name VARCHAR(255),
+      position VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(employee_id, language)
     )`);
 
     console.log('Database tables initialized');

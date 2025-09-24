@@ -187,20 +187,20 @@ const createAdmin = async (req, res) => {
 // Employee login
 const employeeLogin = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { email, password } = req.body;
 
-        if (!username || !password) {
-            return res.status(400).json({ message: 'Username va password talab qilinadi' });
+        if (!email || !password) {
+            return res.status(400).json({ message: 'Email va password talab qilinadi' });
         }
 
         // Employee ni database dan topish
         const result = await pool.query(
-            'SELECT * FROM employees WHERE username = $1 AND is_active = true',
-            [username]
+            'SELECT * FROM employees WHERE email = $1 AND is_active = true',
+            [email]
         );
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
+            return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 
         const employee = result.rows[0];
@@ -208,13 +208,13 @@ const employeeLogin = async (req, res) => {
         // Password tekshirish
         const isValidPassword = await bcrypt.compare(password, employee.password);
         if (!isValidPassword) {
-            return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
+            return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 
         // Token yaratish
         const token = generateToken({
             id: employee.id,
-            username: employee.username,
+            email: employee.email,
             role: 'employee',
             salon_id: employee.salon_id
         });
@@ -224,7 +224,6 @@ const employeeLogin = async (req, res) => {
             token,
             user: {
                 id: employee.id,
-                username: employee.username,
                 email: employee.email,
                 name: employee.name,
                 surname: employee.surname,

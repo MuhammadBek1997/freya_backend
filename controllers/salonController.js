@@ -511,7 +511,7 @@ const getSalonComments = async (req, res) => {
         const offset = (page - 1) * limit;
         
         const query = `
-            SELECT sc.*, u.username, u.full_name
+            SELECT sc.*, u.full_name
             FROM salon_comments sc
             LEFT JOIN users u ON sc.user_id = u.id
             WHERE sc.salon_id = $1
