@@ -337,6 +337,10 @@ const updateSalon = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
+        
+        console.log('Update data received:', JSON.stringify(updateData, null, 2));
+        console.log('salon_types type:', typeof updateData.salon_types);
+        console.log('salon_types value:', updateData.salon_types);
 
         // Remove id and timestamps from update data
         delete updateData.id;
