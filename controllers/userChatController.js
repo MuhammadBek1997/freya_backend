@@ -105,8 +105,8 @@ const getConversations = async (req, res) => {
                WHEN lm.other_user_type = 'admin' THEN a.full_name
              END as other_user_name,
              CASE 
-               WHEN lm.other_user_type = 'user' THEN u.avatar_url
-               WHEN lm.other_user_type = 'employee' THEN e.avatar_url
+               WHEN lm.other_user_type = 'user' THEN NULL
+               WHEN lm.other_user_type = 'employee' THEN NULL
                WHEN lm.other_user_type = 'admin' THEN NULL
              END as other_user_avatar,
              COALESCE(uc.unread_count, 0) as unread_count
@@ -153,8 +153,8 @@ const getConversationWithEmployee = async (req, res) => {
                WHEN m.sender_type = 'admin' THEN a.full_name
              END as sender_name,
              CASE 
-               WHEN m.sender_type = 'user' THEN u.avatar_url
-               WHEN m.sender_type = 'employee' THEN e.avatar_url
+               WHEN m.sender_type = 'user' THEN NULL
+               WHEN m.sender_type = 'employee' THEN NULL
                WHEN m.sender_type = 'admin' THEN NULL
              END as sender_avatar
       FROM messages m

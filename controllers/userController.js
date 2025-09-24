@@ -212,7 +212,7 @@ const verifyPhone = async (req, res) => {
 // 2-bosqich: Ism va familiya qo'shish
 const registerStep2 = async (req, res) => {
     try {
-        const { phone, firstName, lastName, location } = req.body;
+        const { phone, firstName, lastName } = req.body;
 
         if (!phone || !firstName || !lastName) {
             return res.status(400).json({
@@ -252,10 +252,10 @@ const registerStep2 = async (req, res) => {
         const updateResult = await pool.query(
             `UPDATE users 
              SET first_name = $1, last_name = $2, full_name = $3, username = $4, 
-                 location = $5, registration_step = 2, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $6
-             RETURNING id, phone, email, first_name, last_name, full_name, username, location, registration_step`,
-            [firstName, lastName, `${firstName} ${lastName}`, username, location, user.id]
+                 registration_step = 2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $5
+             RETURNING id, phone, email, first_name, last_name, full_name, username, registration_step`,
+            [firstName, lastName, `${firstName} ${lastName}`, username, user.id]
         );
 
         const updatedUser = updateResult.rows[0];
@@ -283,7 +283,6 @@ const registerStep2 = async (req, res) => {
                     lastName: updatedUser.last_name,
                     fullName: updatedUser.full_name,
                     username: updatedUser.username,
-                    location: updatedUser.location,
                     registrationStep: updatedUser.registration_step
                 },
                 token: token

@@ -1,5 +1,6 @@
 const { pool } = require('../config/database');
 const employeeTranslationService = require('../services/employeeTranslationService');
+const bcrypt = require('bcrypt');
 
 // Get all employees
 const getAllEmployees = async (req, res) => {
@@ -25,7 +26,7 @@ const getAllEmployees = async (req, res) => {
         console.log('📊 Parameters:', { page, limit, search, salonId, language, offset });
 
         let query = `
-            SELECT e.*, s.name as salon_name,
+            SELECT e.*, s.salon_name as salon_name,
                    COUNT(c.id) as comment_count,
                    AVG(c.rating) as avg_rating
             FROM employees e
@@ -50,7 +51,7 @@ const getAllEmployees = async (req, res) => {
             query += ` WHERE ${conditions.join(' AND ')}`;
         }
         
-        query += ` GROUP BY e.id, s.name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
         console.log('🗃️ Executing query:', query);
@@ -437,12 +438,21 @@ const getEmployeeById = async (req, res) => {
 // Create new employee
 const createEmployee = async (req, res) => {
     try {
+        console.log('=== CREATE EMPLOYEE FUNCTION CALLED ===');
+        console.log('Request method:', req.method);
+        console.log('Request URL:', req.url);
+        console.log('Request headers:', req.headers);
+        console.log('Request body:', req.body);
+        console.log('Request body type:', typeof req.body);
+        console.log('Request body keys:', Object.keys(req.body || {}));
+        
         const {
             salon_id,
-            name,
-            phone,
-            email,
-            position
+            employee_name: name,
+            employee_phone: phone,
+            employee_email: email,
+            position,
+            employee_password: password
         } = req.body;
         
         // Check if salon exists
@@ -469,14 +479,18 @@ const createEmployee = async (req, res) => {
             });
         }
         
+        // Password ni hash qilish
+        console.log('Password value:', password, 'Type:', typeof password);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
         const query = `
-            INSERT INTO employees (salon_id, name, phone, email, position, is_active)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO employees (salon_id, name, phone, email, position, employee_password, is_active)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         `;
         
         const result = await pool.query(query, [
-            salon_id, name, phone, email, position, true
+            salon_id, name, phone, email, position, hashedPassword, true
         ]);
         
         const employeeId = result.rows[0].id;

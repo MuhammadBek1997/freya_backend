@@ -19,32 +19,6 @@ const swaggerDefinition = {
     }
   ],
   components: {
-    parameters: {
-      LanguageParam: {
-        name: 'lng',
-        in: 'query',
-        description: 'Til kodi (en, uz, ru)',
-        required: false,
-        schema: {
-          type: 'string',
-          enum: ['en', 'uz', 'ru'],
-          default: 'ru'
-        },
-        example: 'ru'
-      },
-      AcceptLanguageHeader: {
-        name: 'Accept-Language',
-        in: 'header',
-        description: 'Til kodi header orqali (en, uz, ru)',
-        required: false,
-        schema: {
-          type: 'string',
-          enum: ['en', 'uz', 'ru'],
-          default: 'ru'
-        },
-        example: 'ru'
-      }
-    },
     securitySchemes: {
       bearerAuth: {
         type: 'http',

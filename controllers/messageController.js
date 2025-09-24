@@ -79,22 +79,24 @@ const { pool } = require('../config/database');
  */
 const sendMessage = async (req, res) => {
   try {
-    const { receiver_id, receiver_type, message_text, message_type = 'text', file_url } = req.body;
+    const { receiver_id, receiver_type, content, message_type = 'text', file_url } = req.body;
     const sender_id = req.user.id;
     const sender_type = req.user.role === 'superadmin' || req.user.role === 'admin' ? 'admin' : 'employee';
 
-    if (!receiver_id || !receiver_type || !message_text) {
+    console.log('sendMessage debug:', { receiver_id, receiver_type, content, sender_id, sender_type });
+
+    if (!receiver_id || !receiver_type || !content) {
       return res.status(400).json({ message: 'Barcha majburiy maydonlarni to\'ldiring' });
     }
 
     const query = `
-      INSERT INTO messages (sender_id, sender_type, receiver_id, receiver_type, message_text, message_type, file_url)
+      INSERT INTO messages (sender_id, sender_type, receiver_id, receiver_type, content, message_type, file_url)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
 
     const result = await pool.query(query, [
-      sender_id, sender_type, receiver_id, receiver_type, message_text, message_type, file_url
+      sender_id, sender_type, receiver_id, receiver_type, content, message_type, file_url
     ]);
 
     res.status(201).json({
@@ -238,12 +240,12 @@ const getConversations = async (req, res) => {
       SELECT lm.*,
              CASE 
                WHEN lm.other_user_type = 'user' THEN u.full_name
-               WHEN lm.other_user_type = 'employee' THEN CONCAT(e.name, ' ', e.surname)
+               WHEN lm.other_user_type = 'employee' THEN e.name
                WHEN lm.other_user_type = 'admin' THEN a.full_name
              END as other_user_name,
              CASE 
-               WHEN lm.other_user_type = 'user' THEN u.avatar_url
-               WHEN lm.other_user_type = 'employee' THEN e.avatar_url
+          WHEN lm.other_user_type = 'user' THEN NULL
+          WHEN lm.other_user_type = 'employee' THEN NULL
                WHEN lm.other_user_type = 'admin' THEN NULL
              END as other_user_avatar
       FROM latest_messages lm

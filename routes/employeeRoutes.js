@@ -211,7 +211,14 @@ router.get('/employees/:id', getEmployeeById);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/employees', verifyAdmin, createEmployee);
+// Test route
+router.post('/employees/test', (req, res) => {
+    console.log('TEST ROUTE CALLED');
+    console.log('Request body:', req.body);
+    res.json({ success: true, message: 'Test route works' });
+});
+
+router.post('/employees', createEmployee); // Vaqtincha ochiq
 
 /**
  * @swagger

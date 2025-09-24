@@ -14,8 +14,8 @@ const superadminLogin = async (req, res) => {
         // Superadmin ni database dan topish
         console.log('Login attempt:', { username, password });
         const result = await pool.query(
-            'SELECT * FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
-            [username, 'superadmin']
+            'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
+            [username]
         );
         console.log('Database result:', result.rows);
 
@@ -26,7 +26,7 @@ const superadminLogin = async (req, res) => {
         const superadmin = result.rows[0];
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, superadmin.password_hash);
+        const isValidPassword = await bcrypt.compare(password, superadmin.password);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
@@ -35,7 +35,7 @@ const superadminLogin = async (req, res) => {
         const token = generateToken({
             id: superadmin.id,
             username: superadmin.username,
-            role: superadmin.role
+            role: 'superadmin'
         });
 
         res.json({
@@ -46,7 +46,7 @@ const superadminLogin = async (req, res) => {
                 username: superadmin.username,
                 email: superadmin.email,
                 full_name: superadmin.full_name,
-                role: superadmin.role
+                role: 'superadmin'
             }
         });
 
@@ -75,8 +75,8 @@ const adminLogin = async (req, res) => {
 
         // Admin ni database dan topish
         const result = await pool.query(
-            'SELECT * FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
-            [username, 'admin']
+            'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
+            [username]
         );
 
         if (result.rows.length === 0) {
@@ -86,7 +86,7 @@ const adminLogin = async (req, res) => {
         const admin = result.rows[0];
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, admin.password_hash);
+        const isValidPassword = await bcrypt.compare(password, admin.password);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
@@ -95,7 +95,7 @@ const adminLogin = async (req, res) => {
         const token = generateToken({
             id: admin.id,
             username: admin.username,
-            role: admin.role
+            role: 'admin'
         });
 
         res.json({
@@ -106,7 +106,8 @@ const adminLogin = async (req, res) => {
                 username: admin.username,
                 email: admin.email,
                 full_name: admin.full_name,
-                role: admin.role
+                role: 'admin',
+                salon_id: admin.salon_id
             }
         });
 
@@ -166,9 +167,9 @@ const createAdmin = async (req, res) => {
 
         // Create admin
         const result = await pool.query(
-            `INSERT INTO admins (username, email, password_hash, full_name, role, salon_id)
-             VALUES ($1, $2, $3, $4, 'admin', $5)
-             RETURNING id, username, email, full_name, role, salon_id, created_at`,
+            `INSERT INTO admins (username, email, password, full_name, salon_id)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id, username, email, full_name, salon_id, created_at`,
             [username, email, hashedPassword, full_name, salon_id]
         );
 
@@ -194,10 +195,10 @@ const employeeLogin = async (req, res) => {
             return res.status(400).json({ message: 'Email va password talab qilinadi' });
         }
 
-        // Employee ni database dan topish (employee_phone maydonini email sifatida ishlatamiz)
-        console.log('📞 Searching employee with phone:', email);
+        // Employee ni database dan topish
+        console.log('📧 Searching employee with email:', email);
         const result = await pool.query(
-            'SELECT * FROM employees WHERE employee_phone = $1 AND is_active = true',
+            'SELECT * FROM employees WHERE email = $1 AND is_active = true',
             [email]
         );
         console.log('📊 Query result:', result.rows.length, 'employees found');
@@ -208,7 +209,7 @@ const employeeLogin = async (req, res) => {
         }
 
         const employee = result.rows[0];
-        console.log('👤 Employee found:', { id: employee.id, name: employee.employee_name });
+        console.log('👤 Employee found:', { id: employee.id, name: employee.name || employee.employee_name });
 
         // Password tekshirish
         console.log('🔐 Checking password...');
@@ -223,7 +224,7 @@ const employeeLogin = async (req, res) => {
         // Token yaratish
         const token = generateToken({
             id: employee.id,
-            email: employee.employee_phone,
+            email: employee.email,
             role: 'employee',
             salon_id: employee.salon_id
         });
@@ -233,9 +234,9 @@ const employeeLogin = async (req, res) => {
             token,
             user: {
                 id: employee.id,
-                email: employee.employee_phone,
-                name: employee.employee_name,
-                surname: employee.employee_name, // surname yo'q, shuning uchun name ishlatamiz
+                email: employee.email,
+                name: employee.name || employee.employee_name,
+                surname: employee.name || employee.employee_name, // surname yo'q, shuning uchun name ishlatamiz
                 role: 'employee',
                 salon_id: employee.salon_id
             }

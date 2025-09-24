@@ -15,8 +15,8 @@ const authMiddleware = {
       
       // Check if admin exists and is active
       const result = await query(
-        'SELECT * FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
-        [decoded.id, decoded.role]
+        'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+        [decoded.id]
       );
 
       if (result.rows.length === 0) {
@@ -45,8 +45,8 @@ const authMiddleware = {
       
       // Check if admin exists and is active
       const result = await query(
-        'SELECT * FROM admins WHERE id = $1 AND role IN ($2, $3) AND is_active = true',
-        [decoded.id, 'admin', 'superadmin']
+        'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+        [decoded.id]
       );
 
       console.log('verifyAdmin - Database query result:', result.rows.length);
@@ -115,6 +115,8 @@ const authMiddleware = {
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
+      console.log('Received token:', token.substring(0, 50) + '...');
+      console.log('JWT_SECRET:', process.env.JWT_SECRET);
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Decoded token:', decoded);
       
@@ -124,17 +126,17 @@ const authMiddleware = {
       if (decoded.role === 'employee') {
         console.log('Checking employee with ID:', decoded.id);
         const result = await query(
-          'SELECT * FROM employees WHERE id = $1 AND is_active = true',
+          'SELECT id, employee_name, employee_phone, employee_password, salon_id, position, name, is_active, created_at, updated_at FROM employees WHERE id = $1 AND is_active = true',
           [decoded.id]
         );
         console.log('Employee query result:', result.rows.length);
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'employee' };
-          console.log('Employee found:', user.name);
+          console.log('Employee found:', user.name || user.employee_name);
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
         const result = await query(
-      'SELECT * FROM admins WHERE id = $1 AND is_active = true',
+      'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
       [decoded.id]
     );
         if (result.rows.length > 0) {
@@ -142,12 +144,16 @@ const authMiddleware = {
         }
       } else {
         // Default to user table
+        const userId = decoded.userId || decoded.id;
+        console.log('Checking user with ID:', userId);
         const result = await query(
-      'SELECT * FROM users WHERE id = $1 AND is_active = true',
-      [decoded.id]
+      'SELECT id, phone, email, password_hash, first_name, last_name, full_name, username, registration_step, phone_verified, is_active, created_at, updated_at FROM users WHERE id = $1 AND is_active = true',
+      [userId]
     );
+        console.log('User query result:', result.rows.length);
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'user' };
+          console.log('User found:', user.full_name);
         }
       }
 
