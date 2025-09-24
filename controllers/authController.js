@@ -188,33 +188,42 @@ const createAdmin = async (req, res) => {
 const employeeLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log('🔍 Employee login attempt:', { email, password: '***' });
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Email va password talab qilinadi' });
         }
 
-        // Employee ni database dan topish
+        // Employee ni database dan topish (employee_phone maydonini email sifatida ishlatamiz)
+        console.log('📞 Searching employee with phone:', email);
         const result = await pool.query(
-            'SELECT * FROM employees WHERE email = $1 AND is_active = true',
+            'SELECT * FROM employees WHERE employee_phone = $1 AND is_active = true',
             [email]
         );
+        console.log('📊 Query result:', result.rows.length, 'employees found');
 
         if (result.rows.length === 0) {
+            console.log('❌ Employee not found');
             return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 
         const employee = result.rows[0];
+        console.log('👤 Employee found:', { id: employee.id, name: employee.employee_name });
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, employee.password);
+        console.log('🔐 Checking password...');
+        const isValidPassword = await bcrypt.compare(password, employee.employee_password);
+        console.log('🔐 Password valid:', isValidPassword);
+        
         if (!isValidPassword) {
+            console.log('❌ Invalid password');
             return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 
         // Token yaratish
         const token = generateToken({
             id: employee.id,
-            email: employee.email,
+            email: employee.employee_phone,
             role: 'employee',
             salon_id: employee.salon_id
         });
@@ -224,9 +233,9 @@ const employeeLogin = async (req, res) => {
             token,
             user: {
                 id: employee.id,
-                email: employee.email,
-                name: employee.name,
-                surname: employee.surname,
+                email: employee.employee_phone,
+                name: employee.employee_name,
+                surname: employee.employee_name, // surname yo'q, shuning uchun name ishlatamiz
                 role: 'employee',
                 salon_id: employee.salon_id
             }
