@@ -8,81 +8,39 @@ const createSalon = async (req, res) => {
     console.log('CreateSalon function called with body:', req.body);
     try {
         const {
-            salon_name,
-            salon_phone,
-            salon_add_phone,
-            salon_instagram,
-            salon_rating = 0,
-            comments = [],
-            salon_payment,
-            salon_description,
-            salon_types = [],
-            private_salon = false,
-            is_private = false,
-            work_schedule = [],
-            salon_title,
-            salon_additionals = [],
-            sale_percent = 0,
-            sale_limit = 0,
-            location = { lat: 41, long: 64 },
-            salon_orient,
-            salon_photos = [],
-            salon_comfort = [],
-            description_uz,
-            description_ru,
-            description_en,
-            address_uz,
-            address_ru,
-            address_en
+            name,
+            phone,
+            email,
+            description,
+            address,
+            working_hours = {}
         } = req.body;
 
         // Validate required fields
-        if (!salon_name) {
+        console.log('Validation check - name:', name, 'type:', typeof name);
+        if (!name || name.trim() === '') {
+            console.log('Validation failed - name is empty or undefined');
             return res.status(400).json({
                 success: false,
                 message: 'Salon nomi majburiy'
             });
         }
+        console.log('Validation passed - name is valid');
 
         const query = `
             INSERT INTO salons (
-                salon_name, salon_phone, salon_add_phone, salon_instagram,
-                salon_rating, comments, salon_payment, salon_description, salon_types,
-                private_salon, is_private, work_schedule, salon_title, salon_additionals, sale_percent,
-                sale_limit, location, salon_orient, salon_photos, salon_comfort,
-                description_uz, description_ru, description_en,
-                address_uz, address_ru, address_en
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+                name, phone, email, description, address, working_hours
+            ) VALUES ($1, $2, $3, $4, $5, $6)
             RETURNING *
         `;
 
         const values = [
-            salon_name,
-            salon_phone,
-            salon_add_phone,
-            salon_instagram,
-            salon_rating,
-            JSON.stringify(comments),
-            JSON.stringify(salon_payment),
-            salon_description,
-            JSON.stringify(salon_types),
-            private_salon,
-            is_private,
-            JSON.stringify(work_schedule),
-            salon_title,
-            JSON.stringify(salon_additionals),
-            sale_percent,
-            sale_limit,
-            JSON.stringify(location),
-            JSON.stringify(salon_orient),
-            JSON.stringify(salon_photos),
-            JSON.stringify(salon_comfort),
-            description_uz || salon_description || 'Salon haqida malumot',
-            description_ru || salon_description || 'Информация о салоне',
-            description_en || salon_description || 'Salon information',
-            address_uz || 'Toshkent shahri',
-            address_ru || 'Город Ташкент',
-            address_en || 'Tashkent city'
+            name,
+            phone,
+            email,
+            description,
+            address,
+            JSON.stringify(working_hours)
         ];
 
         console.log('Executing database query...');
@@ -92,37 +50,17 @@ const createSalon = async (req, res) => {
 
         // Parse JSON fields back to objects
         try {
-            salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
-            salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
-            salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            // private_salon is already a boolean, no need to parse
-            salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
-            salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
-            salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
-            salon.salon_orient = salon.salon_orient && salon.salon_orient !== 'null' ? JSON.parse(salon.salon_orient) : null;
-            salon.salon_photos = salon.salon_photos && salon.salon_photos !== 'null' ? JSON.parse(salon.salon_photos) : [];
-            salon.salon_comfort = salon.salon_comfort && salon.salon_comfort !== 'null' ? JSON.parse(salon.salon_comfort) : [];
+            salon.working_hours = salon.working_hours && salon.working_hours !== 'null' ? JSON.parse(salon.working_hours) : {};
         } catch (parseError) {
             console.error('JSON parsing error:', parseError);
-            // Set default values if parsing fails
-            salon.comments = [];
-            salon.salon_payment = null;
-            salon.salon_types = [];
-            // private_salon is already a boolean, no need to set default
-            salon.work_schedule = [];
-            salon.salon_additionals = [];
-            salon.location = null;
-            salon.salon_orient = null;
-            salon.salon_photos = [];
-            salon.salon_comfort = [];
+            salon.working_hours = {};
         }
 
         // Salon ma'lumotlarini barcha tillarga tarjima qilish va saqlash
         try {
             const salonData = {
-                name: salon.salon_name,
-                description: salon.salon_description,
-                salon_title: salon.salon_title
+                name: salon.name,
+                description: salon.description
             };
             await salonTranslationService.translateAndStoreSalon(salonData, salon.id);
             console.log('Salon translations stored successfully');
@@ -178,8 +116,8 @@ const getAllSalons = async (req, res) => {
         let paramIndex = 1;
 
         if (search) {
-            query += ` AND (name ILIKE $${paramIndex} OR address ILIKE $${paramIndex})`;
-            countQuery += ` AND (name ILIKE $${paramIndex} OR address ILIKE $${paramIndex})`;
+            query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+            countQuery += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
             queryParams.push(`%${search}%`);
             paramIndex++;
         }
