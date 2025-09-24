@@ -290,32 +290,16 @@ const getSalonById = async (req, res) => {
         salon.salon_title_en = translations.en.salon_title;
         salon.salon_title_ru = translations.ru.salon_title;
         
-        // JSON fields'ni parse qilamiz
-        try {
-            salon.comments = salon.comments && salon.comments !== 'null' ? JSON.parse(salon.comments) : [];
-            salon.salon_payment = salon.salon_payment && salon.salon_payment !== 'null' ? JSON.parse(salon.salon_payment) : null;
-            salon.salon_types = salon.salon_types && salon.salon_types !== 'null' ? JSON.parse(salon.salon_types) : [];
-            // private_salon is already a boolean, no need to parse
-            salon.work_schedule = salon.work_schedule && salon.work_schedule !== 'null' ? JSON.parse(salon.work_schedule) : [];
-            salon.salon_additionals = salon.salon_additionals && salon.salon_additionals !== 'null' ? JSON.parse(salon.salon_additionals) : [];
-            salon.location = salon.location && salon.location !== 'null' ? JSON.parse(salon.location) : null;
-            salon.salon_orient = salon.salon_orient && salon.salon_orient !== 'null' ? JSON.parse(salon.salon_orient) : null;
-            salon.salon_photos = salon.salon_photos && salon.salon_photos !== 'null' ? JSON.parse(salon.salon_photos) : [];
-            salon.salon_comfort = salon.salon_comfort && salon.salon_comfort !== 'null' ? JSON.parse(salon.salon_comfort) : [];
-        } catch (parseError) {
-            console.error('JSON parsing error in getSalonById:', parseError);
-            // Set default values if parsing fails
-            salon.comments = [];
-            salon.salon_payment = null;
-            salon.salon_types = [];
-            salon.salon_format = {"selected":true,"format":"corporative"};
-            salon.work_schedule = [];
-            salon.salon_additionals = [];
-            salon.location = null;
-            salon.salon_orient = null;
-            salon.salon_photos = [];
-            salon.salon_comfort = [];
-        }
+        // JSONB fields are already parsed by PostgreSQL, no need to JSON.parse again
+        salon.comments = salon.comments || [];
+        salon.salon_payment = salon.salon_payment || null;
+        salon.salon_types = salon.salon_types || [];
+        salon.work_schedule = salon.work_schedule || [];
+        salon.salon_additionals = salon.salon_additionals || [];
+        salon.location = salon.location || null;
+        salon.salon_orient = salon.salon_orient || null;
+        salon.salon_photos = salon.salon_photos || [];
+        salon.salon_comfort = salon.salon_comfort || [];
 
         res.json({
             success: true,
@@ -337,10 +321,6 @@ const updateSalon = async (req, res) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
-        
-        console.log('Update data received:', JSON.stringify(updateData, null, 2));
-        console.log('salon_types type:', typeof updateData.salon_types);
-        console.log('salon_types value:', updateData.salon_types);
 
         // Remove id and timestamps from update data
         delete updateData.id;
@@ -386,17 +366,17 @@ const updateSalon = async (req, res) => {
 
         const salon = result.rows[0];
         
-        // Parse JSON fields
-        salon.comments = JSON.parse(salon.comments || '[]');
-        salon.salon_payment = JSON.parse(salon.salon_payment || '{}');
-        salon.salon_types = JSON.parse(salon.salon_types || '[]');
-        salon.salon_format = JSON.parse(salon.salon_format || '{"selected":true,"format":"corporative"}');
-        salon.work_schedule = JSON.parse(salon.work_schedule || '[]');
-        salon.salon_additionals = JSON.parse(salon.salon_additionals || '[]');
-        salon.location = JSON.parse(salon.location || '{}');
-        salon.salon_orient = JSON.parse(salon.salon_orient || '{}');
-        salon.salon_photos = JSON.parse(salon.salon_photos || '[]');
-        salon.salon_comfort = JSON.parse(salon.salon_comfort || '[]');
+        // Parse JSON fields (JSONB fields are already parsed by PostgreSQL)
+        salon.comments = salon.comments || [];
+        salon.salon_payment = salon.salon_payment || {};
+        salon.salon_types = salon.salon_types || [];
+        salon.salon_format = salon.salon_format || {"selected":true,"format":"corporative"};
+        salon.work_schedule = salon.work_schedule || [];
+        salon.salon_additionals = salon.salon_additionals || [];
+        salon.location = salon.location || {};
+        salon.salon_orient = salon.salon_orient || {};
+        salon.salon_photos = salon.salon_photos || [];
+        salon.salon_comfort = salon.salon_comfort || [];
 
         // Yangilangan ma'lumotlarni tarjima qilish va saqlash
         try {
