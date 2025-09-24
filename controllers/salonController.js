@@ -27,10 +27,35 @@ const createSalon = async (req, res) => {
         }
         console.log('Validation passed - name is valid');
 
+        // Default qiymatlar
+        const defaultSalonTypes = [
+            {"type": "Салон красоты", "selected": true},
+            {"type": "Фитнес", "selected": false},
+            {"type": "Функциональные тренировки", "selected": false},
+            {"type": "Йога", "selected": false},
+            {"type": "Массаж", "selected": false}
+        ];
+
+        const defaultLocation = {"lat": 41, "long": 64};
+        const defaultSalonOrient = {"lat": 41, "long": 64};
+        
+        const defaultSalonComfort = [
+            {"name": "parking", "isActive": false},
+            {"name": "cafee", "isActive": false},
+            {"name": "onlyFemale", "isActive": false},
+            {"name": "water", "isActive": false},
+            {"name": "pets", "isActive": false},
+            {"name": "bath", "isActive": false},
+            {"name": "towel", "isActive": false},
+            {"name": "allow14", "isActive": false},
+            {"name": "allow16", "isActive": false}
+        ];
+
         const query = `
             INSERT INTO salons (
-                name, phone, email, description, address, working_hours
-            ) VALUES ($1, $2, $3, $4, $5, $6)
+                name, phone, email, description, address, working_hours, 
+                salon_types, location, salon_orient, salon_comfort
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
         `;
 
@@ -40,7 +65,11 @@ const createSalon = async (req, res) => {
             email,
             description,
             address,
-            JSON.stringify(working_hours)
+            JSON.stringify(working_hours),
+            JSON.stringify(defaultSalonTypes),
+            JSON.stringify(defaultLocation),
+            JSON.stringify(defaultSalonOrient),
+            JSON.stringify(defaultSalonComfort)
         ];
 
         console.log('Executing database query...');
@@ -50,10 +79,18 @@ const createSalon = async (req, res) => {
 
         // Parse JSON fields back to objects
         try {
-            salon.working_hours = salon.working_hours && salon.working_hours !== 'null' ? JSON.parse(salon.working_hours) : {};
+            salon.working_hours = salon.working_hours && salon.working_hours !== 'null' ? salon.working_hours : {};
+            salon.salon_types = salon.salon_types || defaultSalonTypes;
+            salon.location = salon.location || defaultLocation;
+            salon.salon_orient = salon.salon_orient || defaultSalonOrient;
+            salon.salon_comfort = salon.salon_comfort || defaultSalonComfort;
         } catch (parseError) {
             console.error('JSON parsing error:', parseError);
             salon.working_hours = {};
+            salon.salon_types = defaultSalonTypes;
+            salon.location = defaultLocation;
+            salon.salon_orient = defaultSalonOrient;
+            salon.salon_comfort = defaultSalonComfort;
         }
 
         // Salon ma'lumotlarini barcha tillarga tarjima qilish va saqlash
