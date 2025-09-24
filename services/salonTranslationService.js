@@ -194,6 +194,9 @@ class SalonTranslationService {
 
                 translations[lang] = translatedData;
 
+                // Database'ga saqlash
+                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title);
+
                 // JSON faylni yangilash
                 const localeData = await this.readLocaleFile(lang);
                 if (localeData.salons[salonId]) {
