@@ -94,13 +94,16 @@ class SalonTranslationService {
             for (const lang of this.supportedLanguages) {
                 let translatedData;
                 
+                // salon_types ni to'g'ri formatda olish
+                const salonTypes = Array.isArray(salonData.salon_types) ? salonData.salon_types : [];
+
                 if (lang === 'uz') {
                     // O'zbek tili uchun original ma'lumotlarni ishlatamiz
                     translatedData = {
                         name: salonData.name || salonData.salon_name,
                         description: salonData.description || salonData.salon_description,
                         salon_title: salonData.salon_title,
-                        salon_types: salonData.salon_types || []
+                        salon_types: salonTypes
                     };
                 } else {
                     // Boshqa tillar uchun tarjima qilamiz
@@ -108,7 +111,7 @@ class SalonTranslationService {
                         name: salonData.name || salonData.salon_name,
                         description: salonData.description || salonData.salon_description,
                         salon_title: salonData.salon_title,
-                        salon_types: salonData.salon_types || []
+                        salon_types: salonTypes
                     }, lang);
                 }
 
