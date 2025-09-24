@@ -482,22 +482,19 @@ const createEmployee = async (req, res) => {
         const employeeId = result.rows[0].id;
         
         // Employee ma'lumotlarini barcha tillarga tarjima qilish va saqlash
-        // Vaqtincha o'chirildi - username ustuni muammosi tufayli
-        /*
         try {
             await employeeTranslationService.translateAndStoreEmployee({
                 name,
                 surname: '', // Default surname
                 profession: position,
                 bio: '', // Default bio
-                position: position
+                specialization: '' // Default specialization
             }, employeeId);
             console.log('Employee translations stored successfully');
         } catch (translationError) {
             console.error('Employee translation error:', translationError);
             // Tarjima xatosi bo'lsa ham employee yaratilganini qaytaramiz
         }
-        */
         
         res.status(201).json({
             success: true,
@@ -561,6 +558,21 @@ const updateEmployee = async (req, res) => {
         `;
         
         await pool.query(query, [name, phone, email, profession, id]);
+        
+        // Employee tarjimalarini yangilash
+        try {
+            await employeeTranslationService.updateEmployeeTranslations(id, {
+                name,
+                surname: surname || '',
+                profession: profession,
+                bio: '', // Default bio
+                specialization: '' // Default specialization
+            });
+            console.log('Employee translations updated successfully');
+        } catch (translationError) {
+            console.error('Employee translation update error:', translationError);
+            // Tarjima xatosi bo'lsa ham employee yangilanganini qaytaramiz
+        }
         
         res.json({
             success: true,

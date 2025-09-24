@@ -177,6 +177,36 @@ class EmployeeTranslationService {
                     en: 'Brow Master',
                     ru: 'Бровист',
                     uz: 'Qosh ustasi'
+                },
+                'Stilist': {
+                    en: 'Stylist',
+                    ru: 'Стилист',
+                    uz: 'Stilist'
+                },
+                'Kosmetolog': {
+                    en: 'Cosmetologist',
+                    ru: 'Косметолог',
+                    uz: 'Kosmetolog'
+                },
+                'Vizajist': {
+                    en: 'Makeup Artist',
+                    ru: 'Визажист',
+                    uz: 'Vizajist'
+                },
+                'Brovist': {
+                    en: 'Browist',
+                    ru: 'Бровист',
+                    uz: 'Brovist'
+                },
+                'Leshmaker': {
+                    en: 'Lashmaker',
+                    ru: 'Лэшмейкер',
+                    uz: 'Leshmaker'
+                },
+                'Massajist': {
+                    en: 'Masseur',
+                    ru: 'Массажист',
+                    uz: 'Massajist'
                 }
             };
 
