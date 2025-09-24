@@ -11,7 +11,10 @@ async function translateSalonData(data, targetLanguage) {
             'Zamonaviy go\'zallik saloni': 'Modern Beauty Salon',
             'Professional xizmatlar': 'Professional Services',
             'Sifatli xizmat': 'Quality Service',
-            'Eng yaxshi mutaxassislar': 'Best Specialists'
+            'Eng yaxshi mutaxassislar': 'Best Specialists',
+            'Ayollar': 'Women',
+            'Erkaklar': 'Men',
+            'Bolalar': 'Children'
         },
         'ru': {
             'Freya Beauty Salon': 'Салон красоты Freya',
@@ -19,16 +22,36 @@ async function translateSalonData(data, targetLanguage) {
             'Zamonaviy go\'zallik saloni': 'Современный салон красоты',
             'Professional xizmatlar': 'Профессиональные услуги',
             'Sifatli xizmat': 'Качественный сервис',
-            'Eng yaxshi mutaxassislar': 'Лучшие специалисты'
+            'Eng yaxshi mutaxassislar': 'Лучшие специалисты',
+            'Ayollar': 'Женщины',
+            'Erkaklar': 'Мужчины',
+            'Bolalar': 'Дети'
         }
     };
 
     const langTranslations = translations[targetLanguage] || {};
     
+    // salon_types tarjimasi
+    let translatedSalonTypes = [];
+    if (data.salon_types && Array.isArray(data.salon_types)) {
+        translatedSalonTypes = data.salon_types.map(type => {
+            if (typeof type === 'object' && type.name) {
+                return {
+                    ...type,
+                    name: langTranslations[type.name] || type.name
+                };
+            } else if (typeof type === 'string') {
+                return langTranslations[type] || type;
+            }
+            return type;
+        });
+    }
+    
     return {
         name: langTranslations[data.name] || data.name,
         description: langTranslations[data.description] || data.description,
-        salon_title: langTranslations[data.salon_title] || data.salon_title
+        salon_title: langTranslations[data.salon_title] || data.salon_title,
+        salon_types: translatedSalonTypes
     };
 }
 
@@ -72,25 +95,27 @@ class SalonTranslationService {
                 let translatedData;
                 
                 if (lang === 'uz') {
-                    // Uzbek uchun original ma'lumotni saqlaymiz
+                    // O'zbek tili uchun original ma'lumotlarni ishlatamiz
                     translatedData = {
                         name: salonData.name || salonData.salon_name,
                         description: salonData.description || salonData.salon_description,
-                        salon_title: salonData.salon_title
+                        salon_title: salonData.salon_title,
+                        salon_types: salonData.salon_types || []
                     };
                 } else {
                     // Boshqa tillar uchun tarjima qilamiz
                     translatedData = await translateSalonData({
                         name: salonData.name || salonData.salon_name,
                         description: salonData.description || salonData.salon_description,
-                        salon_title: salonData.salon_title
+                        salon_title: salonData.salon_title,
+                        salon_types: salonData.salon_types || []
                     }, lang);
                 }
 
                 translations[lang] = translatedData;
 
                 // Database'ga saqlash
-                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title);
+                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title, translatedData.salon_types);
 
                 // JSON faylga ham saqlash (backup uchun)
                 const localeData = await this.readLocaleFile(lang);
@@ -106,20 +131,21 @@ class SalonTranslationService {
     }
 
     // Database'ga tarjima saqlash
-    async saveSalonTranslation(salonId, language, name, description, salon_title) {
+    async saveSalonTranslation(salonId, language, name, description, salon_title, salon_types = []) {
         try {
             const query = `
-                INSERT INTO salon_translations (salon_id, language, name, description, salon_title)
-                VALUES ($1, $2, $3, $4, $5)
+                INSERT INTO salon_translations (salon_id, language, name, description, salon_title, salon_types)
+                VALUES ($1, $2, $3, $4, $5, $6)
                 ON CONFLICT (salon_id, language) 
                 DO UPDATE SET 
                     name = EXCLUDED.name,
                     description = EXCLUDED.description,
                     salon_title = EXCLUDED.salon_title,
+                    salon_types = EXCLUDED.salon_types,
                     updated_at = CURRENT_TIMESTAMP
             `;
             
-            await pool.query(query, [salonId, language, name, description, salon_title]);
+            await pool.query(query, [salonId, language, name, description, salon_title, JSON.stringify(salon_types)]);
             console.log(`Translation saved for salon ${salonId} in ${language}`);
         } catch (error) {
             console.error('Error saving salon translation:', error);
@@ -187,15 +213,21 @@ class SalonTranslationService {
                 let translatedData;
                 
                 if (lang === 'uz') {
-                    translatedData = updatedData;
+                    translatedData = {
+                        ...updatedData,
+                        salon_types: updatedData.salon_types || []
+                    };
                 } else {
-                    translatedData = await translateSalonData(updatedData, lang);
+                    translatedData = await translateSalonData({
+                        ...updatedData,
+                        salon_types: updatedData.salon_types || []
+                    }, lang);
                 }
 
                 translations[lang] = translatedData;
 
                 // Database'ga saqlash
-                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title);
+                await this.saveSalonTranslation(salonId, lang, translatedData.name, translatedData.description, translatedData.salon_title, translatedData.salon_types);
 
                 // JSON faylni yangilash
                 const localeData = await this.readLocaleFile(lang);
