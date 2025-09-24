@@ -122,7 +122,11 @@ const createSalon = async (req, res) => {
         try {
             const salonData = {
                 name: salon.name,
-                description: salon.description
+                salon_name: salonName,
+                description: salon.description,
+                salon_description: salonDescription,
+                salon_title: salon.salon_title || 'Salon',
+                salon_types: salon.salon_types || []
             };
             await salonTranslationService.translateAndStoreSalon(salonData, salon.id);
             console.log('Salon translations stored successfully');

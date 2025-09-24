@@ -12,6 +12,12 @@ async function translateSalonData(data, targetLanguage) {
             'Professional xizmatlar': 'Professional Services',
             'Sifatli xizmat': 'Quality Service',
             'Eng yaxshi mutaxassislar': 'Best Specialists',
+            'Salon': 'Salon',
+            'Salon haqida malumot': 'Information about salon',
+            'Yangi salon': 'New Salon',
+            'Test salon': 'Test Salon',
+            'Ikkinchi salon': 'Second Salon',
+            'string': 'Description',
             'Ayollar': 'Women',
             'Erkaklar': 'Men',
             'Bolalar': 'Children'
@@ -23,6 +29,12 @@ async function translateSalonData(data, targetLanguage) {
             'Professional xizmatlar': 'Профессиональные услуги',
             'Sifatli xizmat': 'Качественный сервис',
             'Eng yaxshi mutaxassislar': 'Лучшие специалисты',
+            'Salon': 'Салон',
+            'Salon haqida malumot': 'Информация о салоне',
+            'Yangi salon': 'Новый салон',
+            'Test salon': 'Тестовый салон',
+            'Ikkinchi salon': 'Второй салон',
+            'string': 'Описание',
             'Ayollar': 'Женщины',
             'Erkaklar': 'Мужчины',
             'Bolalar': 'Дети'
@@ -47,10 +59,15 @@ async function translateSalonData(data, targetLanguage) {
         });
     }
     
+    // Maydonlarni tarjima qilish
+    const translatedName = data.name || data.salon_name;
+    const translatedDescription = data.description || data.salon_description;
+    const translatedTitle = data.salon_title;
+    
     return {
-        name: langTranslations[data.name] || data.name,
-        description: langTranslations[data.description] || data.description,
-        salon_title: langTranslations[data.salon_title] || data.salon_title,
+        name: langTranslations[translatedName] || translatedName,
+        description: langTranslations[translatedDescription] || translatedDescription,
+        salon_title: langTranslations[translatedTitle] || translatedTitle,
         salon_types: translatedSalonTypes
     };
 }
