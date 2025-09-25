@@ -13,8 +13,8 @@ const superadminLogin = async (req, res) => {
 
         // Superadmin ni database dan topish
         const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
-            [username]
+            'SELECT id, username, email, password_hash, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
+            [username, 'superadmin']
         );
 
         if (result.rows.length === 0) {
