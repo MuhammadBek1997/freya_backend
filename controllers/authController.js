@@ -65,7 +65,7 @@ const adminLogin = async (req, res) => {
 
         // Admin ni database dan topish
         const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
+            'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
             [username]
         );
 
