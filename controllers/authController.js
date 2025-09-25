@@ -157,7 +157,7 @@ const createAdmin = async (req, res) => {
 
         // Create admin
         const result = await pool.query(
-            `INSERT INTO admins (username, email, password, full_name, salon_id)
+            `INSERT INTO admins (username, email, password_hash, full_name, salon_id)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, username, email, full_name, salon_id, created_at`,
             [username, email, hashedPassword, full_name, salon_id]
