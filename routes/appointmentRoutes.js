@@ -376,7 +376,7 @@ router.put('/:id/cancel', appointmentController.cancelAppointment);
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: 'Appointment o\'chirildi'
+ *                   example: "Appointment o'chirildi"
  *       404:
  *         description: Appointment topilmadi
  *         content:
