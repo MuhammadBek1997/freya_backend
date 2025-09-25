@@ -54,89 +54,32 @@ const getAllEmployees = async (req, res) => {
 
         const employees = await pool.query(query, params);
         
-        // Xodimlarni 3 ta tilda ma'lumot bilan olish
-        const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
-            try {
-                // Barcha tillar uchun tarjimalarni olish
-                const translations = {};
-                const languages = ['uz', 'en', 'ru'];
+        // Sodda ma'lumotlarni qaytarish (translation service ishlatmasdan)
+        const translatedEmployees = employees.rows.map(employee => {
+            // Barcha tillar uchun bir xil ma'lumotni qaytarish
+            return {
+                ...employee,
+                name_uz: employee.name || '',
+                name_en: employee.name || '',
+                name_ru: employee.name || '',
                 
-                for (const lang of languages) {
-                    try {
-                        const translatedEmployee = await employeeTranslationService.getEmployeeByLanguage(employee.id, lang);
-                        if (translatedEmployee) {
-                            translations[lang] = {
-                                name: translatedEmployee.name || employee.name,
-                                surname: translatedEmployee.surname || employee.surname,
-                                profession: translatedEmployee.profession || employee.profession,
-                                bio: translatedEmployee.bio || employee.bio,
-                                specialization: translatedEmployee.specialization || ''
-                            };
-                        } else {
-                            // Agar tarjima mavjud bo'lmasa, original ma'lumotni ishlatamiz
-                            translations[lang] = {
-                                name: employee.name || '',
-                                surname: employee.surname || '',
-                                profession: employee.profession || '',
-                                bio: employee.bio || '',
-                                specialization: ''
-                            };
-                        }
-                    } catch (langError) {
-                        console.error(`Error getting translation for language ${lang}:`, langError);
-                        translations[lang] = {
-                            name: employee.name || '',
-                            surname: employee.surname || '',
-                            profession: employee.profession || '',
-                            bio: employee.bio || '',
-                            specialization: ''
-                        };
-                    }
-                }
+                surname_uz: employee.surname || '',
+                surname_en: employee.surname || '',
+                surname_ru: employee.surname || '',
                 
-                // Employee ma'lumotlariga tarjimalarni qo'shamiz
-                employee.name_uz = translations.uz.name;
-                employee.name_en = translations.en.name;
-                employee.name_ru = translations.ru.name;
+                profession_uz: employee.profession || '',
+                profession_en: employee.profession || '',
+                profession_ru: employee.profession || '',
                 
-                employee.surname_uz = translations.uz.surname;
-                employee.surname_en = translations.en.surname;
-                employee.surname_ru = translations.ru.surname;
+                bio_uz: employee.bio || '',
+                bio_en: employee.bio || '',
+                bio_ru: employee.bio || '',
                 
-                employee.profession_uz = translations.uz.profession;
-                employee.profession_en = translations.en.profession;
-                employee.profession_ru = translations.ru.profession;
-                
-                employee.bio_uz = translations.uz.bio;
-                employee.bio_en = translations.en.bio;
-                employee.bio_ru = translations.ru.bio;
-                
-                employee.specialization_uz = translations.uz.specialization;
-                employee.specialization_en = translations.en.specialization;
-                employee.specialization_ru = translations.ru.specialization;
-                
-                return employee;
-            } catch (employeeError) {
-                console.error(`Error processing employee ${employee.id}:`, employeeError);
-                // Xatolik bo'lsa, original ma'lumotlarni qaytaramiz
-                employee.name_uz = employee.name || '';
-                employee.name_en = employee.name || '';
-                employee.name_ru = employee.name || '';
-                employee.surname_uz = employee.surname || '';
-                employee.surname_en = employee.surname || '';
-                employee.surname_ru = employee.surname || '';
-                employee.profession_uz = employee.profession || '';
-                employee.profession_en = employee.profession || '';
-                employee.profession_ru = employee.profession || '';
-                employee.bio_uz = employee.bio || '';
-                employee.bio_en = employee.bio || '';
-                employee.bio_ru = employee.bio || '';
-                employee.specialization_uz = '';
-                employee.specialization_en = '';
-                employee.specialization_ru = '';
-                return employee;
-            }
-        }));
+                specialization_uz: '',
+                specialization_en: '',
+                specialization_ru: ''
+            };
+        });
         
         // Get total count
         let countQuery = `SELECT COUNT(*) as total FROM employees`;
