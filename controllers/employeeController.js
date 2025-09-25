@@ -24,11 +24,10 @@ const getAllEmployees = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT e.*, s.salon_name as salon_name,
+            SELECT e.*,
                    COUNT(c.id) as comment_count,
                    AVG(c.rating) as avg_rating
             FROM employees e
-            LEFT JOIN salons s ON e.salon_id = s.id
             LEFT JOIN employee_comments c ON e.id = c.employee_id
         `;
         
@@ -49,7 +48,7 @@ const getAllEmployees = async (req, res) => {
             query += ` WHERE ${conditions.join(' AND ')}`;
         }
         
-        query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        query += ` GROUP BY e.id ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
         const employees = await pool.query(query, params);

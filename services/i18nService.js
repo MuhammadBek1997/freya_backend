@@ -66,15 +66,16 @@ class I18nService {
    */
   async getSupportedLanguages() {
     try {
-      const response = await axios.get(`${this.baseURL}/languages`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`
-        }
-      });
-
-      return response.data.languages || response.data;
+      // Return static supported languages instead of calling external API
+      const supportedLanguages = [
+        { code: 'uz', name: 'O\'zbek' },
+        { code: 'ru', name: 'Русский' },
+        { code: 'en', name: 'English' }
+      ];
+      
+      return supportedLanguages;
     } catch (error) {
-      console.error('Get languages error:', error.response?.data || error.message);
+      console.error('Get languages error:', error.message);
       throw new Error('Failed to get supported languages');
     }
   }
