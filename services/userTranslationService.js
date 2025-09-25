@@ -4,8 +4,6 @@ class UserTranslationService {
     
     async getUserByLanguage(userId, language) {
         try {
-            console.log(`Getting translation for user ${userId} in language ${language}`);
-            
             // Avval translation jadvalidan qidiramiz
             const result = await pool.query(`
                 SELECT ut.name, ut.surname, ut.bio,
@@ -16,7 +14,6 @@ class UserTranslationService {
             `, [userId, language]);
             
             if (result.rows.length > 0) {
-                console.log(`Found translation in database:`, result.rows[0]);
                 return result.rows[0];
             }
             
@@ -44,8 +41,6 @@ class UserTranslationService {
                     bio = EXCLUDED.bio,
                     updated_at = CURRENT_TIMESTAMP
             `, [userId, language, name, surname, bio]);
-            
-            console.log(`User translation saved for ${userId} in ${language}`);
         } catch (error) {
             console.error('Save user translation error:', error);
         }

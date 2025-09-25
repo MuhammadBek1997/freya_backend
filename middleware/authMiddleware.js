@@ -41,7 +41,6 @@ const authMiddleware = {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('verifyAdmin - Decoded token:', decoded);
       
       // Check if admin exists and is active
       const result = await query(
@@ -49,8 +48,7 @@ const authMiddleware = {
         [decoded.id]
       );
 
-      console.log('verifyAdmin - Database query result:', result.rows.length);
-      console.log('verifyAdmin - Query params:', decoded.id, 'admin', 'superadmin');
+
 
       if (result.rows.length === 0) {
         return res.status(401).json({ message: 'Admin huquqi talab qilinadi' });
@@ -68,35 +66,25 @@ const authMiddleware = {
   verifyUser: async (req, res, next) => {
     try {
       const token = req.header('Authorization')?.replace('Bearer ', '');
-      console.log('verifyUser - Token received:', token ? 'Yes' : 'No');
       
       if (!token) {
-        console.log('Token topilmadi');
-        console.log('verifyUser - No token provided');
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
-      console.log('Token mavjud, decode qilmoqda...');
-      console.log('JWT_SECRET:', process.env.JWT_SECRET);
-      console.log('JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 'undefined');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('Decoded token:', decoded);
-      console.log('verifyUser - Decoded token:', decoded);
       
       // Check if user exists and is active
       const result = await query(
         'SELECT * FROM users WHERE id = $1 AND is_active = true',
-        [decoded.userId]
+        [decoded.id || decoded.userId]
       );
 
-      console.log('verifyUser - Database query result:', result.rows.length);
       if (result.rows.length === 0) {
-        console.log('verifyUser - User not found or inactive');
         return res.status(401).json({ message: 'Foydalanuvchi topilmadi yoki faol emas' });
       }
 
       req.user = result.rows[0];
-      console.log('verifyUser - User authenticated successfully:', req.user.id);
+      req.user.userId = req.user.id; // Add userId field for compatibility
       next();
     } catch (error) {
       console.error('User auth error:', error.message);
@@ -115,24 +103,18 @@ const authMiddleware = {
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
-      console.log('Received token:', token.substring(0, 50) + '...');
-      console.log('JWT_SECRET:', process.env.JWT_SECRET);
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('Decoded token:', decoded);
       
       let user = null;
       
       // Check based on role in token
       if (decoded.role === 'employee') {
-        console.log('Checking employee with ID:', decoded.id);
         const result = await query(
           'SELECT id, employee_name, employee_phone, employee_password, salon_id, position, name, is_active, created_at, updated_at FROM employees WHERE id = $1 AND is_active = true',
           [decoded.id]
         );
-        console.log('Employee query result:', result.rows.length);
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'employee' };
-          console.log('Employee found:', user.name || user.employee_name);
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
         const result = await query(
@@ -145,20 +127,16 @@ const authMiddleware = {
       } else {
         // Default to user table
         const userId = decoded.userId || decoded.id;
-        console.log('Checking user with ID:', userId);
         const result = await query(
       'SELECT id, phone, email, password_hash, first_name, last_name, full_name, username, registration_step, phone_verified, is_active, created_at, updated_at FROM users WHERE id = $1 AND is_active = true',
       [userId]
     );
-        console.log('User query result:', result.rows.length);
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'user' };
-          console.log('User found:', user.full_name);
         }
       }
 
       if (!user) {
-        console.log('User not found or inactive');
         return res.status(401).json({ message: 'Foydalanuvchi topilmadi yoki faol emas' });
       }
 

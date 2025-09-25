@@ -535,6 +535,203 @@ const swaggerDefinition = {
         },
         required: ['id', 'name', 'price', 'duration']
       },
+      Schedule: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Jadval ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
+          },
+          salon_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Salon ID si',
+            example: '987fcdeb-51a2-43d1-9f12-123456789abc'
+          },
+          employee_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Xodim ID si',
+            example: '456e7890-f12b-34c5-d678-901234567890'
+          },
+          service_name: {
+            type: 'string',
+            description: 'Xizmat nomi',
+            example: 'Soch kesish'
+          },
+          service_price: {
+            type: 'number',
+            format: 'float',
+            description: 'Xizmat narxi',
+            example: 50000
+          },
+          available_date: {
+            type: 'string',
+            format: 'date',
+            description: 'Mavjud sana',
+            example: '2024-01-15'
+          },
+          available_time: {
+            type: 'string',
+            description: 'Mavjud vaqt',
+            example: '10:00'
+          },
+          duration: {
+            type: 'integer',
+            description: 'Davomiyligi (daqiqalarda)',
+            example: 60
+          },
+          is_available: {
+            type: 'boolean',
+            description: 'Mavjudlik holati',
+            example: true
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          }
+        },
+        required: ['id', 'salon_id', 'employee_id', 'service_name', 'service_price', 'available_date', 'available_time']
+      },
+      Appointment: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Appointment ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
+          },
+          application_number: {
+            type: 'string',
+            description: 'Ariza raqami',
+            example: 'APP000001'
+          },
+          user_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Foydalanuvchi ID si',
+            example: '456e7890-f12b-34c5-d678-901234567890'
+          },
+          phone_number: {
+            type: 'string',
+            description: 'Telefon raqami',
+            example: '+998901234567'
+          },
+          application_date: {
+            type: 'string',
+            format: 'date',
+            description: 'Ariza sanasi',
+            example: '2024-01-15'
+          },
+          application_time: {
+            type: 'string',
+            description: 'Ariza vaqti',
+            example: '10:00'
+          },
+          schedule_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Jadval ID si',
+            example: '789e0123-f45b-67c8-d901-234567890123'
+          },
+          employee_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Xodim ID si',
+            example: '012e3456-f78b-90c1-d234-567890123456'
+          },
+          service_name: {
+            type: 'string',
+            description: 'Xizmat nomi',
+            example: 'Soch kesish'
+          },
+          service_price: {
+            type: 'number',
+            format: 'float',
+            description: 'Xizmat narxi',
+            example: 50000
+          },
+          status: {
+            type: 'string',
+            enum: ['pending', 'accepted', 'cancelled', 'done', 'ignored'],
+            description: 'Appointment holati',
+            example: 'pending'
+          },
+          notes: {
+            type: 'string',
+            description: 'Qo\'shimcha izohlar',
+            example: 'Qisqa soch kesish'
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          }
+        },
+        required: ['id', 'application_number', 'user_id', 'phone_number', 'application_date', 'application_time', 'schedule_id', 'employee_id', 'service_name', 'service_price', 'status']
+      },
+      AppointmentCreate: {
+        type: 'object',
+        properties: {
+          phone_number: {
+            type: 'string',
+            description: 'Telefon raqami',
+            example: '+998901234567'
+          },
+          application_date: {
+            type: 'string',
+            format: 'date',
+            description: 'Ariza sanasi',
+            example: '2024-01-15'
+          },
+          application_time: {
+            type: 'string',
+            description: 'Ariza vaqti',
+            example: '10:00'
+          },
+          schedule_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Jadval ID si (bu orqali salon_id va employee_id aniqlanadi)',
+            example: '789e0123-f45b-67c8-d901-234567890123'
+          },
+          service_name: {
+            type: 'string',
+            description: 'Xizmat nomi',
+            example: 'Soch kesish'
+          },
+          service_price: {
+            type: 'number',
+            format: 'float',
+            description: 'Xizmat narxi',
+            example: 50000
+          },
+          notes: {
+            type: 'string',
+            description: 'Qo\'shimcha izohlar',
+            example: 'Qisqa soch kesish'
+          }
+        },
+        required: ['phone_number', 'application_date', 'application_time', 'schedule_id', 'service_name', 'service_price']
+      },
     },
   },
   security: [
@@ -558,13 +755,6 @@ const swaggerUiOptions = {
   customSiteTitle: 'Freya API Documentation',
   swaggerOptions: {
       requestInterceptor: (req) => {
-        console.log('Swagger Request:', {
-          url: req.url,
-          method: req.method,
-          headers: req.headers,
-          body: req.body
-        });
-        
         // CORS headers qo'shish
         req.headers = req.headers || {};
         req.headers['Access-Control-Allow-Origin'] = '*';
@@ -577,14 +767,6 @@ const swaggerUiOptions = {
         return req;
       },
       responseInterceptor: (res) => {
-        console.log('Swagger Response:', {
-          status: res.status,
-          statusText: res.statusText,
-          url: res.url,
-          headers: res.headers,
-          body: res.body
-        });
-        
         // 500 xatosini aniqlash
         if (res.status >= 500) {
           console.error('Swagger 500 Error:', {
@@ -598,7 +780,7 @@ const swaggerUiOptions = {
         return res;
       },
     onComplete: () => {
-      console.log('Swagger UI loaded successfully');
+      // Swagger UI loaded successfully
     },
     onFailure: (error) => {
       console.error('Swagger UI error:', error);

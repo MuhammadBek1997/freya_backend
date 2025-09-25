@@ -170,7 +170,6 @@ class SalonTranslationService {
             `;
             
             await pool.query(query, [salonId, language, name, description, salon_title, JSON.stringify(salon_types)]);
-            console.log(`Translation saved for salon ${salonId} in ${language}`);
         } catch (error) {
             console.error('Error saving salon translation:', error);
             throw error;
@@ -180,10 +179,8 @@ class SalonTranslationService {
     // Salon ma'lumotlarini tilga qarab olish
     async getSalonByLanguage(salonId, language = 'uz') {
         try {
-            console.log(`Getting translation for salon ${salonId} in language ${language}`);
             // Agar til qo'llab-quvvatlanmasa, uzbek tilini qaytaramiz
             const lang = this.supportedLanguages.includes(language) ? language : 'uz';
-            console.log(`Final language to use: ${lang}`);
             
             // Database'dan tarjimani olish
             const query = `
@@ -192,21 +189,15 @@ class SalonTranslationService {
                 WHERE salon_id = $1 AND language = $2
             `;
             
-            console.log(`Executing query with params: [${salonId}, ${lang}]`);
             const result = await pool.query(query, [salonId, lang]);
             
-            console.log(`Database query result for ${salonId}:`, result.rows);
-            
             if (result.rows.length > 0) {
-                console.log(`Found translation in database:`, result.rows[0]);
                 return result.rows[0];
             }
             
             // Database'da topilmasa, JSON fayldan olish (fallback)
-            console.log(`No translation found in database, trying JSON file`);
             const localeData = await this.readLocaleFile(lang);
             const jsonResult = localeData.salons[salonId] || null;
-            console.log(`JSON file result:`, jsonResult);
             return jsonResult;
         } catch (error) {
             console.error('Get salon by language error:', error);

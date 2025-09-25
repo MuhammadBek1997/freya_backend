@@ -213,8 +213,6 @@ router.get('/employees/:id', getEmployeeById);
  */
 // Test route
 router.post('/employees/test', (req, res) => {
-    console.log('TEST ROUTE CALLED');
-    console.log('Request body:', req.body);
     res.json({ success: true, message: 'Test route works' });
 });
 

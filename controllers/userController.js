@@ -110,8 +110,7 @@ const registerStep1 = async (req, res) => {
             // SMS yuborilmasa ham, foydalanuvchi ro'yxatdan o'tsin (development uchun)
         }
 
-        console.log(`Verification code for ${phone}: ${verificationCode}`);
-        console.log('SMS yuborish natijasi:', smsResult);
+
 
         res.status(201).json({
             success: true,

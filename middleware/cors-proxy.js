@@ -28,13 +28,7 @@ const corsProxy = (req, res, next) => {
     res.header('Access-Control-Max-Age', '86400'); // 24 soat
     res.header('Access-Control-Expose-Headers', 'Content-Length, X-Foo, X-Bar');
     
-    // CORS debug uchun log
-    console.log('CORS Debug:', {
-        origin: origin,
-        method: req.method,
-        url: req.url,
-        allowed: allowedOrigins.includes(origin)
-    });
+    // CORS debug
     
     // OPTIONS so'rovlari uchun
     if (req.method === 'OPTIONS') {

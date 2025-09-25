@@ -17,7 +17,6 @@ class SMSService {
         try {
             // Token tekshiruvi
             if (!this.token || this.token.trim() === '') {
-                console.log('Token mavjud emas, yangi token olishga harakat qilaman...');
                 const refreshResult = await this.refreshToken();
                 if (!refreshResult.success) {
                     return {
@@ -29,8 +28,6 @@ class SMSService {
             
             // Telefon raqamini formatlash (faqat raqamlar)
             const formattedPhone = phone.replace(/[^\d]/g, '');
-            
-            console.log('SMS yuborish uchun token:', this.token ? 'Mavjud' : 'Mavjud emas');
             
             const response = await axios.post(
                 `${this.baseUrl}${eskizConfig.endpoints.sendSms}`,

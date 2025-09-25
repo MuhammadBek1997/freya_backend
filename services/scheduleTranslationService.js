@@ -133,7 +133,6 @@ const updateScheduleTranslations = async () => {
             });
         }
         
-        console.log(`Updated translations for ${schedules.rows.length} schedules`);
         return true;
     } catch (error) {
         console.error('Error updating schedule translations:', error);
@@ -152,7 +151,6 @@ class ScheduleTranslationService {
             const data = await fs.readFile(filePath, 'utf8');
             return JSON.parse(data);
         } catch (error) {
-            console.log(`Creating new locale file for ${language}`);
             return { schedules: {} };
         }
     }

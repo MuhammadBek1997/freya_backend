@@ -5,7 +5,6 @@ const salonTranslationService = require('../services/salonTranslationService');
 
 // Create a new salon
 const createSalon = async (req, res) => {
-    console.log('CreateSalon function called with body:', req.body);
     try {
         const {
             salon_name,
@@ -42,15 +41,12 @@ const createSalon = async (req, res) => {
         const salonDescription = salon_description || description;
 
         // Validate required fields
-        console.log('Validation check - salon_name:', salonName, 'type:', typeof salonName);
         if (!salonName || salonName.trim() === '') {
-            console.log('Validation failed - salon_name is empty or undefined');
             return res.status(400).json({
                 success: false,
                 message: 'Salon nomi (salon_name) majburiy'
             });
         }
-        console.log('Validation passed - salon_name is valid');
 
         // Default qiymatlar
         const defaultSalonTypes = [
@@ -97,9 +93,7 @@ const createSalon = async (req, res) => {
             JSON.stringify(salon_comfort || defaultSalonComfort)
         ];
 
-        console.log('Executing database query...');
         const result = await pool.query(query, values);
-        console.log('Database query completed successfully');
         const salon = result.rows[0];
 
         // Parse JSON fields back to objects
@@ -129,7 +123,6 @@ const createSalon = async (req, res) => {
                 salon_types: salon.salon_types || []
             };
             await salonTranslationService.translateAndStoreSalon(salonData, salon.id);
-            console.log('Salon translations stored successfully');
         } catch (translationError) {
             console.error('Translation error:', translationError);
             // Tarjima xatosi bo'lsa ham salon yaratilganini qaytaramiz
@@ -157,17 +150,11 @@ const createSalon = async (req, res) => {
 // Get all salons
 const getAllSalons = async (req, res) => {
     try {
-        console.log('getAllSalons called with query:', req.query);
-        
         // Database connection test
         const dbTest = await pool.query('SELECT NOW()');
-        console.log('Database connection OK:', dbTest.rows[0]);
         
         const { page = 1, limit = 10, search = '' } = req.query;
-        console.log('req.language:', req.language);
-        console.log('req.query.language:', req.query.language);
         const language = req.language || req.query.language || 'ru'; // Language middleware'dan olinadi
-        console.log('Final language for getAllSalons:', language);
         const offset = (page - 1) * limit;
 
         let query = `
@@ -197,9 +184,7 @@ const getAllSalons = async (req, res) => {
         ]);
 
         // Salonlarni 3 ta tilda ma'lumot bilan olish
-        console.log(`Processing ${salonsResult.rows.length} salons for all languages`);
         const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
-            console.log(`Processing salon ${salon.id} for all languages`);
             
             // Barcha tillar uchun tarjimalarni olish
             const translations = {};
@@ -447,7 +432,6 @@ const updateSalon = async (req, res) => {
         // Yangilangan ma'lumotlarni tarjima qilish va saqlash
         try {
             await salonTranslationService.updateSalonTranslations(id, salon);
-            console.log('Salon translations updated successfully');
         } catch (translationError) {
             console.error('Translation update error:', translationError);
             // Tarjima xatosi bo'lsa ham yangilanganini qaytaramiz
@@ -493,7 +477,7 @@ const deleteSalon = async (req, res) => {
         // Tarjima fayllaridan ham o'chirish
         try {
             await salonTranslationService.deleteSalonTranslations(id);
-            console.log('Salon translations deleted successfully');
+
         } catch (translationError) {
             console.error('Translation deletion error:', translationError);
             // Tarjima o'chirishda xato bo'lsa ham davom etamiz

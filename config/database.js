@@ -13,7 +13,6 @@ pool.connect((err, client, release) => {
     console.error('PostgreSQL database ulanish xatosi:', err);
     process.exit(-1);
   } else {
-    console.log('PostgreSQL database ga ulanish muvaffaqiyatli');
     release();
     
     // Initialize tables
@@ -123,19 +122,16 @@ async function initializeTables() {
       UNIQUE(employee_id, language)
     )`);
 
-    console.log('Database tables initialized');
+    // Database tables initialized
   } catch (error) {
     console.error('Database tables yaratishda xatolik:', error);
   }
 }
 
-// Query function with logging
+// Query function
 const query = async (text, params = []) => {
-  const start = Date.now();
   try {
     const result = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('Query executed:', { text, duration, rows: result.rowCount });
     return result;
   } catch (error) {
     console.error('Database query error:', error);

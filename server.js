@@ -26,6 +26,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
 const i18nRoutes = require('./routes/i18nRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -323,6 +324,9 @@ app.use('/api/admin', adminRoutes);
 // I18n routes
 app.use('/api/i18n', i18nRoutes);
 
+// Appointment routes
+app.use('/api/appointments', appointmentRoutes);
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Server xatosi:', err.stack);
@@ -363,10 +367,7 @@ app.use((req, res) => {
 
 // Start server
 server.listen(PORT, () => {
-    console.log(`Server ${PORT} portda ishlamoqda`);
-    console.log(`Socket.io server ham ishga tushdi`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Database URL: ${process.env.DATABASE_URL ? 'O\'rnatilgan' : 'O\'rnatilmagan'}`);
+    // Server started successfully
 });
 
 // Error handling for server
@@ -376,8 +377,7 @@ server.on('error', (err) => {
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
     server.close(() => {
-        console.log('Process terminated');
+        // Process terminated
     });
 });

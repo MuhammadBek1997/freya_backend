@@ -12,12 +12,10 @@ const superadminLogin = async (req, res) => {
         }
 
         // Superadmin ni database dan topish
-        console.log('Login attempt:', { username, password });
         const result = await pool.query(
             'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
             [username]
         );
-        console.log('Database result:', result.rows);
 
         if (result.rows.length === 0) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
@@ -59,17 +57,9 @@ const superadminLogin = async (req, res) => {
 // Admin login
 const adminLogin = async (req, res) => {
     try {
-        console.log('Admin login so\'rovi keldi:', {
-            body: req.body,
-            headers: req.headers,
-            method: req.method,
-            url: req.url
-        });
-
         const { username, password } = req.body;
 
         if (!username || !password) {
-            console.log('Username yoki password yo\'q:', { username, password });
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
         }
 
@@ -189,35 +179,27 @@ const createAdmin = async (req, res) => {
 const employeeLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log('🔍 Employee login attempt:', { email, password: '***' });
 
         if (!email || !password) {
             return res.status(400).json({ message: 'Email va password talab qilinadi' });
         }
 
         // Employee ni database dan topish
-        console.log('📧 Searching employee with email:', email);
         const result = await pool.query(
             'SELECT * FROM employees WHERE email = $1 AND is_active = true',
             [email]
         );
-        console.log('📊 Query result:', result.rows.length, 'employees found');
 
         if (result.rows.length === 0) {
-            console.log('❌ Employee not found');
             return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 
         const employee = result.rows[0];
-        console.log('👤 Employee found:', { id: employee.id, name: employee.name || employee.employee_name });
 
         // Password tekshirish
-        console.log('🔐 Checking password...');
         const isValidPassword = await bcrypt.compare(password, employee.employee_password);
-        console.log('🔐 Password valid:', isValidPassword);
         
         if (!isValidPassword) {
-            console.log('❌ Invalid password');
             return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
         }
 

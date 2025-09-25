@@ -83,8 +83,6 @@ const sendMessage = async (req, res) => {
     const sender_id = req.user.id;
     const sender_type = req.user.role === 'superadmin' || req.user.role === 'admin' ? 'admin' : 'employee';
 
-    console.log('sendMessage debug:', { receiver_id, receiver_type, content, sender_id, sender_type });
-
     if (!receiver_id || !receiver_type || !content) {
       return res.status(400).json({ message: 'Barcha majburiy maydonlarni to\'ldiring' });
     }

@@ -22,7 +22,6 @@ const initializeSocket = (server) => {
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_super_secret_jwt_key_here_change_this_in_production');
-      console.log('Socket auth - decoded token:', decoded);
       
       // Check if it's an employee or user
       let userQuery, userResult;
@@ -41,7 +40,6 @@ const initializeSocket = (server) => {
       socket.userId = decoded.id || decoded.userId;
       socket.user = userResult.rows[0];
       socket.userRole = decoded.role;
-      console.log(`Socket authenticated: ${socket.user.name || socket.user.username} (${decoded.role})`);
       next();
     } catch (error) {
       console.error('Socket authentication error:', error);
@@ -51,21 +49,17 @@ const initializeSocket = (server) => {
 
   // Socket connection handling
   io.on('connection', (socket) => {
-    console.log(`User ${socket.user.username} connected with socket ID: ${socket.id}`);
-
     // Join user to their personal room
     socket.join(`user_${socket.userId}`);
 
     // Handle joining conversation rooms
     socket.on('join_conversation', (conversationId) => {
       socket.join(`conversation_${conversationId}`);
-      console.log(`User ${socket.user.username} joined conversation ${conversationId}`);
     });
 
     // Handle leaving conversation rooms
     socket.on('leave_conversation', (conversationId) => {
       socket.leave(`conversation_${conversationId}`);
-      console.log(`User ${socket.user.username} left conversation ${conversationId}`);
     });
 
     // Handle sending messages
@@ -92,8 +86,6 @@ const initializeSocket = (server) => {
         
         // Emit back to sender for confirmation
         socket.emit('message_sent', message);
-
-        console.log(`Message sent from ${socket.user.username} to user ${receiver_id}`);
       } catch (error) {
         console.error('Error sending message:', error);
         socket.emit('message_error', { error: 'Failed to send message' });
@@ -153,7 +145,6 @@ const initializeSocket = (server) => {
 
     // Handle disconnection
     socket.on('disconnect', () => {
-      console.log(`User ${socket.user.username} disconnected`);
       socket.broadcast.emit('user_status_update', {
         user_id: socket.userId,
         username: socket.user.username,

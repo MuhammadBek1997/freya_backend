@@ -83,7 +83,7 @@ class EmployeeTranslationService {
             `;
             
             await pool.query(query, [employeeId, language, name, surname, profession, bio, specialization]);
-            console.log(`Employee translation saved for ${employeeId} in ${language}`);
+    
         } catch (error) {
             console.error('Save employee translation error:', error);
             throw error;

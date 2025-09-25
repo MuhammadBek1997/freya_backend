@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt');
 // Get all employees
 const getAllEmployees = async (req, res) => {
     try {
-        console.log('🔍 getAllEmployees called with query:', req.query);
         const { page = 1, limit = 10, search = '', salonId } = req.query;
         
         // Agar salonId berilgan bo'lsa, salon mavjudligini tekshirish
@@ -23,7 +22,6 @@ const getAllEmployees = async (req, res) => {
         
         const language = req.language || req.query.current_language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
-        console.log('📊 Parameters:', { page, limit, search, salonId, language, offset });
 
         let query = `
             SELECT e.*, s.salon_name as salon_name,
@@ -54,10 +52,7 @@ const getAllEmployees = async (req, res) => {
         query += ` GROUP BY e.id, s.salon_name ORDER BY e.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
-        console.log('🗃️ Executing query:', query);
-        console.log('📝 Query params:', params);
         const employees = await pool.query(query, params);
-        console.log('✅ Query result count:', employees.rows.length);
         
         // Xodimlarni 3 ta tilda ma'lumot bilan olish
         const translatedEmployees = await Promise.all(employees.rows.map(async (employee) => {
@@ -438,13 +433,6 @@ const getEmployeeById = async (req, res) => {
 // Create new employee
 const createEmployee = async (req, res) => {
     try {
-        console.log('=== CREATE EMPLOYEE FUNCTION CALLED ===');
-        console.log('Request method:', req.method);
-        console.log('Request URL:', req.url);
-        console.log('Request headers:', req.headers);
-        console.log('Request body:', req.body);
-        console.log('Request body type:', typeof req.body);
-        console.log('Request body keys:', Object.keys(req.body || {}));
         
         const {
             salon_id,
@@ -480,7 +468,6 @@ const createEmployee = async (req, res) => {
         }
         
         // Password ni hash qilish
-        console.log('Password value:', password, 'Type:', typeof password);
         const hashedPassword = await bcrypt.hash(password, 10);
         
         const query = `
@@ -582,9 +569,7 @@ const updateEmployee = async (req, res) => {
                 bio: '', // Default bio
                 specialization: '' // Default specialization
             });
-            console.log('Employee translations updated successfully');
         } catch (translationError) {
-            console.error('Employee translation update error:', translationError);
             // Tarjima xatosi bo'lsa ham employee yangilanganini qaytaramiz
         }
         
