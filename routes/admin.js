@@ -36,8 +36,7 @@ const { verifyAdmin } = require('../middleware/authMiddleware');
  */
 router.post('/salon/top', verifyAdmin, async (req, res) => {
     try {
-        const { salonId } = req.params;
-        const { isTop, duration = 7 } = req.body; // duration kunlarda
+        const { salonId, isTop, duration = 7 } = req.body; // duration kunlarda
         
         // Admin ekanligini tekshirish
         if (req.admin.role !== 'admin' && req.admin.role !== 'superadmin') {
