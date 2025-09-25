@@ -36,8 +36,8 @@ const getAllEmployees = async (req, res) => {
         const conditions = [];
         
         if (search) {
-            conditions.push(`(e.employee_name ILIKE $${params.length + 1} OR e.employee_description ILIKE $${params.length + 2})`);
-            params.push(`%${search}%`, `%${search}%`);
+            conditions.push(`(e.name ILIKE $${params.length + 1} OR e.surname ILIKE $${params.length + 2} OR e.profession ILIKE $${params.length + 3})`);
+            params.push(`%${search}%`, `%${search}%`, `%${search}%`);
         }
         
         if (salonId) {
