@@ -579,6 +579,161 @@ const getSalonComments = async (req, res) => {
     }
 };
 
+// Helper function to calculate distance between two coordinates using Haversine formula
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+};
+
+// Get nearby salons based on user location
+const getNearbySalons = async (req, res) => {
+    try {
+        const { latitude, longitude, radius = 10, page = 1, limit = 10 } = req.query;
+        
+        // Validate required parameters
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude va longitude majburiy parametrlar'
+            });
+        }
+        
+        const userLat = parseFloat(latitude);
+        const userLng = parseFloat(longitude);
+        const searchRadius = parseFloat(radius);
+        const pageNum = parseInt(page);
+        const limitNum = parseInt(limit);
+        const offset = (pageNum - 1) * limitNum;
+        
+        // Validate coordinates
+        if (isNaN(userLat) || isNaN(userLng) || userLat < -90 || userLat > 90 || userLng < -180 || userLng > 180) {
+            return res.status(400).json({
+                success: false,
+                message: 'Noto\'g\'ri koordinatalar'
+            });
+        }
+        
+        // Get all salons with location data
+        const query = `
+            SELECT 
+                s.*,
+                CASE 
+                    WHEN s.location IS NOT NULL AND s.location->>'lat' IS NOT NULL AND s.location->>'lng' IS NOT NULL
+                    THEN CAST(s.location->>'lat' AS DECIMAL)
+                    ELSE NULL 
+                END as salon_lat,
+                CASE 
+                    WHEN s.location IS NOT NULL AND s.location->>'lat' IS NOT NULL AND s.location->>'lng' IS NOT NULL
+                    THEN CAST(s.location->>'lng' AS DECIMAL)
+                    ELSE NULL 
+                END as salon_lng
+            FROM salons s
+            WHERE s.is_active = true 
+            AND s.location IS NOT NULL 
+            AND s.location->>'lat' IS NOT NULL 
+            AND s.location->>'lng' IS NOT NULL
+            ORDER BY s.created_at DESC
+        `;
+        
+        const result = await pool.query(query);
+        
+        // Calculate distances and filter by radius
+        const salonsWithDistance = result.rows
+            .map(salon => {
+                const salonLat = parseFloat(salon.salon_lat);
+                const salonLng = parseFloat(salon.salon_lng);
+                
+                if (isNaN(salonLat) || isNaN(salonLng)) {
+                    return null;
+                }
+                
+                const distance = calculateDistance(userLat, userLng, salonLat, salonLng);
+                
+                return {
+                    ...salon,
+                    distance: Math.round(distance * 100) / 100, // Round to 2 decimal places
+                    distance_text: distance < 1 ? 
+                        `${Math.round(distance * 1000)} m` : 
+                        `${Math.round(distance * 10) / 10} km`
+                };
+            })
+            .filter(salon => salon && salon.distance <= searchRadius)
+            .sort((a, b) => a.distance - b.distance); // Sort by distance
+        
+        // Apply pagination
+        const paginatedSalons = salonsWithDistance.slice(offset, offset + limitNum);
+        
+        // Add translations for each salon
+        const translatedSalons = await Promise.all(
+            paginatedSalons.map(async (salon) => {
+                try {
+                    const translations = await salonTranslationService.getSalonTranslations(salon.id);
+                    return {
+                        ...salon,
+                        name_uz: translations.name_uz || salon.salon_name || '',
+                        name_en: translations.name_en || salon.salon_name || '',
+                        name_ru: translations.name_ru || salon.salon_name || '',
+                        description_uz: translations.description_uz || salon.salon_description || '',
+                        description_en: translations.description_en || salon.salon_description || '',
+                        description_ru: translations.description_ru || salon.salon_description || '',
+                        address_uz: salon.address_uz || '',
+                        address_en: salon.address_en || '',
+                        address_ru: salon.address_ru || ''
+                    };
+                } catch (error) {
+                    console.error(`Translation error for salon ${salon.id}:`, error);
+                    return {
+                        ...salon,
+                        name_uz: salon.salon_name || '',
+                        name_en: salon.salon_name || '',
+                        name_ru: salon.salon_name || '',
+                        description_uz: salon.salon_description || '',
+                        description_en: salon.salon_description || '',
+                        description_ru: salon.salon_description || '',
+                        address_uz: salon.address_uz || '',
+                        address_en: salon.address_en || '',
+                        address_ru: salon.address_ru || ''
+                    };
+                }
+            })
+        );
+        
+        res.json({
+            success: true,
+            data: translatedSalons,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total: salonsWithDistance.length,
+                pages: Math.ceil(salonsWithDistance.length / limitNum)
+            },
+            search_params: {
+                user_location: {
+                    latitude: userLat,
+                    longitude: userLng
+                },
+                radius: searchRadius,
+                radius_text: `${searchRadius} km`
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching nearby salons:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Yaqin atrofdagi salonlarni olishda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     createSalon,
     getAllSalons,
@@ -586,5 +741,6 @@ module.exports = {
     updateSalon,
     deleteSalon,
     addSalonComment,
-    getSalonComments
+    getSalonComments,
+    getNearbySalons
 };

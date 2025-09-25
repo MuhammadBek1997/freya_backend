@@ -7,7 +7,8 @@ const {
     updateSalon,
     deleteSalon,
     addSalonComment,
-    getSalonComments
+    getSalonComments,
+    getNearbySalons
 } = require('../controllers/salonController');
 const { verifySuperAdmin } = require('../middleware/authMiddleware');
 const { languageDetection } = require('../middleware/languageMiddleware');
@@ -89,6 +90,7 @@ const { languageDetection } = require('../middleware/languageMiddleware');
 router.get('/', languageDetection, getAllSalons);
 
 
+
 /**
  * @swagger
  * /api/salons/{id}:
@@ -132,6 +134,109 @@ router.get('/', languageDetection, getAllSalons);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+/**
+ * @swagger
+ * /api/salons/nearby:
+ *   get:
+ *     summary: Yaqin atrofdagi salonlarni olish
+ *     tags: [Salons]
+ *     parameters:
+ *       - in: query
+ *         name: latitude
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Foydalanuvchi kenglik koordinatasi
+ *       - in: query
+ *         name: longitude
+ *         required: true
+ *         schema:
+ *           type: number
+ *           format: float
+ *         description: Foydalanuvchi uzunlik koordinatasi
+ *       - in: query
+ *         name: radius
+ *         schema:
+ *           type: number
+ *           format: float
+ *           default: 10
+ *         description: Qidiruv radiusi (km)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *     responses:
+ *       200:
+ *         description: Yaqin atrofdagi salonlar ro'yxati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     allOf:
+ *                       - $ref: '#/components/schemas/Salon'
+ *                       - type: object
+ *                         properties:
+ *                           distance:
+ *                             type: number
+ *                             description: Masofa (km)
+ *                           distance_text:
+ *                             type: string
+ *                             description: Masofa matni
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *                 search_params:
+ *                   type: object
+ *                   properties:
+ *                     user_location:
+ *                       type: object
+ *                       properties:
+ *                         latitude:
+ *                           type: number
+ *                         longitude:
+ *                           type: number
+ *                     radius:
+ *                       type: number
+ *                     radius_text:
+ *                       type: string
+ *       400:
+ *         description: Noto'g'ri parametrlar
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/nearby', languageDetection, getNearbySalons);
+
 router.get('/:id', languageDetection, getSalonById);
 
 

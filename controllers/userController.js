@@ -752,6 +752,139 @@ const generateUserToken = async (req, res) => {
     }
 };
 
+// User location ma'lumotlarini yangilash
+const updateUserLocation = async (req, res) => {
+    try {
+        const { latitude, longitude, address, city, country, location_permission } = req.body;
+        const userId = req.user.userId; // JWT tokendan olinadi
+
+        // Validatsiya
+        if (!latitude || !longitude) {
+            return res.status(400).json({
+                success: false,
+                message: 'Latitude va longitude majburiy'
+            });
+        }
+
+        const lat = parseFloat(latitude);
+        const lng = parseFloat(longitude);
+
+        // Koordinatalarni tekshirish
+        if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            return res.status(400).json({
+                success: false,
+                message: 'Noto\'g\'ri koordinatalar'
+            });
+        }
+
+        // Foydalanuvchini tekshirish
+        const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        // Location ma'lumotlarini yangilash
+        const updateQuery = `
+            UPDATE users 
+            SET latitude = $1, 
+                longitude = $2, 
+                address = $3, 
+                city = $4, 
+                country = $5, 
+                location_permission = $6,
+                location_updated_at = CURRENT_TIMESTAMP,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $7
+            RETURNING id, latitude, longitude, address, city, country, location_permission, location_updated_at
+        `;
+
+        const result = await pool.query(updateQuery, [
+            lat, 
+            lng, 
+            address || null, 
+            city || null, 
+            country || null, 
+            location_permission !== undefined ? location_permission : true,
+            userId
+        ]);
+
+        res.json({
+            success: true,
+            message: 'Location ma\'lumotlari muvaffaqiyatli yangilandi',
+            data: {
+                user_id: result.rows[0].id,
+                location: {
+                    latitude: result.rows[0].latitude,
+                    longitude: result.rows[0].longitude,
+                    address: result.rows[0].address,
+                    city: result.rows[0].city,
+                    country: result.rows[0].country,
+                    permission: result.rows[0].location_permission,
+                    updated_at: result.rows[0].location_updated_at
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Update User Location Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// User location ma'lumotlarini olish
+const getUserLocation = async (req, res) => {
+    try {
+        const userId = req.user.userId; // JWT tokendan olinadi
+
+        // Foydalanuvchi location ma'lumotlarini olish
+        const result = await pool.query(`
+            SELECT id, latitude, longitude, address, city, country, location_permission, location_updated_at
+            FROM users 
+            WHERE id = $1
+        `, [userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const user = result.rows[0];
+
+        res.json({
+            success: true,
+            data: {
+                user_id: user.id,
+                location: {
+                    latitude: user.latitude,
+                    longitude: user.longitude,
+                    address: user.address,
+                    city: user.city,
+                    country: user.country,
+                    permission: user.location_permission,
+                    updated_at: user.location_updated_at
+                },
+                has_location: !!(user.latitude && user.longitude),
+                permission_granted: user.location_permission === true
+            }
+        });
+
+    } catch (error) {
+        console.error('Get User Location Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -761,5 +894,7 @@ module.exports = {
     sendPhoneChangeCode,
     deleteUser,
     updateUser,
-    generateUserToken
+    generateUserToken,
+    updateUserLocation,
+    getUserLocation
 };

@@ -12,7 +12,9 @@ const {
     sendPhoneChangeCode,
     deleteUser,
     updateUser,
-    generateUserToken
+    generateUserToken,
+    updateUserLocation,
+    getUserLocation
 } = require('../controllers/userController');
 
 // Middleware
@@ -25,6 +27,8 @@ const {
     validateVerificationCode,
     validateNameFormat
 } = require('../middleware/phoneValidationMiddleware');
+
+const { verifyUser } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -664,5 +668,162 @@ router.put('/update/:id', updateUser);
  *         description: Server xatosi
  */
 router.post('/generate-token/:id', generateUserToken);
+
+/**
+ * @swagger
+ * /api/users/location:
+ *   put:
+ *     summary: Foydalanuvchi location ma'lumotlarini yangilash
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - latitude
+ *               - longitude
+ *             properties:
+ *               latitude:
+ *                 type: number
+ *                 format: float
+ *                 minimum: -90
+ *                 maximum: 90
+ *                 example: 41.2995
+ *                 description: Kenglik (latitude)
+ *               longitude:
+ *                 type: number
+ *                 format: float
+ *                 minimum: -180
+ *                 maximum: 180
+ *                 example: 69.2401
+ *                 description: Uzunlik (longitude)
+ *               address:
+ *                 type: string
+ *                 example: "Toshkent shahri, Yunusobod tumani"
+ *                 description: To'liq manzil
+ *               city:
+ *                 type: string
+ *                 example: "Toshkent"
+ *                 description: Shahar nomi
+ *               country:
+ *                 type: string
+ *                 example: "Uzbekistan"
+ *                 description: Davlat nomi
+ *               location_permission:
+ *                 type: boolean
+ *                 example: true
+ *                 description: Location ruxsati berilganmi
+ *     responses:
+ *       200:
+ *         description: Location ma'lumotlari muvaffaqiyatli yangilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Location ma'lumotlari yangilandi"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     latitude:
+ *                       type: number
+ *                       example: 41.2995
+ *                     longitude:
+ *                       type: number
+ *                       example: 69.2401
+ *                     address:
+ *                       type: string
+ *                       example: "Toshkent shahri, Yunusobod tumani"
+ *                     city:
+ *                       type: string
+ *                       example: "Toshkent"
+ *                     country:
+ *                       type: string
+ *                       example: "Uzbekistan"
+ *                     location_permission:
+ *                       type: boolean
+ *                       example: true
+ *                     location_updated_at:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-01-15T10:30:00Z"
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.put('/location', verifyUser, updateUserLocation);
+
+/**
+ * @swagger
+ * /api/users/location:
+ *   get:
+ *     summary: Foydalanuvchi location ma'lumotlarini olish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Location ma'lumotlari muvaffaqiyatli olingan
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     latitude:
+ *                       type: number
+ *                       example: 41.2995
+ *                     longitude:
+ *                       type: number
+ *                       example: 69.2401
+ *                     address:
+ *                       type: string
+ *                       example: "Toshkent shahri, Yunusobod tumani"
+ *                     city:
+ *                       type: string
+ *                       example: "Toshkent"
+ *                     country:
+ *                       type: string
+ *                       example: "Uzbekistan"
+ *                     location_permission:
+ *                       type: boolean
+ *                       example: true
+ *                     location_updated_at:
+ *                       type: string
+ *                       format: date-time
+ *                       example: "2024-01-15T10:30:00Z"
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi yoki location ma'lumotlari yo'q
+ *       500:
+ *         description: Server xatosi
+ */
+router.get('/location', verifyUser, getUserLocation);
 
 module.exports = router;
