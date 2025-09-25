@@ -76,9 +76,9 @@ router.post('/salon/top', verifyAdmin, async (req, res) => {
 
             // Yangi top history qo'shish
             await pool.query(`
-                INSERT INTO salon_top_history (salon_id, admin_id, end_date)
-                VALUES ($1, $2, $3)
-            `, [salonId, req.admin.id, endDate]);
+                INSERT INTO salon_top_history (salon_id, admin_id, action, end_date)
+                VALUES ($1, $2, $3, $4)
+            `, [salonId, req.admin.id, 'activate', endDate]);
 
             res.json({
                 success: true,
