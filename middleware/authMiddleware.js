@@ -15,7 +15,7 @@ const authMiddleware = {
       
       // Check if admin exists and is active
       const result = await query(
-        'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+        'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
         [decoded.id]
       );
 
@@ -44,7 +44,7 @@ const authMiddleware = {
       
       // Check if admin exists and is active
       const result = await query(
-        'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+        'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
         [decoded.id]
       );
 
