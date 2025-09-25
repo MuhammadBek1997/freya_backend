@@ -78,7 +78,7 @@ router.post('/salon/top', verifyAdmin, async (req, res) => {
             await pool.query(`
                 INSERT INTO salon_top_history (salon_id, admin_id, action, end_date)
                 VALUES ($1, $2, $3, $4)
-            `, [salonId, req.admin.id, 'activate', endDate]);
+            `, [salonId, req.admin.id, 'top', endDate]);
 
             res.json({
                 success: true,
