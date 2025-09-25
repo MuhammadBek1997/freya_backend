@@ -40,7 +40,7 @@ router.post('/salon/top', verifyAdmin, async (req, res) => {
         const { isTop, duration = 7 } = req.body; // duration kunlarda
         
         // Admin ekanligini tekshirish
-        if (req.user.role !== 'admin') {
+        if (req.admin.role !== 'admin' && req.admin.role !== 'superadmin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Faqat adminlar salon top qilishi mumkin' 
@@ -79,7 +79,7 @@ router.post('/salon/top', verifyAdmin, async (req, res) => {
             await pool.query(`
                 INSERT INTO salon_top_history (salon_id, admin_id, end_date)
                 VALUES ($1, $2, $3)
-            `, [salonId, req.user.id, endDate]);
+            `, [salonId, req.admin.id, endDate]);
 
             res.json({
                 success: true,
@@ -129,7 +129,7 @@ router.post('/salon/top', verifyAdmin, async (req, res) => {
 router.get('/salons/top', verifyAdmin, async (req, res) => {
     try {
         // Admin ekanligini tekshirish
-        if (req.user.role !== 'admin') {
+        if (req.admin.role !== 'admin' && req.admin.role !== 'superadmin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Faqat adminlar top salonlar ro\'yxatini ko\'rishi mumkin' 
@@ -167,7 +167,7 @@ router.get('/salon/:salonId/top-history', verifyAdmin, async (req, res) => {
         const { salonId } = req.params;
         
         // Admin ekanligini tekshirish
-        if (req.user.role !== 'admin') {
+        if (req.admin.role !== 'admin' && req.admin.role !== 'superadmin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Faqat adminlar salon top history ko\'rishi mumkin' 
@@ -204,7 +204,7 @@ router.get('/salons', verifyAdmin, async (req, res) => {
         const { page = 1, limit = 10, search = '', top_only = false } = req.query;
         
         // Admin ekanligini tekshirish
-        if (req.user.role !== 'admin') {
+        if (req.admin.role !== 'admin' && req.admin.role !== 'superadmin') {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Faqat adminlar salon ro\'yxatini ko\'rishi mumkin' 
