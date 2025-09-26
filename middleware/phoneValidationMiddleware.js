@@ -38,27 +38,19 @@ const checkPhoneExists = () => {
     return async (req, res, next) => {
         try {
             const { phone } = req.body;
-            console.log('🔍 CheckPhoneExists middleware - Phone:', phone);
             
             const result = await query(
                 'SELECT id FROM users WHERE phone = $1',
                 [phone]
             );
 
-            console.log('📊 Database query result:', {
-                rowCount: result.rows.length,
-                rows: result.rows
-            });
-
             if (result.rows.length > 0) {
-                console.log('❌ Phone already exists, returning error');
                 return res.status(400).json({
                     success: false,
                     message: 'Bu telefon raqam allaqachon ro\'yxatdan o\'tgan'
                 });
             }
 
-            console.log('✅ Phone not found, proceeding to next middleware');
             next();
         } catch (error) {
             console.error('Check phone exists error:', error);
