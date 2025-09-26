@@ -5,6 +5,8 @@ class SMSService {
     constructor() {
         this.token = eskizConfig.token;
         this.baseUrl = eskizConfig.baseUrl;
+        this.tokenExpiry = null;
+        this.refreshInProgress = false;
     }
 
     /**
@@ -15,15 +17,14 @@ class SMSService {
      */
     async sendSMS(phone, message) {
         try {
-            // Token tekshiruvi
-            if (!this.token || this.token.trim() === '') {
-                const refreshResult = await this.refreshToken();
-                if (!refreshResult.success) {
-                    return {
-                        success: false,
-                        error: 'Token olishda xatolik'
-                    };
-                }
+            // Token tekshiruvi va avtomatik yangilash
+            await this.ensureValidToken();
+            
+            if (!this.token) {
+                return {
+                    success: false,
+                    error: 'Token olishda xatolik'
+                };
             }
             
             // Telefon raqamini formatlash (faqat raqamlar)
@@ -54,10 +55,15 @@ class SMSService {
             console.error('SMS yuborishda xatolik:', error.response?.data || error.message);
             
             // Token muddati tugagan bo'lsa, yangilashga harakat qilish
-            if (error.response?.status === 401) {
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                console.log('Token muddati tugagan, yangilanmoqda...');
+                this.token = null; // Tokenni tozalash
+                this.tokenExpiry = null;
+                
                 const refreshResult = await this.refreshToken();
                 if (refreshResult.success) {
                     // Token yangilangandan keyin qayta urinish
+                    console.log('Token yangilandi, qayta urinish...');
                     return this.sendSMS(phone, message);
                 }
             }
@@ -170,11 +176,48 @@ class SMSService {
     }
 
     /**
+     * Token mavjudligini va amal qilish muddatini tekshirish
+     * @returns {Promise<void>}
+     */
+    async ensureValidToken() {
+        // Token yo'q yoki bo'sh bo'lsa
+        if (!this.token || this.token.trim() === '') {
+            console.log('Token mavjud emas, yangilanmoqda...');
+            await this.refreshToken();
+            return;
+        }
+
+        // Token muddati tugagan bo'lsa
+        if (this.tokenExpiry && new Date() >= this.tokenExpiry) {
+            console.log('Token muddati tugagan, yangilanmoqda...');
+            await this.refreshToken();
+            return;
+        }
+
+        // Token muddati yaqinlashgan bo'lsa (1 kun qolgan)
+        if (this.tokenExpiry && new Date() >= new Date(this.tokenExpiry.getTime() - (24 * 60 * 60 * 1000))) {
+            console.log('Token muddati yaqinlashgan, oldindan yangilanmoqda...');
+            await this.refreshToken();
+            return;
+        }
+    }
+
+    /**
      * Tokenni yangilash
      * @returns {Promise<Object>} - Yangilash natijasi
      */
     async refreshToken() {
+        // Agar refresh jarayoni davom etayotgan bo'lsa, kutish
+        if (this.refreshInProgress) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            return { success: !!this.token, token: this.token };
+        }
+
+        this.refreshInProgress = true;
+        
         try {
+            console.log('Eskiz.uz token yangilanmoqda...');
+            
             const response = await axios.post(
                 `${this.baseUrl}${eskizConfig.endpoints.auth}`,
                 {
@@ -184,28 +227,49 @@ class SMSService {
                 {
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    timeout: 10000 // 10 soniya timeout
                 }
             );
 
-            if (response.data.token) {
+            if (response.data && response.data.token) {
                 this.token = response.data.token;
+                // Token 30 kun amal qiladi, lekin 25 kundan keyin yangilaymiz
+                this.tokenExpiry = new Date(Date.now() + (25 * 24 * 60 * 60 * 1000));
+                
+                console.log('Eskiz.uz token muvaffaqiyatli yangilandi');
+                
                 return {
                     success: true,
-                    token: response.data.token
+                    token: response.data.token,
+                    message: 'Token muvaffaqiyatli yangilandi'
                 };
             }
 
+            console.error('Eskiz.uz javobida token yo\'q:', response.data);
             return {
                 success: false,
-                error: 'Token olinmadi'
+                error: 'Token olinmadi - javobda token mavjud emas'
             };
         } catch (error) {
             console.error('Token yangilashda xatolik:', error.response?.data || error.message);
+            
+            // Xatolik turini aniqlash
+            let errorMessage = 'Token yangilashda noma\'lum xatolik';
+            if (error.response) {
+                errorMessage = error.response.data?.message || `HTTP ${error.response.status} xatolik`;
+            } else if (error.code === 'ECONNABORTED') {
+                errorMessage = 'So\'rov vaqti tugadi (timeout)';
+            } else if (error.code === 'ENOTFOUND') {
+                errorMessage = 'Internet aloqasi yo\'q';
+            }
+            
             return {
                 success: false,
-                error: error.response?.data?.message || error.message
+                error: errorMessage
             };
+        } finally {
+            this.refreshInProgress = false;
         }
     }
 
@@ -215,6 +279,16 @@ class SMSService {
      */
     async getBalance() {
         try {
+            // Token tekshiruvi va avtomatik yangilash
+            await this.ensureValidToken();
+            
+            if (!this.token) {
+                return {
+                    success: false,
+                    error: 'Token olishda xatolik'
+                };
+            }
+
             const response = await axios.get(
                 `${this.baseUrl}${eskizConfig.endpoints.getBalance}`,
                 {
@@ -231,6 +305,20 @@ class SMSService {
             };
         } catch (error) {
             console.error('Balansni olishda xatolik:', error.response?.data || error.message);
+            
+            // Token muddati tugagan bo'lsa, yangilashga harakat qilish
+            if (error.response?.status === 401 || error.response?.status === 403) {
+                console.log('Balance olishda token muddati tugagan, yangilanmoqda...');
+                this.token = null;
+                this.tokenExpiry = null;
+                
+                const refreshResult = await this.refreshToken();
+                if (refreshResult.success) {
+                    console.log('Token yangilandi, balance qayta olinmoqda...');
+                    return this.getBalance();
+                }
+            }
+            
             return {
                 success: false,
                 error: error.response?.data?.message || error.message
