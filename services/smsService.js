@@ -87,8 +87,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Oddiy SMS matni
-        const message = `Tasdiqlash kodi: ${verificationCode}`;
+        // Eskiz.uz tasdiqlangan template #2
+        const message = `Freya mobil ilovasiga ro'yxatdan o'tish uchun tasdiqlash kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -110,8 +110,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Oddiy SMS matni
-        const message = `Parol tiklash kodi: ${verificationCode}`;
+        // Eskiz.uz tasdiqlangan template #1
+        const message = `Freya ilovasida parolni tiklash uchun tasdiqlash kodi: ${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -133,8 +133,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Oddiy SMS matni
-        const message = `Telefon o'zgartirish kodi: ${verificationCode}`;
+        // Eskiz.uz tasdiqlangan template #3
+        const message = `<#>Freya dasturiga Telefon raqamni o'zgartirish uchun tasdiqlash kodi:${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         
@@ -156,7 +156,7 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Eskiz.uz tasdiqlangan template (Template #4)
+        // Eskiz.uz tasdiqlangan template #4
         const message = `<#>Freya dasturiga Ro'yhatdan o'tish uchun tasdiqlash kodi:${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
