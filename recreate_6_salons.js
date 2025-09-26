@@ -10,13 +10,18 @@ async function recreate6Salons() {
     try {
         console.log('🔄 Recreating 6 salons with specified structure...\n');
 
-        // 1. Delete all existing salons
-        console.log('1. Deleting all existing salons...');
+        // 1. Delete all existing admins first (to avoid foreign key constraint)
+        console.log('1. Deleting all existing admins...');
+        const deleteAdminsResult = await pool.query('DELETE FROM admins');
+        console.log(`✅ Deleted ${deleteAdminsResult.rowCount} existing admins`);
+
+        // 2. Delete all existing salons
+        console.log('2. Deleting all existing salons...');
         const deleteResult = await pool.query('DELETE FROM salons');
         console.log(`✅ Deleted ${deleteResult.rowCount} existing salons`);
 
-        // 2. Create 6 new salons with the specified structure
-        console.log('\n2. Creating 6 new salons...');
+        // 3. Create 6 new salons with the specified structure
+        console.log('\n3. Creating 6 new salons...');
 
         const salonsData = [
             {
@@ -316,8 +321,8 @@ async function recreate6Salons() {
             console.log(`✅ Created salon ${i + 1}: ${insertResult.rows[0].name} (ID: ${insertResult.rows[0].id})`);
         }
 
-        // 3. Verify the created salons
-        console.log('\n3. Verifying created salons...');
+        // 4. Verify the created salons
+        console.log('\n4. Verifying created salons...');
         const verifyResult = await pool.query(`
             SELECT id, name, is_top, is_private,
                    salon_name_uz, salon_name_en, salon_name_ru,
