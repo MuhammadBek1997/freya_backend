@@ -10,12 +10,12 @@ const swaggerDefinition = {
   },
   servers: [
     {
-      url: 'http://localhost:3011',
-      description: 'Development server (Current)'
+      url: 'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
+      description: 'Production server (Heroku) - Default'
     },
     {
-      url: 'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
-      description: 'Production server (Heroku)'
+      url: 'http://localhost:3000',
+      description: 'Development server (Local)'
     }
   ],
   components: {
