@@ -888,6 +888,122 @@ const getUserLocation = async (req, res) => {
     }
 };
 
+// Parolni tiklash (tasdiqlash kodi bilan)
+const resetPassword = async (req, res) => {
+    try {
+        const { phone, verificationCode, newPassword } = req.body;
+
+        // Validatsiya
+        if (!phone) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam kiritilishi shart'
+            });
+        }
+
+        if (!verificationCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tasdiqlash kodi kiritilishi shart'
+            });
+        }
+
+        if (!newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: 'Yangi parol kiritilishi shart'
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak'
+            });
+        }
+
+        if (!validatePhoneNumber(phone)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Telefon raqam formati noto\'g\'ri'
+            });
+        }
+
+        // Foydalanuvchini topish va tasdiqlash kodini tekshirish
+        const userQuery = `
+            SELECT id, verification_code, verification_expires_at 
+            FROM users 
+            WHERE phone = $1
+        `;
+        const userResult = await pool.query(userQuery, [phone]);
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bu telefon raqam bilan ro\'yxatdan o\'tmagan'
+            });
+        }
+
+        const user = userResult.rows[0];
+
+        // Tasdiqlash kodini tekshirish
+        if (!user.verification_code) {
+            return res.status(400).json({
+                success: false,
+                message: 'Avval parolni tiklash kodini so\'rang'
+            });
+        }
+
+        if (user.verification_code !== verificationCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tasdiqlash kodi noto\'g\'ri'
+            });
+        }
+
+        // Kodning muddati tugaganligini tekshirish
+        if (new Date() > new Date(user.verification_expires_at)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tasdiqlash kodining muddati tugagan. Yangi kod so\'rang'
+            });
+        }
+
+        // Yangi parolni hash qilish
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Parolni yangilash va tasdiqlash kodini tozalash
+        const updateQuery = `
+            UPDATE users 
+            SET password_hash = $1, 
+                verification_code = NULL, 
+                verification_expires_at = NULL,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
+            RETURNING id, phone
+        `;
+
+        const updateResult = await pool.query(updateQuery, [hashedPassword, user.id]);
+
+        res.json({
+            success: true,
+            message: 'Parol muvaffaqiyatli yangilandi',
+            data: {
+                userId: updateResult.rows[0].id,
+                phone: updateResult.rows[0].phone
+            }
+        });
+
+    } catch (error) {
+        console.error('Reset Password Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -895,6 +1011,7 @@ module.exports = {
     loginUser,
     sendPasswordResetCode,
     sendPhoneChangeCode,
+    resetPassword,
     deleteUser,
     updateUser,
     generateUserToken,

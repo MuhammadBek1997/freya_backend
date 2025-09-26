@@ -10,6 +10,7 @@ const {
     loginUser,
     sendPasswordResetCode,
     sendPhoneChangeCode,
+    resetPassword,
     deleteUser,
     updateUser,
     generateUserToken,
@@ -369,10 +370,69 @@ router.post('/password-reset/send-code',
     sendPasswordResetCode
 );
 
-// Parolni tiklash uchun yangi endpoint (frontend bilan mos kelishi uchun)
+/**
+ * @swagger
+ * /api/users/reset-password:
+ *   post:
+ *     summary: Parolni tiklash (tasdiqlash kodi bilan)
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - phone
+ *               - verificationCode
+ *               - newPassword
+ *             properties:
+ *               phone:
+ *                 type: string
+ *                 description: Telefon raqam
+ *                 example: "+998901234567"
+ *               verificationCode:
+ *                 type: string
+ *                 description: SMS orqali kelgan tasdiqlash kodi
+ *                 example: "123456"
+ *               newPassword:
+ *                 type: string
+ *                 description: Yangi parol (kamida 6 ta belgi)
+ *                 example: "newpassword123"
+ *     responses:
+ *       200:
+ *         description: Parol muvaffaqiyatli yangilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Parol muvaffaqiyatli yangilandi"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: integer
+ *                       example: 123
+ *                     phone:
+ *                       type: string
+ *                       example: "+998901234567"
+ *       400:
+ *         description: Validatsiya xatosi yoki noto'g'ri tasdiqlash kodi
+ *       404:
+ *         description: Telefon raqam topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+// Parolni tiklash (tasdiqlash kodi bilan)
 router.post('/reset-password',
     validatePhoneNumber,
-    sendPasswordResetCode
+    resetPassword
 );
 
 /**
