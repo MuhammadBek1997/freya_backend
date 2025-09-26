@@ -126,6 +126,90 @@ router.get('/my-appointments', appointmentController.getUserAppointments);
 
 /**
  * @swagger
+ * /api/appointments/salon/{salon_id}:
+ *   get:
+ *     summary: Salon uchun appointmentlarni olish
+ *     description: Berilgan salon ID bo'yicha barcha appointmentlarni olish
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: salon_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Salon ID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, confirmed, completed, cancelled]
+ *         description: Appointment holati
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Appointment sanasi (YYYY-MM-DD)
+ *     responses:
+ *       200:
+ *         description: Salon appointmentlari ro'yxati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Salon zayavkalari muvaffaqiyatli olindi"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Appointment'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: Avtorizatsiya xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       404:
+ *         description: Salon topilmadi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/salon/:salon_id', appointmentController.getSalonAppointments);
+
+/**
+ * @swagger
  * /api/appointments/{id}:
  *   get:
  *     summary: ID bo'yicha appointment olish

@@ -517,6 +517,92 @@ const deleteAppointment = async (req, res) => {
     }
 };
 
+// Get appointments for a specific salon
+const getSalonAppointments = async (req, res) => {
+    try {
+        const { salon_id } = req.params;
+        const { page = 1, limit = 10, status, date } = req.query;
+        const offset = (page - 1) * limit;
+
+        // Validate salon exists
+        const salonCheck = await pool.query('SELECT id FROM salons WHERE id = $1', [salon_id]);
+        if (salonCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        let query = `
+            SELECT a.*, s.day_of_week, s.start_time, s.end_time,
+                   u.name as user_full_name, u.email as user_email,
+                   e.name as employee_name, sal.name as salon_name
+            FROM appointments a
+            LEFT JOIN schedules s ON a.schedule_id = s.id
+            LEFT JOIN users u ON a.user_id = u.id
+            LEFT JOIN employees e ON a.employee_id = e.id
+            LEFT JOIN salons sal ON s.salon_id = sal.id
+            WHERE s.salon_id = $1
+        `;
+        const params = [salon_id];
+
+        if (status) {
+            query += ` AND a.status = $${params.length + 1}`;
+            params.push(status);
+        }
+
+        if (date) {
+            query += ` AND a.application_date = $${params.length + 1}`;
+            params.push(date);
+        }
+
+        query += ` ORDER BY a.application_date DESC, a.application_time DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(parseInt(limit), parseInt(offset));
+
+        const appointments = await pool.query(query, params);
+
+        // Get total count
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM appointments a
+            LEFT JOIN schedules s ON a.schedule_id = s.id
+            WHERE s.salon_id = $1
+        `;
+        const countParams = [salon_id];
+
+        if (status) {
+            countQuery += ` AND a.status = $${countParams.length + 1}`;
+            countParams.push(status);
+        }
+
+        if (date) {
+            countQuery += ` AND a.application_date = $${countParams.length + 1}`;
+            countParams.push(date);
+        }
+
+        const totalResult = await pool.query(countQuery, countParams);
+        const total = totalResult.rows[0].total;
+
+        res.json({
+            success: true,
+            message: 'Salon zayavkalari muvaffaqiyatli olindi',
+            data: appointments.rows,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching salon appointments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Salon zayavkalarini olishda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     createAppointment,
     getAllAppointments,
@@ -524,6 +610,7 @@ module.exports = {
     updateAppointment,
     updateAppointmentStatus,
     getUserAppointments,
+    getSalonAppointments,
     cancelAppointment,
     deleteAppointment
 };
