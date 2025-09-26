@@ -25,7 +25,7 @@ const generateVerificationCode = () => {
 // 1-bosqich: Telefon, email va parol bilan ro'yxatdan o'tish
 const registerStep1 = async (req, res) => {
     try {
-        const { phone, email, password } = req.body;
+        const { phone, password } = req.body;
 
         // Validatsiya
         if (!phone || !password) {
@@ -39,13 +39,6 @@ const registerStep1 = async (req, res) => {
             return res.status(400).json({
                 success: false,
                 message: 'Telefon raqam formati noto\'g\'ri. Namuna: +998901234567'
-            });
-        }
-
-        if (email && !validateEmail(email)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email formati noto\'g\'ri'
             });
         }
 
@@ -69,21 +62,6 @@ const registerStep1 = async (req, res) => {
             });
         }
 
-        // Email mavjudligini tekshirish (agar berilgan bo'lsa)
-        if (email) {
-            const existingEmail = await pool.query(
-                'SELECT id FROM users WHERE email = $1',
-                [email]
-            );
-
-            if (existingEmail.rows.length > 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Bu email allaqachon ro\'yxatdan o\'tgan'
-                });
-            }
-        }
-
         // Parolni hash qilish
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -95,12 +73,12 @@ const registerStep1 = async (req, res) => {
         const verificationCode = smsResult.verificationCode || generateVerificationCode();
         const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
 
-        // Foydalanuvchini 1-bosqich bilan saqlash
+        // Foydalanuvchini 1-bosqich bilan saqlash (email null)
         const result = await pool.query(
             `INSERT INTO users (phone, email, password_hash, registration_step, verification_code, verification_expires_at, created_at)
              VALUES ($1, $2, $3, 1, $4, $5, CURRENT_TIMESTAMP)
              RETURNING id, phone, email, registration_step`,
-            [phone, email, hashedPassword, verificationCode, verificationExpires]
+            [phone, null, hashedPassword, verificationCode, verificationExpires]
         );
 
         const user = result.rows[0];
@@ -110,15 +88,12 @@ const registerStep1 = async (req, res) => {
             // SMS yuborilmasa ham, foydalanuvchi ro'yxatdan o'tsin (development uchun)
         }
 
-
-
         res.status(201).json({
             success: true,
             message: 'Ro\'yxatdan o\'tish 1-bosqichi muvaffaqiyatli. Telefon raqamingizga tasdiqlash kodi yuborildi.',
             data: {
                 userId: user.id,
                 phone: user.phone,
-                email: user.email,
                 registrationStep: user.registration_step,
                 smsStatus: smsResult.success ? 'yuborildi' : 'yuborilmadi',
                 // Development uchun verification code qaytaramiz
@@ -208,22 +183,38 @@ const verifyPhone = async (req, res) => {
     }
 };
 
-// 2-bosqich: Ism va familiya qo'shish
+// 2-bosqich: Username va email qo'shish
 const registerStep2 = async (req, res) => {
     try {
-        const { phone, firstName, lastName } = req.body;
+        const { phone, username, email } = req.body;
 
-        if (!phone || !firstName || !lastName) {
+        if (!phone || !username) {
             return res.status(400).json({
                 success: false,
-                message: 'Telefon raqam, ism va familiya majburiy'
+                message: 'Telefon raqam va username majburiy'
             });
         }
 
-        if (firstName.length < 2 || lastName.length < 2) {
+        if (username.length < 3) {
             return res.status(400).json({
                 success: false,
-                message: 'Ism va familiya kamida 2 ta belgidan iborat bo\'lishi kerak'
+                message: 'Username kamida 3 ta belgidan iborat bo\'lishi kerak'
+            });
+        }
+
+        // Username formatini tekshirish (faqat harflar, raqamlar va _ ruxsat etilgan)
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username faqat harflar, raqamlar va _ belgisidan iborat bo\'lishi kerak'
+            });
+        }
+
+        // Email formatini tekshirish (agar berilgan bo'lsa)
+        if (email && !validateEmail(email)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email formati noto\'g\'ri'
             });
         }
 
@@ -244,17 +235,41 @@ const registerStep2 = async (req, res) => {
 
         const user = result.rows[0];
 
-        // Username generatsiya qilish (phone raqamdan)
-        const username = phone.replace('+', '').replace(/\D/g, '');
+        // Username allaqachon mavjudligini tekshirish
+        const existingUsername = await pool.query(
+            'SELECT id FROM users WHERE username = $1 AND id != $2',
+            [username, user.id]
+        );
+
+        if (existingUsername.rows.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bu username allaqachon band'
+            });
+        }
+
+        // Email mavjudligini tekshirish (agar berilgan bo'lsa)
+        if (email) {
+            const existingEmail = await pool.query(
+                'SELECT id FROM users WHERE email = $1 AND id != $2',
+                [email, user.id]
+            );
+
+            if (existingEmail.rows.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bu email allaqachon ro\'yxatdan o\'tgan'
+                });
+            }
+        }
 
         // Foydalanuvchi ma'lumotlarini yangilash va 2-bosqichni yakunlash
         const updateResult = await pool.query(
             `UPDATE users 
-             SET first_name = $1, last_name = $2, full_name = $3, username = $4, 
-                 registration_step = 2, updated_at = CURRENT_TIMESTAMP
-             WHERE id = $5
-             RETURNING id, phone, email, first_name, last_name, full_name, username, registration_step`,
-            [firstName, lastName, `${firstName} ${lastName}`, username, user.id]
+             SET username = $1, email = $2, registration_step = 2, updated_at = CURRENT_TIMESTAMP
+             WHERE id = $3
+             RETURNING id, phone, email, username, registration_step`,
+            [username, email, user.id]
         );
 
         const updatedUser = updateResult.rows[0];
@@ -278,9 +293,6 @@ const registerStep2 = async (req, res) => {
                     id: updatedUser.id,
                     phone: updatedUser.phone,
                     email: updatedUser.email,
-                    firstName: updatedUser.first_name,
-                    lastName: updatedUser.last_name,
-                    fullName: updatedUser.full_name,
                     username: updatedUser.username,
                     registrationStep: updatedUser.registration_step
                 },

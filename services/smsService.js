@@ -156,8 +156,8 @@ class SMSService {
         // Agar kod berilmagan bo'lsa, random yaratish
         const verificationCode = code || this.generateVerificationCode();
         
-        // Oddiy SMS matni
-        const message = `Ro'yxatdan o'tish kodi: ${verificationCode}`;
+        // Eskiz.uz tasdiqlangan template (Template #4)
+        const message = `<#>Freya dasturiga Ro'yhatdan o'tish uchun tasdiqlash kodi:${verificationCode}`;
         
         const result = await this.sendSMS(phone, message);
         

@@ -35,23 +35,19 @@ const { verifyUser } = require('../middleware/authMiddleware');
  * components:
  *   schemas:
  *     UserRegistrationStep1:
- *       type: object
- *       required:
- *         - phone
- *         - password
- *       properties:
- *         phone:
- *           type: string
- *           description: Foydalanuvchi telefon raqami (+998XXXXXXXXX formatida)
- *           example: "+998901234567"
- *         email:
- *           type: string
- *           description: Foydalanuvchi email manzili (ixtiyoriy)
- *           example: "user@example.com"
- *         password:
- *           type: string
- *           description: Foydalanuvchi paroli (kamida 6 ta belgi)
- *           example: "password123"
+       type: object
+       required:
+         - phone
+         - password
+       properties:
+         phone:
+           type: string
+           description: Foydalanuvchi telefon raqami (+998XXXXXXXXX formatida)
+           example: "+998901234567"
+         password:
+           type: string
+           description: Foydalanuvchi paroli (kamida 6 ta belgi)
+           example: "password123"
  *     
  *     PhoneVerification:
  *       type: object
@@ -72,25 +68,20 @@ const { verifyUser } = require('../middleware/authMiddleware');
  *       type: object
  *       required:
  *         - phone
- *         - firstName
- *         - lastName
+ *         - username
  *       properties:
  *         phone:
  *           type: string
  *           description: Foydalanuvchi telefon raqami
  *           example: "+998901234567"
- *         firstName:
+ *         username:
  *           type: string
- *           description: Foydalanuvchi ismi
- *           example: "Akmal"
- *         lastName:
+ *           description: Foydalanuvchi username (majburiy)
+ *           example: "akmal_user"
+ *         email:
  *           type: string
- *           description: Foydalanuvchi familiyasi
- *           example: "Karimov"
- *         location:
- *           type: string
- *           description: Foydalanuvchi manzili (ixtiyoriy)
- *           example: "Toshkent, O'zbekiston"
+ *           description: Foydalanuvchi email manzili (ixtiyoriy)
+ *           example: "user@example.com"
  *     
  *     UserLogin:
  *       type: object
@@ -171,7 +162,6 @@ const { verifyUser } = require('../middleware/authMiddleware');
  */
 router.post('/register/step1', 
     validatePhoneNumber,
-    validateEmailFormat,
     validatePasswordStrength,
     checkPhoneExists(pool),
     registerStep1
@@ -289,7 +279,6 @@ router.post('/verify-phone',
  */
 router.post('/register/step2',
     validatePhoneNumber,
-    validateNameFormat,
     registerStep2
 );
 
