@@ -118,7 +118,7 @@ const authMiddleware = {
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
         const result = await query(
-      'SELECT id, username, email, password, full_name, salon_id, phone, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+      'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
       [decoded.id]
     );
         if (result.rows.length > 0) {
