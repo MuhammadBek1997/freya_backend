@@ -31,14 +31,14 @@ async function checkCurrentData() {
         console.log('👥 EMPLOYEES BY SALON:');
         for (const salon of salonsResult.rows) {
             const employeesResult = await pool.query(`
-                SELECT id, name, phone, email, position 
+                SELECT id, employee_name, employee_phone, email, position 
                 FROM employees 
                 WHERE salon_id = $1
             `, [salon.id]);
             
             console.log(`${salon.name}: ${employeesResult.rows.length} employees`);
             employeesResult.rows.forEach((emp, index) => {
-                console.log(`  ${index + 1}. ${emp.name} - ${emp.position} - ${emp.phone}`);
+                console.log(`  ${index + 1}. ${emp.employee_name} - ${emp.position} - ${emp.employee_phone}`);
             });
         }
         
@@ -46,7 +46,7 @@ async function checkCurrentData() {
         console.log('\n📅 SCHEDULES BY EMPLOYEE:');
         for (const salon of salonsResult.rows) {
             const employeesResult = await pool.query(`
-                SELECT id, name FROM employees WHERE salon_id = $1
+                SELECT id, employee_name FROM employees WHERE salon_id = $1
             `, [salon.id]);
             
             console.log(`\n${salon.name}:`);
@@ -57,7 +57,7 @@ async function checkCurrentData() {
                     WHERE employee_id = $1
                 `, [employee.id]);
                 
-                console.log(`  ${employee.name}: ${schedulesResult.rows.length} schedules`);
+                console.log(`  ${employee.employee_name}: ${schedulesResult.rows.length} schedules`);
                 schedulesResult.rows.forEach((schedule, index) => {
                     console.log(`    ${index + 1}. ${schedule.service_name} - ${schedule.duration}min - ${schedule.price} so'm`);
                 });
