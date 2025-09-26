@@ -163,7 +163,7 @@ const { verifyUser } = require('../middleware/authMiddleware');
 router.post('/register/step1', 
     validatePhoneNumber,
     validatePasswordStrength,
-    checkPhoneExists(pool),
+    checkPhoneExists(),
     registerStep1
 );
 
