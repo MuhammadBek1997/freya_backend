@@ -114,7 +114,7 @@ const fs = require('fs').promises;
  */
 const createPost = async (req, res) => {
     try {
-        const { title, description, salon_id } = req.body;
+        const { title, description } = req.body;
         const admin_id = req.user.id;
 
         // Validation
@@ -125,6 +125,17 @@ const createPost = async (req, res) => {
         if (title.length > 255) {
             return res.status(400).json({ message: 'Sarlavha 255 belgidan oshmasligi kerak' });
         }
+
+        // Admin ma'lumotlarini olish (salon_id uchun)
+        const adminResult = await pool.query(`
+            SELECT salon_id FROM admins WHERE id = $1 AND is_active = true
+        `, [admin_id]);
+
+        if (adminResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Admin topilmadi' });
+        }
+
+        const admin_salon_id = adminResult.rows[0].salon_id;
 
         // Media fayllarni qayta ishlash
         let mediaFiles = [];
@@ -143,7 +154,7 @@ const createPost = async (req, res) => {
             INSERT INTO posts (title, description, media_files, admin_id, salon_id)
             VALUES ($1, $2, $3, $4, $5)
             RETURNING *
-        `, [title.trim(), description?.trim() || null, JSON.stringify(mediaFiles), admin_id, salon_id || null]);
+        `, [title.trim(), description?.trim() || null, JSON.stringify(mediaFiles), admin_id, admin_salon_id]);
 
         const post = result.rows[0];
 
@@ -402,7 +413,7 @@ const getPostById = async (req, res) => {
 const updatePost = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, salon_id, keep_existing_media } = req.body;
+        const { title, description, keep_existing_media } = req.body;
         const admin_id = req.user.id;
 
         // Postni tekshirish va admin huquqini tekshirish
@@ -451,15 +462,13 @@ const updatePost = async (req, res) => {
                 title = COALESCE($1, title),
                 description = COALESCE($2, description),
                 media_files = $3,
-                salon_id = COALESCE($4, salon_id),
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $5 AND admin_id = $6
+            WHERE id = $4 AND admin_id = $5
             RETURNING *
         `, [
             title?.trim() || null,
             description?.trim() || null,
             JSON.stringify(mediaFiles),
-            salon_id || null,
             id,
             admin_id
         ]);
