@@ -1065,8 +1065,9 @@ const uploadProfileImage = async (req, res) => {
         }
 
         // Eski rasmni olish
-        const getUserQuery = 'SELECT image FROM users WHERE id = ?';
-        const [userRows] = await pool.execute(getUserQuery, [userId]);
+        const getUserQuery = 'SELECT image FROM users WHERE id = $1';
+        const userResult = await pool.query(getUserQuery, [userId]);
+        const userRows = userResult.rows;
         
         if (userRows.length === 0) {
             return res.status(404).json({
@@ -1080,8 +1081,8 @@ const uploadProfileImage = async (req, res) => {
         const imageBase64 = getImageAsBase64(req.file.buffer, mimeType);
 
         // Base64 ni database'ga saqlash
-        const updateQuery = 'UPDATE users SET image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-        await pool.execute(updateQuery, [imageBase64, userId]);
+        const updateQuery = 'UPDATE users SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2';
+        await pool.query(updateQuery, [imageBase64, userId]);
 
         // Eski rasmni o'chirish (memory storage uchun hech narsa qilmaydi)
         const oldImageData = userRows[0].image;
@@ -1111,8 +1112,9 @@ const getProfileImage = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const query = 'SELECT image FROM users WHERE id = ?';
-        const [rows] = await pool.execute(query, [userId]);
+        const query = 'SELECT image FROM users WHERE id = $1';
+        const result = await pool.query(query, [userId]);
+        const rows = result.rows;
 
         if (rows.length === 0) {
             return res.status(404).json({
@@ -1159,8 +1161,9 @@ const deleteProfileImage = async (req, res) => {
         const userId = req.user.id;
 
         // Eski rasmni olish
-        const getUserQuery = 'SELECT image FROM users WHERE id = ?';
-        const [userRows] = await pool.execute(getUserQuery, [userId]);
+        const getUserQuery = 'SELECT image FROM users WHERE id = $1';
+        const userResult = await pool.query(getUserQuery, [userId]);
+        const userRows = userResult.rows;
         
         if (userRows.length === 0) {
             return res.status(404).json({
@@ -1172,8 +1175,8 @@ const deleteProfileImage = async (req, res) => {
         const oldImageData = userRows[0].image;
 
         // Database dan rasm ma'lumotlarini o'chirish
-        const updateQuery = 'UPDATE users SET image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-        await pool.execute(updateQuery, [userId]);
+        const updateQuery = 'UPDATE users SET image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1';
+        await pool.query(updateQuery, [userId]);
 
         // Memory storage uchun eski rasm ma'lumotlarini tozalash
         if (oldImageData) {
