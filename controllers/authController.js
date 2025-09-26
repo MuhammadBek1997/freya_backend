@@ -178,20 +178,20 @@ const createAdmin = async (req, res) => {
 // Employee login
 const employeeLogin = async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ message: 'Email va password talab qilinadi' });
+        if (!username || !password) {
+            return res.status(400).json({ message: 'Username va password talab qilinadi' });
         }
 
-        // Employee ni database dan topish
+        // Employee ni database dan topish (username yoki email orqali)
         const result = await pool.query(
-            'SELECT * FROM employees WHERE email = $1 AND is_active = true',
-            [email]
+            'SELECT * FROM employees WHERE (employee_name = $1 OR email = $1) AND is_active = true',
+            [username]
         );
 
         if (result.rows.length === 0) {
-            return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
+            return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
 
         const employee = result.rows[0];
@@ -200,13 +200,13 @@ const employeeLogin = async (req, res) => {
         const isValidPassword = await bcrypt.compare(password, employee.employee_password);
         
         if (!isValidPassword) {
-            return res.status(401).json({ message: 'Noto\'g\'ri email yoki password' });
+            return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
 
         // Token yaratish
         const token = generateToken({
             id: employee.id,
-            email: employee.email,
+            username: employee.employee_name || employee.email,
             role: 'employee',
             salon_id: employee.salon_id
         });
@@ -216,6 +216,7 @@ const employeeLogin = async (req, res) => {
             token,
             user: {
                 id: employee.id,
+                username: employee.employee_name || employee.email,
                 email: employee.email,
                 name: employee.name || employee.employee_name,
                 surname: employee.name || employee.employee_name, // surname yo'q, shuning uchun name ishlatamiz
