@@ -80,6 +80,285 @@ const requireAdmin = (req, res, next) => {
  *   description: Post boshqaruvi API
  */
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Post:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: Post ID
+ *         title:
+ *           type: string
+ *           description: Post sarlavhasi
+ *         description:
+ *           type: string
+ *           description: Post tavsifi
+ *         media_files:
+ *           type: array
+ *           items:
+ *             type: string
+ *           description: Media fayllar ro'yxati
+ *         admin_id:
+ *           type: string
+ *           format: uuid
+ *           description: Admin ID
+ *         salon_id:
+ *           type: string
+ *           format: uuid
+ *           description: Salon ID
+ *         is_active:
+ *           type: boolean
+ *           description: Post faol holati
+ *         view_count:
+ *           type: integer
+ *           description: Ko'rishlar soni
+ *         like_count:
+ *           type: integer
+ *           description: Yoqtirishlar soni
+ *         created_at:
+ *           type: string
+ *           format: date-time
+ *           description: Yaratilgan vaqt
+ *         updated_at:
+ *           type: string
+ *           format: date-time
+ *           description: Yangilangan vaqt
+ *         admin_username:
+ *           type: string
+ *           description: Admin username
+ *         admin_full_name:
+ *           type: string
+ *           description: Admin to'liq ismi
+ *         salon_name:
+ *           type: string
+ *           description: Salon nomi
+ *     PostCreate:
+ *       type: object
+ *       required:
+ *         - title
+ *         - description
+ *       properties:
+ *         title:
+ *           type: string
+ *           description: Post sarlavhasi
+ *           example: "Yangi xizmat"
+ *         description:
+ *           type: string
+ *           description: Post tavsifi
+ *           example: "Bizda yangi soch turmagi xizmati mavjud"
+ *         media_files:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: binary
+ *           description: Yuklash uchun media fayllar
+ *     PostUpdate:
+ *       type: object
+ *       properties:
+ *         title:
+ *           type: string
+ *           description: Post sarlavhasi
+ *         description:
+ *           type: string
+ *           description: Post tavsifi
+ *         media_files:
+ *           type: array
+ *           items:
+ *             type: string
+ *             format: binary
+ *           description: Yangi media fayllar
+ */
+
+/**
+ * @swagger
+ * /api/posts:
+ *   get:
+ *     summary: Barcha postlarni olish
+ *     tags: [Posts]
+ *     responses:
+ *       200:
+ *         description: Postlar ro'yxati muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Post'
+ *       500:
+ *         description: Server xatosi
+ *   post:
+ *     summary: Yangi post yaratish
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/PostCreate'
+ *     responses:
+ *       201:
+ *         description: Post muvaffaqiyatli yaratildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Post muvaffaqiyatli yaratildi"
+ *                 data:
+ *                   $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       403:
+ *         description: Admin huquqi talab qilinadi
+ *       500:
+ *         description: Server xatosi
+ */
+
+/**
+ * @swagger
+ * /api/posts/{id}:
+ *   get:
+ *     summary: Bitta postni ID bo'yicha olish
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Post'
+ *       404:
+ *         description: Post topilmadi
+ *       500:
+ *         description: Server xatosi
+ *   put:
+ *     summary: Postni yangilash
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Post ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/PostUpdate'
+ *     responses:
+ *       200:
+ *         description: Post muvaffaqiyatli yangilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Post muvaffaqiyatli yangilandi"
+ *                 data:
+ *                   $ref: '#/components/schemas/Post'
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       403:
+ *         description: Admin huquqi talab qilinadi
+ *       404:
+ *         description: Post topilmadi
+ *       500:
+ *         description: Server xatosi
+ *   delete:
+ *     summary: Postni o'chirish
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post muvaffaqiyatli o'chirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Post muvaffaqiyatli o'chirildi"
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       403:
+ *         description: Admin huquqi talab qilinadi
+ *       404:
+ *         description: Post topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+
+/**
+ * @swagger
+ * /api/posts/{id}/like:
+ *   post:
+ *     summary: Postni yoqtirish/yoqtirmaslik
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Post ID
+ *     responses:
+ *       200:
+ *         description: Post yoqtirildi yoki yoqtirilmadi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Post yoqtirildi"
+ *                 like_count:
+ *                   type: integer
+ *                   description: Yangi like soni
+ *       404:
+ *         description: Post topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+
 // Public routes - hamma ko'ra oladi
 router.get('/', getAllPosts);
 router.get('/:id', getPostById);
