@@ -26,6 +26,22 @@ async function initializeTables() {
     // Enable UUID extension
     await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
 
+    // Users table for user registration
+    await pool.query(`CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      phone VARCHAR(20) UNIQUE NOT NULL,
+      email VARCHAR(100),
+      password_hash VARCHAR(255) NOT NULL,
+      username VARCHAR(100),
+      registration_step INTEGER DEFAULT 1,
+      verification_code VARCHAR(6),
+      verification_expires_at TIMESTAMP,
+      is_verified BOOLEAN DEFAULT false,
+      is_active BOOLEAN DEFAULT true,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     // Salons table
     await pool.query(`CREATE TABLE IF NOT EXISTS salons (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -15,7 +15,21 @@ async function deleteTestUser() {
     try {
         console.log('🔍 Production database ga ulanmoqda...');
         
-        // Database schema'ni ko'rish
+        // Barcha table'larni ko'rish
+        const tablesQuery = `
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name;
+        `;
+        const tablesResult = await client.query(tablesQuery);
+        
+        console.log(`📋 Database'dagi barcha table'lar:`);
+        tablesResult.rows.forEach(table => {
+            console.log(`  - ${table.table_name}`);
+        });
+        
+        // Users table schema'ni ko'rish
         const schemaQuery = `
             SELECT column_name, data_type 
             FROM information_schema.columns 
@@ -25,9 +39,13 @@ async function deleteTestUser() {
         const schemaResult = await client.query(schemaQuery);
         
         console.log(`📋 Users table schema:`);
-        schemaResult.rows.forEach(column => {
-            console.log(`  - ${column.column_name}: ${column.data_type}`);
-        });
+        if (schemaResult.rows.length === 0) {
+            console.log(`❌ Users table mavjud emas!`);
+        } else {
+            schemaResult.rows.forEach(column => {
+                console.log(`  - ${column.column_name}: ${column.data_type}`);
+            });
+        }
         
         // Barcha userlarni ko'rish
         const allUsersQuery = 'SELECT id, phone, name, role, is_active, created_at FROM users ORDER BY created_at DESC LIMIT 10';
