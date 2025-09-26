@@ -14,7 +14,7 @@ async function checkCurrentData() {
         
         // Check salons
         const salonsResult = await pool.query(`
-            SELECT id, name, type, is_private, is_active, created_at 
+            SELECT id, name, is_private, is_active, created_at 
             FROM salons 
             ORDER BY created_at
         `);
@@ -22,7 +22,7 @@ async function checkCurrentData() {
         console.log('📍 SALONS:');
         console.log(`Total salons: ${salonsResult.rows.length}`);
         salonsResult.rows.forEach((salon, index) => {
-            console.log(`${index + 1}. ${salon.name} - Type: ${salon.type} - Private: ${salon.is_private} - Active: ${salon.is_active}`);
+            console.log(`${index + 1}. ${salon.name} - Private: ${salon.is_private} - Active: ${salon.is_active}`);
         });
         
         // Count by type
