@@ -896,7 +896,7 @@ const getUserProfile = async (req, res) => {
 
         // Foydalanuvchi ma'lumotlarini olish
         const result = await pool.query(`
-            SELECT id, name, email, phone, location, image, created_at, updated_at
+            SELECT id, full_name as name, email, phone, location, image, created_at, updated_at
             FROM users 
             WHERE id = $1
         `, [userId]);
