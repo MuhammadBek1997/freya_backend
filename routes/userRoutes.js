@@ -35,19 +35,19 @@ const { verifyUser } = require('../middleware/authMiddleware');
  * components:
  *   schemas:
  *     UserRegistrationStep1:
-       type: object
-       required:
-         - phone
-         - password
-       properties:
-         phone:
-           type: string
-           description: Foydalanuvchi telefon raqami (+998XXXXXXXXX formatida)
-           example: "+998901234567"
-         password:
-           type: string
-           description: Foydalanuvchi paroli (kamida 6 ta belgi)
-           example: "password123"
+ *       type: object
+ *       required:
+ *         - phone
+ *         - password
+ *       properties:
+ *         phone:
+ *           type: string
+ *           description: Foydalanuvchi telefon raqami (+998XXXXXXXXX formatida)
+ *           example: "+998901234567"
+ *         password:
+ *           type: string
+ *           description: Foydalanuvchi paroli (kamida 6 ta belgi)
+ *           example: "password123"
  *     
  *     PhoneVerification:
  *       type: object
@@ -257,12 +257,7 @@ router.post('/verify-phone',
  *                           type: string
  *                         email:
  *                           type: string
- *                         firstName:
- *                           type: string
- *                         lastName:
- *                           type: string
- *                         fullName:
- *                           type: string
+ *                           nullable: true
  *                         username:
  *                           type: string
  *                         registrationStep:
@@ -321,12 +316,7 @@ router.post('/register/step2',
  *                           type: string
  *                         email:
  *                           type: string
- *                         firstName:
- *                           type: string
- *                         lastName:
- *                           type: string
- *                         fullName:
- *                           type: string
+ *                           nullable: true
  *                         username:
  *                           type: string
  *                     token:
