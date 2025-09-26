@@ -1045,16 +1045,6 @@ const resetPassword = async (req, res) => {
 // User profil rasmini yuklash
 const uploadProfileImage = async (req, res) => {
     try {
-        console.log('Upload request received:', {
-            hasFile: !!req.file,
-            fileInfo: req.file ? {
-                originalname: req.file.originalname,
-                mimetype: req.file.mimetype,
-                size: req.file.size,
-                hasBuffer: !!req.file.buffer
-            } : null
-        });
-
         const userId = req.user.id;
         
         if (!req.file) {
