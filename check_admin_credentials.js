@@ -24,28 +24,36 @@ async function checkAdminCredentials() {
             return;
         }
 
-        // Get all admin credentials
+        // First, check the structure of admins table
+        console.log('📋 Admins table structure:');
+        const structureResult = await pool.query(`
+            SELECT column_name, data_type, is_nullable, column_default
+            FROM information_schema.columns 
+            WHERE table_name = 'admins' 
+            AND table_schema = 'public'
+            ORDER BY ordinal_position;
+        `);
+
+        console.table(structureResult.rows);
+
+        // Get all admin data (without assuming password column exists)
         const adminsResult = await pool.query(`
-            SELECT id, username, password, salon_id, created_at
-            FROM admins 
-            ORDER BY created_at
+            SELECT * FROM admins ORDER BY created_at
         `);
 
         if (adminsResult.rows.length === 0) {
-            console.log('📭 No admin accounts found in the database.');
+            console.log('\n📭 No admin accounts found in the database.');
             return;
         }
 
-        console.log(`📊 Found ${adminsResult.rows.length} admin account(s):\n`);
+        console.log(`\n📊 Found ${adminsResult.rows.length} admin account(s):\n`);
 
-        // Display admin credentials
+        // Display admin data
         adminsResult.rows.forEach((admin, index) => {
             console.log(`👤 Admin ${index + 1}:`);
-            console.log(`   ID: ${admin.id}`);
-            console.log(`   Username: ${admin.username}`);
-            console.log(`   Password: ${admin.password}`);
-            console.log(`   Salon ID: ${admin.salon_id || 'Not assigned'}`);
-            console.log(`   Created: ${admin.created_at}`);
+            Object.keys(admin).forEach(key => {
+                console.log(`   ${key}: ${admin[key]}`);
+            });
             console.log('');
         });
 
