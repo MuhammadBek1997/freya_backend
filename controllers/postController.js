@@ -248,7 +248,7 @@ const getAllPosts = async (req, res) => {
                 p.*,
                 a.username as admin_username,
                 a.full_name as admin_full_name,
-                s.salon_name
+                s.salon_name_uz as salon_name
             FROM posts p
             LEFT JOIN admins a ON p.admin_id = a.id
             LEFT JOIN salons s ON p.salon_id = s.id
@@ -321,7 +321,7 @@ const getPostById = async (req, res) => {
                 p.*,
                 a.username as admin_username,
                 a.full_name as admin_full_name,
-                s.salon_name
+                s.salon_name_uz as salon_name
             FROM posts p
             LEFT JOIN admins a ON p.admin_id = a.id
             LEFT JOIN salons s ON p.salon_id = s.id
