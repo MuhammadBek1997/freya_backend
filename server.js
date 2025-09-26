@@ -27,6 +27,7 @@ const paymentRoutes = require('./routes/payments');
 const adminRoutes = require('./routes/admin');
 const i18nRoutes = require('./routes/i18nRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
+const postRoutes = require('./routes/postRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -113,6 +114,9 @@ app.use(morgan('combined'));
 // Body parser (Swagger UI'dan oldin bo'lishi kerak)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // I18n middleware
 app.use(languageDetection);
@@ -328,6 +332,9 @@ app.use('/api/i18n', i18nRoutes);
 
 // Appointment routes
 app.use('/api/appointments', appointmentRoutes);
+
+// Post routes
+app.use('/api/posts', postRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
