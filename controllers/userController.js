@@ -1065,26 +1065,24 @@ const uploadProfileImage = async (req, res) => {
             });
         }
 
-        const oldImagePath = userRows[0].image;
+        // File buffer'dan base64 yaratish
+        const mimeType = req.file.mimetype;
+        const imageBase64 = getImageAsBase64(req.file.buffer, mimeType);
 
-        // Yangi rasm yo'lini saqlash
-        const imagePath = req.file.path;
+        // Base64 ni database'ga saqlash
         const updateQuery = 'UPDATE users SET image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
-        await pool.execute(updateQuery, [imagePath, userId]);
+        await pool.execute(updateQuery, [imageBase64, userId]);
 
-        // Eski rasmni o'chirish (agar mavjud bo'lsa)
-        if (oldImagePath) {
-            deleteOldImage(oldImagePath);
+        // Eski rasmni o'chirish (memory storage uchun hech narsa qilmaydi)
+        const oldImageData = userRows[0].image;
+        if (oldImageData) {
+            deleteOldImage(oldImageData);
         }
-
-        // Base64 formatida qaytarish
-        const imageBase64 = getImageAsBase64(imagePath);
 
         res.json({
             success: true,
             message: 'Profil rasmi muvaffaqiyatli yuklandi',
             data: {
-                imagePath: imagePath,
                 imageBase64: imageBase64
             }
         });
@@ -1113,9 +1111,9 @@ const getProfileImage = async (req, res) => {
             });
         }
 
-        const imagePath = rows[0].image;
+        const imageData = rows[0].image;
         
-        if (!imagePath) {
+        if (!imageData) {
             return res.json({
                 success: true,
                 message: 'Profil rasmi mavjud emas',
@@ -1125,17 +1123,8 @@ const getProfileImage = async (req, res) => {
             });
         }
 
-        const imageBase64 = getImageAsBase64(imagePath);
-        
-        if (!imageBase64) {
-            return res.json({
-                success: true,
-                message: 'Rasm fayli topilmadi',
-                data: {
-                    imageBase64: null
-                }
-            });
-        }
+        // Database'dan kelgan base64 ma'lumotlarini qaytarish
+        const imageBase64 = getImageAsBase64(imageData);
 
         res.json({
             success: true,
@@ -1170,15 +1159,15 @@ const deleteProfileImage = async (req, res) => {
             });
         }
 
-        const oldImagePath = userRows[0].image;
+        const oldImageData = userRows[0].image;
 
-        // Database dan rasm yo'lini o'chirish
+        // Database dan rasm ma'lumotlarini o'chirish
         const updateQuery = 'UPDATE users SET image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
         await pool.execute(updateQuery, [userId]);
 
-        // Fayl tizimidan rasmni o'chirish
-        if (oldImagePath) {
-            deleteOldImage(oldImagePath);
+        // Memory storage uchun eski rasm ma'lumotlarini tozalash
+        if (oldImageData) {
+            deleteOldImage(oldImageData);
         }
 
         res.json({

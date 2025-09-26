@@ -2,24 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Upload papkasini yaratish
-const uploadDir = path.join(__dirname, '../uploads/profile-images');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Storage konfiguratsiyasi
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-        // Fayl nomini unique qilish
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = path.extname(file.originalname);
-        cb(null, 'profile-' + uniqueSuffix + extension);
-    }
-});
+// Memory storage for Heroku compatibility
+const storage = multer.memoryStorage();
 
 // Fayl filtri - faqat rasmlar
 const fileFilter = (req, file, cb) => {
@@ -85,52 +69,39 @@ const handleUploadError = (error, req, res, next) => {
     });
 };
 
-// Base64 formatida image qaytarish
-const getImageAsBase64 = (imagePath) => {
+// Base64 formatida image qaytarish (buffer uchun)
+const getImageAsBase64 = (imageData, mimeType = 'image/jpeg') => {
     try {
-        if (!imagePath || !fs.existsSync(imagePath)) {
+        if (!imageData) {
             return null;
         }
         
-        const imageBuffer = fs.readFileSync(imagePath);
-        const extension = path.extname(imagePath).toLowerCase();
-        
-        let mimeType = 'image/jpeg'; // default
-        switch (extension) {
-            case '.png':
-                mimeType = 'image/png';
-                break;
-            case '.gif':
-                mimeType = 'image/gif';
-                break;
-            case '.webp':
-                mimeType = 'image/webp';
-                break;
+        // Agar imageData string bo'lsa (database'dan kelgan base64), uni qaytarish
+        if (typeof imageData === 'string') {
+            return imageData;
         }
         
-        return `data:${mimeType};base64,${imageBuffer.toString('base64')}`;
+        // Agar buffer bo'lsa, base64 ga o'tkazish
+        if (Buffer.isBuffer(imageData)) {
+            return `data:${mimeType};base64,${imageData.toString('base64')}`;
+        }
+        
+        return null;
     } catch (error) {
         console.error('Base64 ga o\'tkazishda xatolik:', error);
         return null;
     }
 };
 
-// Eski rasmni o'chirish
+// Memory storage uchun eski rasm o'chirish funksiyasi (hech narsa qilmaydi)
 const deleteOldImage = (imagePath) => {
-    try {
-        if (imagePath && fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath);
-            console.log('Eski rasm o\'chirildi:', imagePath);
-        }
-    } catch (error) {
-        console.error('Eski rasmni o\'chirishda xatolik:', error);
-    }
+    // Memory storage ishlatganimiz uchun fayl o'chirish shart emas
+    console.log('Memory storage: eski rasm avtomatik tozalanadi');
 };
 
 module.exports = {
     upload: upload.single('image'),
     handleUploadError,
     getImageAsBase64,
-    deleteOldImage,
-    uploadDir
+    deleteOldImage
 };

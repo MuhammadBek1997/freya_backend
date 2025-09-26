@@ -1,15 +1,31 @@
 const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+const path = require('path');
 
 const BASE_URL = 'https://freya-salon-backend-cc373ce6622a.herokuapp.com/api';
 
-// Existing user credentials
+// Test uchun foydalanuvchi ma'lumotlari
 const userCredentials = {
     phone: '+998990972472',
     password: 'pass112233'
 };
 
-// Sample base64 image (small PNG)
-const sampleImageBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+// Test uchun oddiy rasm fayli yaratish
+function createTestImageFile() {
+    const testImagePath = path.join(__dirname, 'test_image.png');
+    // 1x1 pixel PNG fayl yaratish
+    const pngBuffer = Buffer.from([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
+        0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0x0F, 0x00, 0x00,
+        0x01, 0x00, 0x01, 0x5C, 0x72, 0xA3, 0x66, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+    ]);
+    fs.writeFileSync(testImagePath, pngBuffer);
+    return testImagePath;
+}
 
 async function testExistingUserImageFunctionality() {
     try {
@@ -37,19 +53,25 @@ async function testExistingUserImageFunctionality() {
         });
         
         console.log('✅ Profil ma\'lumotlari olindi');
-        console.log('Hozirda rasm bor:', !!currentProfileResponse.data.user.image);
-        if (currentProfileResponse.data.user.image) {
-            console.log('Rasm ma\'lumotlari uzunligi:', currentProfileResponse.data.user.image.length);
+        console.log('Hozirda rasm bor:', !!currentProfileResponse.data.data.user.image);
+        if (currentProfileResponse.data.data.user.image) {
+            console.log('Rasm ma\'lumotlari uzunligi:', currentProfileResponse.data.data.user.image.length);
         }
 
         // Step 3: Test image upload
         console.log('\n📸 Step 3: Rasm yuklashni test qilish...');
-        const uploadResponse = await axios.post(`${BASE_URL}/users/upload-image`, {
-            image: sampleImageBase64
-        }, {
+        
+        // Test rasm faylini yaratish
+        const testImagePath = createTestImageFile();
+        
+        // FormData yaratish
+        const formData = new FormData();
+        formData.append('image', fs.createReadStream(testImagePath));
+        
+        const uploadResponse = await axios.post(`${BASE_URL}/users/profile/image/upload`, formData, {
             headers: {
                 'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+                ...formData.getHeaders()
             }
         });
         
@@ -65,14 +87,14 @@ async function testExistingUserImageFunctionality() {
         });
         
         console.log('✅ Yangilangan profil olindi');
-        console.log('Profilda rasm bor:', !!profileAfterUploadResponse.data.user.image);
-        if (profileAfterUploadResponse.data.user.image) {
-            console.log('Yangi rasm ma\'lumotlari uzunligi:', profileAfterUploadResponse.data.user.image.length);
+        console.log('Profilda rasm bor:', !!profileAfterUploadResponse.data.data.user.image);
+        if (profileAfterUploadResponse.data.data.user.image) {
+            console.log('Yangi rasm ma\'lumotlari uzunligi:', profileAfterUploadResponse.data.data.user.image.length);
         }
 
         // Step 5: Test image retrieval endpoint
         console.log('\n🖼️ Step 5: Rasm olish endpointini test qilish...');
-        const imageResponse = await axios.get(`${BASE_URL}/users/image`, {
+        const imageResponse = await axios.get(`${BASE_URL}/users/profile/image`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -83,7 +105,7 @@ async function testExistingUserImageFunctionality() {
 
         // Step 6: Test image deletion
         console.log('\n🗑️ Step 6: Rasm o\'chirishni test qilish...');
-        const deleteResponse = await axios.delete(`${BASE_URL}/users/image`, {
+        const deleteResponse = await axios.delete(`${BASE_URL}/users/profile/image`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -101,7 +123,7 @@ async function testExistingUserImageFunctionality() {
         });
         
         console.log('✅ O\'chirishdan keyin profil tekshirildi');
-        console.log('O\'chirishdan keyin profilda rasm bor:', !!profileAfterDeleteResponse.data.user.image);
+        console.log('O\'chirishdan keyin profilda rasm bor:', !!profileAfterDeleteResponse.data.data.user.image);
 
         console.log('\n🎉 Barcha rasm funksiyalari muvaffaqiyatli test qilindi!');
 
@@ -112,6 +134,13 @@ async function testExistingUserImageFunctionality() {
         }
         if (error.response?.data) {
             console.error('Response ma\'lumotlari:', JSON.stringify(error.response.data, null, 2));
+        }
+    } finally {
+        // Test fayl tozalash
+        const testImagePath = path.join(__dirname, 'test_image.png');
+        if (fs.existsSync(testImagePath)) {
+            fs.unlinkSync(testImagePath);
+            console.log('\n🧹 Test fayli tozalandi');
         }
     }
 }
