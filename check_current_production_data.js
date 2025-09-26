@@ -14,7 +14,7 @@ async function checkCurrentData() {
         
         // Check salons
         const salonsResult = await pool.query(`
-            SELECT id, name, is_private, is_active, created_at 
+            SELECT id, name, is_active, created_at 
             FROM salons 
             ORDER BY created_at
         `);
@@ -22,13 +22,10 @@ async function checkCurrentData() {
         console.log('📍 SALONS:');
         console.log(`Total salons: ${salonsResult.rows.length}`);
         salonsResult.rows.forEach((salon, index) => {
-            console.log(`${index + 1}. ${salon.name} - Private: ${salon.is_private} - Active: ${salon.is_active}`);
+            console.log(`${index + 1}. ${salon.name} - Active: ${salon.is_active}`);
         });
         
-        // Count by type
-        const privateCount = salonsResult.rows.filter(s => s.is_private).length;
-        const corporateCount = salonsResult.rows.filter(s => !s.is_private).length;
-        console.log(`\n📊 Private salons: ${privateCount}, Corporate salons: ${corporateCount}\n`);
+        console.log(`\n📊 Total salons: ${salonsResult.rows.length}\n`);
         
         // Check employees for each salon
         console.log('👥 EMPLOYEES BY SALON:');
