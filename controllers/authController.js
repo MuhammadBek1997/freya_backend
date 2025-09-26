@@ -13,7 +13,7 @@ const superadminLogin = async (req, res) => {
 
         // Superadmin ni database dan topish
         const result = await pool.query(
-            'SELECT id, username, email, password, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
+            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
             [username, 'superadmin']
         );
 
@@ -24,7 +24,7 @@ const superadminLogin = async (req, res) => {
         const superadmin = result.rows[0];
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, superadmin.password);
+        const isValidPassword = await bcrypt.compare(password, superadmin.password_hash);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
@@ -65,7 +65,7 @@ const adminLogin = async (req, res) => {
 
         // Admin ni database dan topish
         const result = await pool.query(
-            'SELECT id, username, email, password, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
+            'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
             [username]
         );
 
@@ -76,7 +76,7 @@ const adminLogin = async (req, res) => {
         const admin = result.rows[0];
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, admin.password);
+        const isValidPassword = await bcrypt.compare(password, admin.password_hash);
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
