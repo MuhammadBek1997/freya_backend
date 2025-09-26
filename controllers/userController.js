@@ -555,8 +555,8 @@ const deleteUser = async (req, res) => {
             // Foydalanuvchi bilan bog'liq xabarlarni o'chirish (sender yoki receiver sifatida)
             await client.query('DELETE FROM messages WHERE sender_id = $1 OR receiver_id = $1', [user.id]);
 
-            // Foydalanuvchi bilan bog'liq user_chats'ni o'chirish
-            await client.query('DELETE FROM user_chats WHERE user_id = $1', [user.id]);
+            // Foydalanuvchi bilan bog'liq user_chats'ni o'chirish (sender yoki receiver sifatida)
+            await client.query('DELETE FROM user_chats WHERE sender_id = $1 OR receiver_id = $1', [user.id]);
 
             // Foydalanuvchini o'chirish
             await client.query('DELETE FROM users WHERE id = $1', [user.id]);
