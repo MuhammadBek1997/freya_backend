@@ -2,6 +2,8 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const smsService = require('../services/smsService');
+const { getImageAsBase64, deleteOldImage } = require('../middleware/imageUpload');
+const path = require('path');
 
 // Telefon raqam formatini tekshirish
 const validatePhoneNumber = (phone) => {
@@ -686,7 +688,7 @@ const updateUser = async (req, res) => {
             UPDATE users 
             SET ${updateFields.join(', ')}
             WHERE id = $${paramIndex + 1}
-            RETURNING id, name, email, phone, location, created_at, updated_at
+            RETURNING id, name, email, phone, location, image, created_at, updated_at
         `;
 
         const result = await pool.query(updateQuery, updateValues);
@@ -888,6 +890,42 @@ const getUserLocation = async (req, res) => {
     }
 };
 
+const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.userId; // JWT tokendan olinadi
+
+        // Foydalanuvchi ma'lumotlarini olish
+        const result = await pool.query(`
+            SELECT id, name, email, phone, location, image, created_at, updated_at
+            FROM users 
+            WHERE id = $1
+        `, [userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const user = result.rows[0];
+
+        res.json({
+            success: true,
+            data: {
+                user: user
+            }
+        });
+
+    } catch (error) {
+        console.error('Get User Profile Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 // Parolni tiklash (tasdiqlash kodi bilan)
 const resetPassword = async (req, res) => {
     try {
@@ -1004,6 +1042,159 @@ const resetPassword = async (req, res) => {
     }
 };
 
+// User profil rasmini yuklash
+const uploadProfileImage = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rasm fayli tanlanmagan'
+            });
+        }
+
+        // Eski rasmni olish
+        const getUserQuery = 'SELECT image FROM users WHERE id = ?';
+        const [userRows] = await pool.execute(getUserQuery, [userId]);
+        
+        if (userRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const oldImagePath = userRows[0].image;
+
+        // Yangi rasm yo'lini saqlash
+        const imagePath = req.file.path;
+        const updateQuery = 'UPDATE users SET image = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+        await pool.execute(updateQuery, [imagePath, userId]);
+
+        // Eski rasmni o'chirish (agar mavjud bo'lsa)
+        if (oldImagePath) {
+            deleteOldImage(oldImagePath);
+        }
+
+        // Base64 formatida qaytarish
+        const imageBase64 = getImageAsBase64(imagePath);
+
+        res.json({
+            success: true,
+            message: 'Profil rasmi muvaffaqiyatli yuklandi',
+            data: {
+                imagePath: imagePath,
+                imageBase64: imageBase64
+            }
+        });
+
+    } catch (error) {
+        console.error('Profil rasmini yuklashda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// User profil rasmini olish
+const getProfileImage = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const query = 'SELECT image FROM users WHERE id = ?';
+        const [rows] = await pool.execute(query, [userId]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const imagePath = rows[0].image;
+        
+        if (!imagePath) {
+            return res.json({
+                success: true,
+                message: 'Profil rasmi mavjud emas',
+                data: {
+                    imageBase64: null
+                }
+            });
+        }
+
+        const imageBase64 = getImageAsBase64(imagePath);
+        
+        if (!imageBase64) {
+            return res.json({
+                success: true,
+                message: 'Rasm fayli topilmadi',
+                data: {
+                    imageBase64: null
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Profil rasmi muvaffaqiyatli olindi',
+            data: {
+                imageBase64: imageBase64
+            }
+        });
+
+    } catch (error) {
+        console.error('Profil rasmini olishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// User profil rasmini o'chirish
+const deleteProfileImage = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Eski rasmni olish
+        const getUserQuery = 'SELECT image FROM users WHERE id = ?';
+        const [userRows] = await pool.execute(getUserQuery, [userId]);
+        
+        if (userRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        const oldImagePath = userRows[0].image;
+
+        // Database dan rasm yo'lini o'chirish
+        const updateQuery = 'UPDATE users SET image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+        await pool.execute(updateQuery, [userId]);
+
+        // Fayl tizimidan rasmni o'chirish
+        if (oldImagePath) {
+            deleteOldImage(oldImagePath);
+        }
+
+        res.json({
+            success: true,
+            message: 'Profil rasmi muvaffaqiyatli o\'chirildi'
+        });
+
+    } catch (error) {
+        console.error('Profil rasmini o\'chirishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -1016,5 +1207,9 @@ module.exports = {
     updateUser,
     generateUserToken,
     updateUserLocation,
-    getUserLocation
+    getUserLocation,
+    getUserProfile,
+    uploadProfileImage,
+    getProfileImage,
+    deleteProfileImage
 };

@@ -15,7 +15,11 @@ const {
     updateUser,
     generateUserToken,
     updateUserLocation,
-    getUserLocation
+    getUserLocation,
+    getUserProfile,
+    uploadProfileImage,
+    getProfileImage,
+    deleteProfileImage
 } = require('../controllers/userController');
 
 // Middleware
@@ -30,6 +34,7 @@ const {
 } = require('../middleware/phoneValidationMiddleware');
 
 const { verifyUser } = require('../middleware/authMiddleware');
+const { upload, handleUploadError } = require('../middleware/imageUpload');
 
 /**
  * @swagger
@@ -864,5 +869,187 @@ router.put('/location', verifyUser, updateUserLocation);
  *         description: Server xatosi
  */
 router.get('/location', verifyUser, getUserLocation);
+
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Foydalanuvchi profilini olish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Foydalanuvchi profili muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                           example: 1
+ *                         name:
+ *                           type: string
+ *                           example: "John Doe"
+ *                         email:
+ *                           type: string
+ *                           example: "john@example.com"
+ *                         phone:
+ *                           type: string
+ *                           example: "+998901234567"
+ *                         location:
+ *                           type: string
+ *                           example: "Tashkent"
+ *                         image:
+ *                           type: string
+ *                           example: "base64_encoded_image_data"
+ *                         created_at:
+ *                           type: string
+ *                           format: date-time
+ *                         updated_at:
+ *                           type: string
+ *                           format: date-time
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.get('/profile', verifyUser, getUserProfile);
+
+/**
+ * @swagger
+ * /api/users/profile/image/upload:
+ *   post:
+ *     summary: Profil rasmini yuklash
+ *     description: Foydalanuvchi profil rasmini yuklash (faqat autentifikatsiya qilingan foydalanuvchilar uchun)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: Profil rasmi (JPEG, PNG, GIF, WebP formatlarida, maksimal 5MB)
+ *     responses:
+ *       200:
+ *         description: Profil rasmi muvaffaqiyatli yuklandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profil rasmi muvaffaqiyatli yuklandi"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     imagePath:
+ *                       type: string
+ *                       example: "/uploads/profile-images/profile-1234567890-123456789.jpg"
+ *                     imageBase64:
+ *                       type: string
+ *                       example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+ *       400:
+ *         description: Xato so'rov (fayl tanlanmagan yoki noto'g'ri format)
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.post('/profile/image/upload', verifyUser, upload, handleUploadError, uploadProfileImage);
+
+/**
+ * @swagger
+ * /api/users/profile/image:
+ *   get:
+ *     summary: Profil rasmini olish
+ *     description: Foydalanuvchi profil rasmini Base64 formatida olish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profil rasmi muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profil rasmi muvaffaqiyatli olindi"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     imageBase64:
+ *                       type: string
+ *                       example: "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQ..."
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.get('/profile/image', verifyUser, getProfileImage);
+
+/**
+ * @swagger
+ * /api/users/profile/image:
+ *   delete:
+ *     summary: Profil rasmini o'chirish
+ *     description: Foydalanuvchi profil rasmini o'chirish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Profil rasmi muvaffaqiyatli o'chirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Profil rasmi muvaffaqiyatli o'chirildi"
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.delete('/profile/image', verifyUser, deleteProfileImage);
 
 module.exports = router;
