@@ -257,7 +257,7 @@ const getUserAppointments = async (req, res) => {
             LEFT JOIN employees e ON a.employee_id = e.id
             WHERE a.user_id = $1
         `;
-        const params = [user_id];
+        const params = [userId];
         
 
 
@@ -273,7 +273,7 @@ const getUserAppointments = async (req, res) => {
 
         // Get total count
         let countQuery = `SELECT COUNT(*) as total FROM appointments WHERE user_id = $1`;
-        const countParams = [user_id];
+        const countParams = [userId];
 
         if (status) {
             countQuery += ` AND status = $${countParams.length + 1}`;
