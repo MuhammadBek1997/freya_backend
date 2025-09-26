@@ -75,8 +75,8 @@ const createSalon = async (req, res) => {
         const query = `
             INSERT INTO salons (
                 name, phone, email, description, address, working_hours, 
-                salon_types, location, salon_orient, salon_comfort
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                salon_types, location, salon_orient, salon_comfort, is_private
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
         `;
 
@@ -90,7 +90,8 @@ const createSalon = async (req, res) => {
             JSON.stringify(salon_types || defaultSalonTypes),
             JSON.stringify(location || defaultLocation),
             JSON.stringify(salon_orient || defaultSalonOrient),
-            JSON.stringify(salon_comfort || defaultSalonComfort)
+            JSON.stringify(salon_comfort || defaultSalonComfort),
+            req.body.is_private !== undefined ? req.body.is_private : false // Default to false (corporate)
         ];
 
         const result = await pool.query(query, values);
@@ -153,7 +154,7 @@ const getAllSalons = async (req, res) => {
         // Database connection test
         const dbTest = await pool.query('SELECT NOW()');
         
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 10, search = '', is_private = '' } = req.query;
         const language = req.language || req.query.language || 'ru'; // Language middleware'dan olinadi
         const offset = (page - 1) * limit;
 
@@ -172,6 +173,15 @@ const getAllSalons = async (req, res) => {
             query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
             countQuery += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
             queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        // is_private filter
+        if (is_private !== '') {
+            const isPrivateValue = is_private === 'true' || is_private === true;
+            query += ` AND is_private = $${paramIndex}`;
+            countQuery += ` AND is_private = $${paramIndex}`;
+            queryParams.push(isPrivateValue);
             paramIndex++;
         }
 
@@ -596,7 +606,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 // Get nearby salons based on user location
 const getNearbySalons = async (req, res) => {
     try {
-        const { latitude, longitude, radius = 10, page = 1, limit = 10 } = req.query;
+        const { latitude, longitude, radius = 10, page = 1, limit = 10, is_private = '' } = req.query;
         
         // Validate required parameters
         if (!latitude || !longitude) {
@@ -622,7 +632,7 @@ const getNearbySalons = async (req, res) => {
         }
         
         // Get all salons with location data
-        const query = `
+        let query = `
             SELECT 
                 s.*,
                 CASE 
@@ -640,10 +650,20 @@ const getNearbySalons = async (req, res) => {
             AND s.location IS NOT NULL 
             AND s.location->>'lat' IS NOT NULL 
             AND s.location->>'lng' IS NOT NULL
-            ORDER BY s.created_at DESC
         `;
         
-        const result = await pool.query(query);
+        let queryParams = [];
+        
+        // Add is_private filter if provided
+        if (is_private !== '') {
+            const isPrivateValue = is_private === 'true' || is_private === true;
+            query += ` AND s.is_private = $1`;
+            queryParams.push(isPrivateValue);
+        }
+        
+        query += ` ORDER BY s.created_at DESC`;
+        
+        const result = await pool.query(query, queryParams);
         
         // Calculate distances and filter by radius
         const salonsWithDistance = result.rows
