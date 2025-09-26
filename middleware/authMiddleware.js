@@ -227,5 +227,6 @@ module.exports = {
   verifyUser: authMiddleware.verifyUser,
   verifyAuth: authMiddleware.verifyAuth,
   verifyUserToken: authMiddleware.verifyUserToken,
-  generateToken: authMiddleware.generateToken
+  generateToken: authMiddleware.generateToken,
+  authenticateToken: authMiddleware.verifyAuth // Alias for verifyAuth
 };
