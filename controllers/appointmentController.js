@@ -250,7 +250,7 @@ const getUserAppointments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT a.*, s.day_of_week, s.start_time, s.end_time,
+            SELECT a.*, s.name as schedule_name, s.title as schedule_title, s.date as schedule_date,
                    e.name as employee_name
             FROM appointments a
             LEFT JOIN schedules s ON a.schedule_id = s.id
@@ -534,9 +534,9 @@ const getSalonAppointments = async (req, res) => {
         }
 
         let query = `
-            SELECT a.*, s.day_of_week, s.start_time, s.end_time,
-                   u.name as user_full_name, u.email as user_email,
-                   e.name as employee_name, sal.name as salon_name
+            SELECT a.*, s.name as schedule_name, s.title as schedule_title, s.date as schedule_date,
+                   u.full_name as user_full_name, u.email as user_email,
+                   e.name as employee_name, sal.salon_name
             FROM appointments a
             LEFT JOIN schedules s ON a.schedule_id = s.id
             LEFT JOIN users u ON a.user_id = u.id
