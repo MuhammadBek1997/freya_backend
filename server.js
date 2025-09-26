@@ -59,25 +59,27 @@ app.use(corsProxy);
 // CORS konfiguratsiyasi (Production va Development uchun)
 const corsOptions = {
     origin: function (origin, callback) {
-        // Production'da faqat ma'lum domainlarga ruxsat
-        if (process.env.NODE_ENV === 'production') {
-            const allowedOrigins = [
-                'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
-                'https://your-frontend-domain.com',
-                'https://*.herokuapp.com'
-            ];
-            
-            // Origin yo'q bo'lsa (masalan, Postman) yoki ruxsat etilgan origin bo'lsa
-            if (!origin || allowedOrigins.some(allowed => 
-                allowed.includes('*') ? origin.includes(allowed.replace('*', '')) : origin === allowed
-            )) {
-                callback(null, true);
-            } else {
-                callback(new Error('CORS policy tomonidan rad etildi'), false);
-            }
-        } else {
-            // Development'da barcha originlarga ruxsat
+        // Ruxsat etilgan originlar ro'yxati
+        const allowedOrigins = [
+            'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
+            'https://your-frontend-domain.com',
+            'https://*.herokuapp.com',
+            'http://localhost:3000',
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'http://localhost:8080',
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:5174'
+        ];
+        
+        // Origin yo'q bo'lsa (masalan, Postman) yoki ruxsat etilgan origin bo'lsa
+        if (!origin || allowedOrigins.some(allowed => 
+            allowed.includes('*') ? origin.includes(allowed.replace('*', '')) : origin === allowed
+        )) {
             callback(null, true);
+        } else {
+            console.log('CORS rad etildi:', origin);
+            callback(new Error('CORS policy tomonidan rad etildi'), false);
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
