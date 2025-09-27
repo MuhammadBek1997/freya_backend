@@ -135,11 +135,12 @@ router.get('/my-appointments', appointmentController.getUserAppointments);
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: salon_id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Salon ID
+         name: salon_id
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: Salon ID
  *       - in: query
  *         name: page
  *         schema:

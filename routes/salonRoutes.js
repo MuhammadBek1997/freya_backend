@@ -104,7 +104,8 @@ router.get('/', languageDetection, getAllSalons);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         description: Salon ID
  *       - $ref: '#/components/parameters/LanguageParam'
  *       - $ref: '#/components/parameters/AcceptLanguageHeader'
@@ -361,7 +362,8 @@ router.post('/', verifySuperAdmin, createSalon);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         description: Salon ID
  *     requestBody:
  *       required: true
@@ -426,7 +428,8 @@ router.put('/:id', verifySuperAdmin, updateSalon);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         description: Salon ID
  *     responses:
  *       200:
@@ -472,7 +475,8 @@ router.delete('/:id', verifySuperAdmin, deleteSalon);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         description: Salon ID
  *     responses:
  *       200:
@@ -511,7 +515,8 @@ router.get('/:id/comments', getSalonComments);
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
+ *           format: uuid
  *         description: Salon ID
  *     requestBody:
  *       required: true
@@ -689,9 +694,9 @@ router.get('/filter/types', languageDetection, getSalonsByTypes);
  *         schema:
  *           type: integer
  *           minimum: 1
- *           maximum: 50
+ *           maximum: 100
  *           default: 10
- *         description: Har sahifadagi salonlar soni
+ *         description: Sahifadagi elementlar soni
  *     responses:
  *       200:
  *         description: Tavsiya qilingan salonlar ro'yxati
@@ -706,30 +711,17 @@ router.get('/filter/types', languageDetection, getSalonsByTypes);
  *                 salons:
  *                   type: array
  *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       salon_name:
- *                         type: string
- *                       salon_description:
- *                         type: string
- *                       salon_rating:
- *                         type: number
- *                       salon_types:
- *                         type: array
- *                         items:
- *                           type: string
+ *                     $ref: '#/components/schemas/Salon'
  *                 pagination:
  *                   type: object
  *                   properties:
- *                     current_page:
- *                       type: integer
- *                     total_pages:
- *                       type: integer
- *                     total_salons:
+ *                     page:
  *                       type: integer
  *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
  *                       type: integer
  *                 recommendation_info:
  *                   type: object
@@ -738,14 +730,22 @@ router.get('/filter/types', languageDetection, getSalonsByTypes);
  *                       type: array
  *                       items:
  *                         type: string
- *                     favourite_salons_count:
+ *                       description: Tavsiya asosidagi salon turlari
+ *                     user_favorites_count:
  *                       type: integer
+ *                       description: Foydalanuvchi favourite salonlari soni
  *       401:
- *         description: Autentifikatsiya talab qilinadi
- *       404:
- *         description: User topilmadi
+ *         description: Avtorizatsiya talab qilinadi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
- *         description: Server xatoligi
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
 router.get('/recommended', verifyUser, languageDetection, getRecommendedSalons);
 

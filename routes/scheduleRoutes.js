@@ -44,12 +44,14 @@ router.get('/schedules', getAllSchedules);
  *     description: Berilgan ID bo'yicha bitta jadval ma'lumotlarini olish
  *     tags: [Schedules]
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Jadval ID raqami
+ *    parameters:
+       - in: path
+         name: id
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: Jadval ID raqami
  *     responses:
  *       200:
  *         description: Jadval muvaffaqiyatli topildi
@@ -189,12 +191,14 @@ router.post('/schedules', verifyAdmin, createSchedule);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Jadval ID raqami
+ *    parameters:
+       - in: path
+         name: id
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: Jadval ID raqami
  *     requestBody:
  *       required: true
  *       content:
@@ -202,14 +206,16 @@ router.post('/schedules', verifyAdmin, createSchedule);
  *           schema:
  *             type: object
  *             properties:
- *               salon_id:
- *                 type: integer
- *                 description: Salon ID raqami
- *                 example: 1
- *               employee_id:
- *                 type: integer
- *                 description: Xodim ID raqami
- *                 example: 1
+               salon_id:
+                 type: string
+                 format: uuid
+                 description: Salon ID raqami
+                 example: "ec21babc-9ea2-49b9-a48b-dfc2a5e9d7b3"
+               employee_id:
+                 type: string
+                 format: uuid
+                 description: Xodim ID raqami
+                 example: "f47ac10b-58cc-4372-a567-0e02b2c3d479"
  *               date:
  *                 type: string
  *                 format: date
@@ -279,12 +285,14 @@ router.put('/schedules/:id', verifyAdmin, updateSchedule);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Jadval ID raqami
+ *    parameters:
+       - in: path
+         name: id
+         required: true
+         schema:
+           type: string
+           format: uuid
+         description: Jadval ID raqami
  *     responses:
  *       200:
  *         description: Jadval muvaffaqiyatli o'chirildi
