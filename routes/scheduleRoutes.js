@@ -89,37 +89,61 @@ router.get('/schedules/:id', getScheduleById);
  *             type: object
  *             required:
  *               - salon_id
- *               - employee_id
+ *               - name
  *               - date
- *               - start_time
- *               - end_time
+ *               - price
  *             properties:
  *               salon_id:
- *                 type: integer
+ *                 type: string
+ *                 format: uuid
  *                 description: Salon ID raqami
- *                 example: 1
- *               employee_id:
- *                 type: integer
- *                 description: Xodim ID raqami
- *                 example: 1
+ *                 example: "ec21babc-9ea2-49b9-a48b-dfc2a5e9d7b3"
+ *               name:
+ *                 type: string
+ *                 description: Jadval nomi
+ *                 example: "Soch olish"
+ *               title:
+ *                 type: string
+ *                 description: Jadval sarlavhasi
+ *                 example: "Erkaklar soch olish xizmati"
  *               date:
  *                 type: string
  *                 format: date
  *                 description: Jadval sanasi
- *                 example: "2024-01-15"
- *               start_time:
- *                 type: string
- *                 format: time
- *                 description: Boshlanish vaqti
- *                 example: "09:00"
- *               end_time:
- *                 type: string
- *                 format: time
- *                 description: Tugash vaqti
- *                 example: "17:00"
- *               is_available:
+ *                 example: "2025-09-28"
+ *               repeat:
  *                 type: boolean
- *                 description: Mavjudlik holati
+ *                 description: Takrorlanish holati
+ *                 example: false
+ *               repeat_value:
+ *                 type: integer
+ *                 description: Takrorlanish qiymati
+ *                 example: null
+ *               employee_list:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uuid
+ *                 description: Xodimlar ro'yxati
+ *                 example: []
+ *               price:
+ *                 type: number
+ *                 format: decimal
+ *                 description: Xizmat narxi
+ *                 example: 50000
+ *               full_pay:
+ *                 type: number
+ *                 format: decimal
+ *                 description: To'liq to'lov
+ *                 example: null
+ *               deposit:
+ *                 type: number
+ *                 format: decimal
+ *                 description: Oldindan to'lov
+ *                 example: null
+ *               is_active:
+ *                 type: boolean
+ *                 description: Faollik holati
  *                 example: true
  *     responses:
  *       201:

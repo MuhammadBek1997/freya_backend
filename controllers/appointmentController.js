@@ -37,7 +37,7 @@ const createAppointment = async (req, res) => {
         }
 
         // Check if schedule exists and get salon_id
-        const scheduleCheck = await pool.query('SELECT id, employee_id, salon_id FROM schedules WHERE id = $1', [schedule_id]);
+        const scheduleCheck = await pool.query('SELECT id, employee_list, salon_id FROM schedules WHERE id = $1', [schedule_id]);
         if (scheduleCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -45,8 +45,12 @@ const createAppointment = async (req, res) => {
             });
         }
 
-        const employee_id = scheduleCheck.rows[0].employee_id;
+        const employee_list = scheduleCheck.rows[0].employee_list;
         const salon_id = scheduleCheck.rows[0].salon_id;
+        
+        // For backward compatibility, if employee_list is not empty, use the first employee
+        // Otherwise, set employee_id to null
+        const employee_id = employee_list && employee_list.length > 0 ? employee_list[0] : null;
 
         // Validate that salon exists
         const salonCheck = await pool.query('SELECT id FROM salons WHERE id = $1', [salon_id]);

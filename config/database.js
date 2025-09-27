@@ -110,12 +110,17 @@ async function initializeTables() {
     // Schedules table
     await pool.query(`CREATE TABLE IF NOT EXISTS schedules (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      employee_id UUID REFERENCES employees(id) ON DELETE CASCADE,
       salon_id UUID REFERENCES salons(id) ON DELETE CASCADE,
+      name VARCHAR(255) NOT NULL,
+      title VARCHAR(255),
       date DATE NOT NULL,
-      start_time TIME NOT NULL,
-      end_time TIME NOT NULL,
-      is_available BOOLEAN DEFAULT true,
+      repeat VARCHAR(50),
+      repeat_value INTEGER,
+      employee_list JSONB DEFAULT '[]',
+      price DECIMAL(10,2) NOT NULL,
+      full_pay DECIMAL(10,2),
+      deposit DECIMAL(10,2),
+      is_active BOOLEAN DEFAULT true,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);

@@ -550,42 +550,62 @@ const swaggerDefinition = {
             description: 'Salon ID si',
             example: '987fcdeb-51a2-43d1-9f12-123456789abc'
           },
-          employee_id: {
+          name: {
             type: 'string',
-            format: 'uuid',
-            description: 'Xodim ID si',
-            example: '456e7890-f12b-34c5-d678-901234567890'
+            description: 'Jadval nomi',
+            example: 'Soch olish'
           },
-          service_name: {
+          title: {
             type: 'string',
-            description: 'Xizmat nomi',
-            example: 'Soch kesish'
+            description: 'Jadval sarlavhasi',
+            example: 'Erkaklar soch olish xizmati'
           },
-          service_price: {
+          date: {
+            type: 'string',
+            format: 'date',
+            description: 'Jadval sanasi',
+            example: '2025-09-28'
+          },
+          repeat: {
+            type: 'boolean',
+            description: 'Takrorlanish holati',
+            example: false
+          },
+          repeat_value: {
+            type: 'integer',
+            description: 'Takrorlanish qiymati',
+            example: null
+          },
+          employee_list: {
+            type: 'array',
+            items: {
+              type: 'string',
+              format: 'uuid'
+            },
+            description: 'Xodimlar ro\'yxati',
+            example: ['456e7890-f12b-34c5-d678-901234567890']
+          },
+          price: {
             type: 'number',
-            format: 'float',
+            format: 'decimal',
             description: 'Xizmat narxi',
             example: 50000
           },
-          available_date: {
-            type: 'string',
-            format: 'date',
-            description: 'Mavjud sana',
-            example: '2024-01-15'
+          full_pay: {
+            type: 'number',
+            format: 'decimal',
+            description: 'To\'liq to\'lov',
+            example: null
           },
-          available_time: {
-            type: 'string',
-            description: 'Mavjud vaqt',
-            example: '10:00'
+          deposit: {
+            type: 'number',
+            format: 'decimal',
+            description: 'Oldindan to\'lov',
+            example: null
           },
-          duration: {
-            type: 'integer',
-            description: 'Davomiyligi (daqiqalarda)',
-            example: 60
-          },
-          is_available: {
+          is_active: {
             type: 'boolean',
-            description: 'Mavjudlik holati',
+            description: 'Faollik holati',
             example: true
           },
           created_at: {
@@ -601,7 +621,7 @@ const swaggerDefinition = {
             example: '2024-01-01T00:00:00.000Z'
           }
         },
-        required: ['id', 'salon_id', 'employee_id', 'service_name', 'service_price', 'available_date', 'available_time']
+        required: ['id', 'salon_id', 'name', 'date', 'price']
       },
       Appointment: {
         type: 'object',

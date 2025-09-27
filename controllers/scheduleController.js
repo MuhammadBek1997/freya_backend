@@ -85,27 +85,37 @@ const createSchedule = async (req, res) => {
     try {
         const {
             salon_id,
-            employee_id,
-            client_name,
-            client_phone,
-            service_name,
-            service_price,
-            appointment_date,
-            appointment_time,
-            notes
+            name,
+            title,
+            date,
+            repeat = false,
+            repeat_value = null,
+            employee_list = [],
+            price,
+            full_pay = null,
+            deposit = null,
+            is_active = true
         } = req.body;
+
+        // Validate required fields
+        if (!salon_id || !name || !date || !price) {
+            return res.status(400).json({
+                success: false,
+                message: 'Majburiy maydonlar: salon_id, name, date, price'
+            });
+        }
 
         const query = `
             INSERT INTO schedules (
-                salon_id, employee_id, client_name, client_phone,
-                service_name, service_price, appointment_date, appointment_time, notes
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                salon_id, name, title, date, repeat, repeat_value,
+                employee_list, price, full_pay, deposit, is_active
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             RETURNING *
         `;
 
         const result = await pool.query(query, [
-            salon_id, employee_id, client_name, client_phone,
-            service_name, service_price, appointment_date, appointment_time, notes
+            salon_id, name, title, date, repeat, repeat_value,
+            employee_list, price, full_pay, deposit, is_active
         ]);
 
         res.status(201).json({
