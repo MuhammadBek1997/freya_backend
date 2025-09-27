@@ -10,7 +10,7 @@ const getAllSchedules = async (req, res) => {
         const params = [];
         
         if (search) {
-            query += ` AND (client_name ILIKE $1 OR service_name ILIKE $2)`;
+            query += ` AND (name ILIKE $1 OR title ILIKE $2)`;
             params.push(`%${search}%`, `%${search}%`);
         }
         
@@ -24,7 +24,7 @@ const getAllSchedules = async (req, res) => {
         const countParams = [];
         
         if (search) {
-            countQuery += ` AND (client_name ILIKE $1 OR service_name ILIKE $2)`;
+            countQuery += ` AND (name ILIKE $1 OR title ILIKE $2)`;
             countParams.push(`%${search}%`, `%${search}%`);
         }
         
@@ -137,34 +137,40 @@ const updateSchedule = async (req, res) => {
     try {
         const { id } = req.params;
         const {
-            client_name,
-            client_phone,
-            service_name,
-            service_price,
-            appointment_date,
-            appointment_time,
-            status,
-            notes
+            salon_id,
+            name,
+            title,
+            date,
+            repeat,
+            repeat_value,
+            employee_list,
+            price,
+            full_pay,
+            deposit,
+            is_active
         } = req.body;
 
         const query = `
             UPDATE schedules SET
-                client_name = $1,
-                client_phone = $2,
-                service_name = $3,
-                service_price = $4,
-                appointment_date = $5,
-                appointment_time = $6,
-                status = $7,
-                notes = $8,
+                salon_id = $1,
+                name = $2,
+                title = $3,
+                date = $4,
+                repeat = $5,
+                repeat_value = $6,
+                employee_list = $7,
+                price = $8,
+                full_pay = $9,
+                deposit = $10,
+                is_active = $11,
                 updated_at = CURRENT_TIMESTAMP
-            WHERE id = $9
+            WHERE id = $12
             RETURNING *
         `;
 
         const result = await pool.query(query, [
-            client_name, client_phone, service_name, service_price,
-            appointment_date, appointment_time, status, notes, id
+            salon_id, name, title, date, repeat, repeat_value,
+            employee_list, price, full_pay, deposit, is_active, id
         ]);
 
         if (result.rows.length === 0) {
