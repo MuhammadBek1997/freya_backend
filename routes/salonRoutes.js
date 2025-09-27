@@ -8,7 +8,8 @@ const {
     deleteSalon,
     addSalonComment,
     getSalonComments,
-    getNearbySalons
+    getNearbySalons,
+    getSalonsByTypes
 } = require('../controllers/salonController');
 const { verifySuperAdmin } = require('../middleware/authMiddleware');
 const { languageDetection } = require('../middleware/languageMiddleware');
@@ -566,5 +567,96 @@ router.get('/:id/comments', getSalonComments);
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/:id/comments', verifySuperAdmin, addSalonComment);
+
+/**
+ * @swagger
+ * /api/salons/filter/types:
+ *   get:
+ *     summary: Salon turlariga ko'ra salonlarni filtrlash
+ *     tags: [Salons]
+ *     parameters:
+ *       - $ref: '#/components/parameters/LanguageParam'
+ *       - $ref: '#/components/parameters/AcceptLanguageHeader'
+ *       - in: query
+ *         name: current_language
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [en, uz, ru]
+ *           default: ru
+ *         description: Javob tili (en, uz, ru)
+ *       - in: query
+ *         name: salon_types
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Salon turlari (vergul bilan ajratilgan, masalan "Салон красоты,Фитнес")
+ *         example: "Салон красоты,Фитнес"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Sahifadagi elementlar soni
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Qidiruv so'zi
+ *     responses:
+ *       200:
+ *         description: Filtrlangan salonlar ro'yxati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 salons:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Salon'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                 filters:
+ *                   type: object
+ *                   properties:
+ *                     salon_types:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     search:
+ *                       type: string
+ *       400:
+ *         description: Noto'g'ri parametrlar
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/filter/types', languageDetection, getSalonsByTypes);
 
 module.exports = router;

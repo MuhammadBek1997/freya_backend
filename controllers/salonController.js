@@ -754,6 +754,164 @@ const getNearbySalons = async (req, res) => {
     }
 };
 
+// Get salons filtered by salon_types
+const getSalonsByTypes = async (req, res) => {
+    try {
+        const { salon_types, page = 1, limit = 10, search = '' } = req.query;
+        const language = req.language || req.query.language || 'ru';
+        const offset = (page - 1) * limit;
+
+        // Validate salon_types parameter
+        if (!salon_types) {
+            return res.status(400).json({
+                success: false,
+                message: 'salon_types parametri majburiy'
+            });
+        }
+
+        // Parse salon_types - can be comma-separated string or array
+        let typesToFilter = [];
+        if (typeof salon_types === 'string') {
+            typesToFilter = salon_types.split(',').map(type => type.trim());
+        } else if (Array.isArray(salon_types)) {
+            typesToFilter = salon_types;
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: 'salon_types noto\'g\'ri formatda'
+            });
+        }
+
+        let query = `
+            SELECT * FROM salons 
+            WHERE 1=1
+        `;
+        let countQuery = `
+            SELECT COUNT(*) FROM salons 
+            WHERE 1=1
+        `;
+        let queryParams = [];
+        let paramIndex = 1;
+
+        // Add search filter if provided
+        if (search) {
+            query += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+            countQuery += ` AND (name ILIKE $${paramIndex} OR description ILIKE $${paramIndex})`;
+            queryParams.push(`%${search}%`);
+            paramIndex++;
+        }
+
+        // Add salon_types filter using JSON operations
+        // Check if any of the salon_types has selected: true for any of the requested types
+        const typeConditions = typesToFilter.map((type, index) => {
+            const currentParamIndex = paramIndex + index;
+            return `EXISTS (
+                SELECT 1 FROM jsonb_array_elements(salon_types) AS elem
+                WHERE elem->>'type' = $${currentParamIndex} AND (elem->>'selected')::boolean = true
+            )`;
+        }).join(' OR ');
+
+        if (typeConditions) {
+            query += ` AND (${typeConditions})`;
+            countQuery += ` AND (${typeConditions})`;
+            queryParams.push(...typesToFilter);
+            paramIndex += typesToFilter.length;
+        }
+
+        query += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        queryParams.push(limit, offset);
+
+        // Execute queries
+        const [salonsResult, countResult] = await Promise.all([
+            pool.query(query, queryParams),
+            pool.query(countQuery, queryParams.slice(0, -2)) // Remove limit and offset for count
+        ]);
+
+        // Process salons with translations
+        const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
+            // Get translations for all languages
+            const translations = {};
+            const languages = ['uz', 'en', 'ru'];
+            
+            for (const lang of languages) {
+                const translatedSalon = await salonTranslationService.getSalonByLanguage(salon.id, lang);
+                if (translatedSalon) {
+                    translations[lang] = {
+                        name: translatedSalon.name,
+                        description: translatedSalon.description,
+                        address: translatedSalon.address,
+                        salon_title: translatedSalon.salon_title,
+                        salon_orient: translatedSalon.salon_orient
+                    };
+                } else {
+                    translations[lang] = {
+                        name: salon.salon_name,
+                        description: salon[`description_${lang}`] || salon.salon_description || 'Salon haqida malumot',
+                        address: salon[`address_${lang}`] || 'Manzil',
+                        salon_title: salon.salon_title,
+                        salon_orient: salon.salon_orient
+                    };
+                }
+            }
+
+            return {
+                id: salon.id,
+                salon_name: salon.salon_name,
+                salon_phone: salon.salon_phone,
+                salon_add_phone: salon.salon_add_phone,
+                salon_instagram: salon.salon_instagram,
+                salon_rating: salon.salon_rating,
+                comments: salon.comments,
+                salon_payment: salon.salon_payment,
+                salon_description: salon.salon_description,
+                salon_types: salon.salon_types,
+                is_private: salon.is_private,
+                work_schedule: salon.work_schedule,
+                salon_title: salon.salon_title,
+                salon_additionals: salon.salon_additionals,
+                sale_percent: salon.sale_percent,
+                sale_limit: salon.sale_limit,
+                location: salon.location,
+                salon_orient: salon.salon_orient,
+                salon_photos: salon.salon_photos,
+                salon_comfort: salon.salon_comfort,
+                created_at: salon.created_at,
+                updated_at: salon.updated_at,
+                translations: translations,
+                // Current language data
+                name: translations[language]?.name || salon.salon_name,
+                description: translations[language]?.description || salon.salon_description,
+                address: translations[language]?.address || 'Manzil'
+            };
+        }));
+
+        const total = parseInt(countResult.rows[0].count);
+        const totalPages = Math.ceil(total / limit);
+
+        res.json({
+            success: true,
+            salons: salons,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: total,
+                totalPages: totalPages
+            },
+            filters: {
+                salon_types: typesToFilter,
+                search: search || null
+            }
+        });
+
+    } catch (error) {
+        console.error('Salon turlariga ko\'ra filtrlashda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Salon turlariga ko\'ra filtrlashda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     createSalon,
     getAllSalons,
@@ -762,5 +920,6 @@ module.exports = {
     deleteSalon,
     addSalonComment,
     getSalonComments,
-    getNearbySalons
+    getNearbySalons,
+    getSalonsByTypes
 };
