@@ -19,7 +19,10 @@ const {
     getUserProfile,
     uploadProfileImage,
     getProfileImage,
-    deleteProfileImage
+    deleteProfileImage,
+    addFavouriteSalon,
+    removeFavouriteSalon,
+    getFavouriteSalons
 } = require('../controllers/userController');
 
 // Middleware
@@ -1051,5 +1054,166 @@ router.get('/profile/image', verifyUser, getProfileImage);
  *         description: Server xatoligi
  */
 router.delete('/profile/image', verifyUser, deleteProfileImage);
+
+/**
+ * @swagger
+ * /api/users/favourites/add:
+ *   post:
+ *     summary: Salonga like bosish (favourite qo'shish)
+ *     description: Foydalanuvchi favourite salonlar ro'yxatiga salon qo'shish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - salon_id
+ *             properties:
+ *               salon_id:
+ *                 type: integer
+ *                 description: Qo'shiladigan salon ID si
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: Salon muvaffaqiyatli favourite qilindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Salon favourite'larga qo'shildi"
+ *                 favourite_salons:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                   example: [1, 2, 3]
+ *       400:
+ *         description: Salon allaqachon favourite'da mavjud yoki noto'g'ri ma'lumot
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: Salon yoki user topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.post('/favourites/add', verifyUser, addFavouriteSalon);
+
+/**
+ * @swagger
+ * /api/users/favourites/remove:
+ *   post:
+ *     summary: Salondan like ni olib tashlash (favourite dan chiqarish)
+ *     description: Foydalanuvchi favourite salonlar ro'yxatidan salon olib tashlash
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - salon_id
+ *             properties:
+ *               salon_id:
+ *                 type: integer
+ *                 description: Olib tashlanadigan salon ID si
+ *                 example: 1
+ *     responses:
+ *       200:
+ *         description: Salon muvaffaqiyatli favourite dan olib tashlandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Salon favourite'lardan olib tashlandi"
+ *                 favourite_salons:
+ *                   type: array
+ *                   items:
+ *                     type: integer
+ *                   example: [2, 3]
+ *       400:
+ *         description: Salon favourite'da mavjud emas yoki noto'g'ri ma'lumot
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: User topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.post('/favourites/remove', verifyUser, removeFavouriteSalon);
+
+/**
+ * @swagger
+ * /api/users/favourites:
+ *   get:
+ *     summary: User favourite salonlarini olish
+ *     description: Foydalanuvchi favourite qilgan salonlar ro'yxatini olish
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: current_language
+ *         schema:
+ *           type: string
+ *           enum: [ru, uz, en]
+ *           default: ru
+ *         description: Tarjima tili
+ *     responses:
+ *       200:
+ *         description: Favourite salonlar ro'yxati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 salons:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       salon_name:
+ *                         type: string
+ *                       salon_description:
+ *                         type: string
+ *                       salon_rating:
+ *                         type: number
+ *                       salon_types:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                 total:
+ *                   type: integer
+ *                   example: 3
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: User topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.get('/favourites', verifyUser, getFavouriteSalons);
 
 module.exports = router;

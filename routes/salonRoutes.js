@@ -9,9 +9,10 @@ const {
     addSalonComment,
     getSalonComments,
     getNearbySalons,
-    getSalonsByTypes
+    getSalonsByTypes,
+    getRecommendedSalons
 } = require('../controllers/salonController');
-const { verifySuperAdmin } = require('../middleware/authMiddleware');
+const { verifySuperAdmin, verifyUser } = require('../middleware/authMiddleware');
 const { languageDetection } = require('../middleware/languageMiddleware');
 
 /**
@@ -658,5 +659,94 @@ router.post('/:id/comments', verifySuperAdmin, addSalonComment);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/filter/types', languageDetection, getSalonsByTypes);
+
+/**
+ * @swagger
+ * /api/salons/recommended:
+ *   get:
+ *     summary: User favourite salonlari asosida tavsiya qilingan salonlar
+ *     description: Foydalanuvchi favourite qilgan salonlar turlariga asoslangan holda boshqa salonlarni tavsiya qilish
+ *     tags: [Salons]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: current_language
+ *         schema:
+ *           type: string
+ *           enum: [ru, uz, en]
+ *           default: ru
+ *         description: Tarjima tili
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 10
+ *         description: Har sahifadagi salonlar soni
+ *     responses:
+ *       200:
+ *         description: Tavsiya qilingan salonlar ro'yxati
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 salons:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       salon_name:
+ *                         type: string
+ *                       salon_description:
+ *                         type: string
+ *                       salon_rating:
+ *                         type: number
+ *                       salon_types:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     current_page:
+ *                       type: integer
+ *                     total_pages:
+ *                       type: integer
+ *                     total_salons:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                 recommendation_info:
+ *                   type: object
+ *                   properties:
+ *                     based_on_types:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     favourite_salons_count:
+ *                       type: integer
+ *       401:
+ *         description: Autentifikatsiya talab qilinadi
+ *       404:
+ *         description: User topilmadi
+ *       500:
+ *         description: Server xatoligi
+ */
+router.get('/recommended', verifyUser, languageDetection, getRecommendedSalons);
 
 module.exports = router;

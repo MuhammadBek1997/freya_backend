@@ -912,6 +912,161 @@ const getSalonsByTypes = async (req, res) => {
     }
 };
 
+// Recommended salons - user favourite salonlari asosida tavsiya qilish
+const getRecommendedSalons = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        const { current_language = 'ru', page = 1, limit = 10 } = req.query;
+        const offset = (page - 1) * limit;
+
+        // User favourite salonlarini olish
+        const userResult = await pool.query(
+            'SELECT favourite_salons FROM users WHERE id = $1',
+            [user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User topilmadi'
+            });
+        }
+
+        const favouriteSalonIds = userResult.rows[0].favourite_salons || [];
+
+        // Agar user hech qaysi salonga like bosmagan bo'lsa, bo'sh to'plam qaytarish
+        if (favouriteSalonIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                salons: [],
+                pagination: {
+                    current_page: parseInt(page),
+                    total_pages: 0,
+                    total_salons: 0,
+                    limit: parseInt(limit)
+                },
+                message: 'Hali hech qaysi salon favourite qilinmagan'
+            });
+        }
+
+        // Favourite salonlarning turlarini olish
+        const placeholders = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
+        const favouriteSalonsResult = await pool.query(
+            `SELECT salon_types FROM salons WHERE id IN (${placeholders}) AND is_active = true`,
+            favouriteSalonIds
+        );
+
+        // Barcha favourite salon turlarini yig'ish
+        const allFavouriteTypes = [];
+        favouriteSalonsResult.rows.forEach(salon => {
+            if (salon.salon_types && Array.isArray(salon.salon_types)) {
+                allFavouriteTypes.push(...salon.salon_types);
+            }
+        });
+
+        // Takrorlanuvchi turlarni olib tashlash
+        const uniqueTypes = [...new Set(allFavouriteTypes)];
+
+        if (uniqueTypes.length === 0) {
+            return res.status(200).json({
+                success: true,
+                salons: [],
+                pagination: {
+                    current_page: parseInt(page),
+                    total_pages: 0,
+                    total_salons: 0,
+                    limit: parseInt(limit)
+                },
+                message: 'Favourite salonlarda turlar topilmadi'
+            });
+        }
+
+        // Recommended salonlarni olish (favourite salonlarni chiqarib tashlash)
+        const typeConditions = uniqueTypes.map((_, index) => `salon_types @> $${index + favouriteSalonIds.length + 1}`).join(' OR ');
+        const excludeConditions = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
+        
+        const countQuery = `
+            SELECT COUNT(*) as total 
+            FROM salons 
+            WHERE is_active = true 
+            AND id NOT IN (${excludeConditions})
+            AND (${typeConditions})
+        `;
+
+        const salonsQuery = `
+            SELECT * FROM salons 
+            WHERE is_active = true 
+            AND id NOT IN (${excludeConditions})
+            AND (${typeConditions})
+            ORDER BY salon_rating DESC, salon_name ASC
+            LIMIT $${favouriteSalonIds.length + uniqueTypes.length + 1} 
+            OFFSET $${favouriteSalonIds.length + uniqueTypes.length + 2}
+        `;
+
+        const queryParams = [
+            ...favouriteSalonIds,
+            ...uniqueTypes.map(type => JSON.stringify([type])),
+            parseInt(limit),
+            offset
+        ];
+
+        const [countResult, salonsResult] = await Promise.all([
+            pool.query(countQuery, [...favouriteSalonIds, ...uniqueTypes.map(type => JSON.stringify([type]))]),
+            pool.query(salonsQuery, queryParams)
+        ]);
+
+        const totalSalons = parseInt(countResult.rows[0].total);
+        const totalPages = Math.ceil(totalSalons / limit);
+
+        // Tarjima qilish
+        const { translateText } = require('../services/i18nService');
+        
+        const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
+            const translatedSalon = { ...salon };
+            
+            if (current_language !== 'ru') {
+                try {
+                    if (salon.salon_name) {
+                        translatedSalon.salon_name = await translateText(salon.salon_name, current_language);
+                    }
+                    if (salon.salon_description) {
+                        translatedSalon.salon_description = await translateText(salon.salon_description, current_language);
+                    }
+                    if (salon.salon_title) {
+                        translatedSalon.salon_title = await translateText(salon.salon_title, current_language);
+                    }
+                } catch (translateError) {
+                    console.error('Tarjima xatosi:', translateError);
+                }
+            }
+            
+            return translatedSalon;
+        }));
+
+        res.status(200).json({
+            success: true,
+            salons: salons,
+            pagination: {
+                current_page: parseInt(page),
+                total_pages: totalPages,
+                total_salons: totalSalons,
+                limit: parseInt(limit)
+            },
+            recommendation_info: {
+                based_on_types: uniqueTypes,
+                favourite_salons_count: favouriteSalonIds.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Recommended salonlarni olishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Recommended salonlarni olishda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     createSalon,
     getAllSalons,
@@ -921,5 +1076,6 @@ module.exports = {
     addSalonComment,
     getSalonComments,
     getNearbySalons,
-    getSalonsByTypes
+    getSalonsByTypes,
+    getRecommendedSalons
 };

@@ -1187,6 +1187,215 @@ const deleteProfileImage = async (req, res) => {
     }
 };
 
+// Favourite salon qo'shish
+const addFavouriteSalon = async (req, res) => {
+    try {
+        const { salon_id } = req.body;
+        const user_id = req.user.id;
+
+        if (!salon_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Salon ID majburiy'
+            });
+        }
+
+        // Salon mavjudligini tekshirish
+        const salonCheck = await pool.query(
+            'SELECT id FROM salons WHERE id = $1 AND is_active = true',
+            [salon_id]
+        );
+
+        if (salonCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        // User mavjudligini tekshirish va favourite_salons olish
+        const userResult = await pool.query(
+            'SELECT favourite_salons FROM users WHERE id = $1',
+            [user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User topilmadi'
+            });
+        }
+
+        let favouriteSalons = userResult.rows[0].favourite_salons || [];
+
+        // Salon allaqachon favourite'da borligini tekshirish
+        if (favouriteSalons.includes(salon_id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Salon allaqachon favourite\'larda mavjud'
+            });
+        }
+
+        // Salon qo'shish
+        favouriteSalons.push(salon_id);
+
+        // Database'ni yangilash
+        await pool.query(
+            'UPDATE users SET favourite_salons = $1 WHERE id = $2',
+            [JSON.stringify(favouriteSalons), user_id]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Salon favourite\'larga qo\'shildi',
+            favourite_salons: favouriteSalons
+        });
+
+    } catch (error) {
+        console.error('Favourite salon qo\'shishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// Favourite salon olib tashlash
+const removeFavouriteSalon = async (req, res) => {
+    try {
+        const { salon_id } = req.body;
+        const user_id = req.user.id;
+
+        if (!salon_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'Salon ID majburiy'
+            });
+        }
+
+        // User mavjudligini tekshirish va favourite_salons olish
+        const userResult = await pool.query(
+            'SELECT favourite_salons FROM users WHERE id = $1',
+            [user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User topilmadi'
+            });
+        }
+
+        let favouriteSalons = userResult.rows[0].favourite_salons || [];
+
+        // Salon favourite'da borligini tekshirish
+        if (!favouriteSalons.includes(salon_id)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Salon favourite\'larda mavjud emas'
+            });
+        }
+
+        // Salon olib tashlash
+        favouriteSalons = favouriteSalons.filter(id => id !== salon_id);
+
+        // Database'ni yangilash
+        await pool.query(
+            'UPDATE users SET favourite_salons = $1 WHERE id = $2',
+            [JSON.stringify(favouriteSalons), user_id]
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Salon favourite\'lardan olib tashlandi',
+            favourite_salons: favouriteSalons
+        });
+
+    } catch (error) {
+        console.error('Favourite salon olib tashlashda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// User favourite salonlarini olish
+const getFavouriteSalons = async (req, res) => {
+    try {
+        const user_id = req.user.id;
+        const { current_language = 'ru' } = req.query;
+
+        // User favourite salonlarini olish
+        const userResult = await pool.query(
+            'SELECT favourite_salons FROM users WHERE id = $1',
+            [user_id]
+        );
+
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User topilmadi'
+            });
+        }
+
+        const favouriteSalonIds = userResult.rows[0].favourite_salons || [];
+
+        if (favouriteSalonIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                salons: [],
+                message: 'Favourite salonlar yo\'q'
+            });
+        }
+
+        // Favourite salonlar ma'lumotlarini olish
+        const placeholders = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
+        const salonsResult = await pool.query(
+            `SELECT * FROM salons WHERE id IN (${placeholders}) AND is_active = true ORDER BY salon_name`,
+            favouriteSalonIds
+        );
+
+        // Tarjima qilish
+        const { translateText } = require('../services/i18nService');
+        
+        const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
+            const translatedSalon = { ...salon };
+            
+            if (current_language !== 'ru') {
+                try {
+                    if (salon.salon_name) {
+                        translatedSalon.salon_name = await translateText(salon.salon_name, current_language);
+                    }
+                    if (salon.salon_description) {
+                        translatedSalon.salon_description = await translateText(salon.salon_description, current_language);
+                    }
+                    if (salon.salon_title) {
+                        translatedSalon.salon_title = await translateText(salon.salon_title, current_language);
+                    }
+                } catch (translateError) {
+                    console.error('Tarjima xatosi:', translateError);
+                }
+            }
+            
+            return translatedSalon;
+        }));
+
+        res.status(200).json({
+            success: true,
+            salons: salons,
+            total: salons.length
+        });
+
+    } catch (error) {
+        console.error('Favourite salonlarni olishda xatolik:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -1203,5 +1412,8 @@ module.exports = {
     getUserProfile,
     uploadProfileImage,
     getProfileImage,
-    deleteProfileImage
+    deleteProfileImage,
+    addFavouriteSalon,
+    removeFavouriteSalon,
+    getFavouriteSalons
 };
