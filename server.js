@@ -391,3 +391,6 @@ process.on('SIGTERM', () => {
         // Process terminated
     });
 });
+
+// Export the app for testing purposes
+module.exports = app;
