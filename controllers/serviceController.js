@@ -9,7 +9,7 @@ const getAllServices = async (req, res) => {
         const search = req.query.search || '';
 
         let query = `
-            SELECT s.*, sa.salon_name 
+            SELECT s.*, sa.salon_name_uz as salon_name 
             FROM services s
             LEFT JOIN salons sa ON s.salon_id = sa.id
             WHERE s.is_active = true
@@ -66,7 +66,7 @@ const getServiceById = async (req, res) => {
         const { id } = req.params;
 
         const query = `
-            SELECT s.*, sa.salon_name 
+            SELECT s.*, sa.salon_name_uz as salon_name 
             FROM services s
             LEFT JOIN salons sa ON s.salon_id = sa.id
             WHERE s.id = $1 AND s.is_active = true
