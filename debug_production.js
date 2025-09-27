@@ -1,61 +1,64 @@
-#!/usr/bin/env node
+require('dotenv').config({ path: '.env.production' });
+const { pool } = require('./config/database');
 
-console.log('🔍 Production Debug Script');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-
-try {
-    console.log('1. Testing userController loading...');
-    const userController = require('./controllers/userController');
-    console.log('✅ UserController loaded');
-    
-    // Check functions
-    const functions = ['addFavouriteSalon', 'removeFavouriteSalon', 'getFavouriteSalons'];
-    functions.forEach(func => {
-        console.log(`${func}: ${typeof userController[func]}`);
-    });
-    
-    console.log('2. Testing userRoutes loading...');
-    const userRoutes = require('./routes/userRoutes');
-    console.log('✅ UserRoutes loaded');
-    console.log('Routes count:', userRoutes.stack ? userRoutes.stack.length : 'Unknown');
-    
-    console.log('3. Testing middleware loading...');
-    const authMiddleware = require('./middleware/authMiddleware');
-    console.log('✅ AuthMiddleware loaded');
-    
-    const phoneValidation = require('./middleware/phoneValidationMiddleware');
-    console.log('✅ PhoneValidationMiddleware loaded');
-    
-    console.log('4. Testing Express app creation...');
-    const express = require('express');
-    const app = express();
-    
-    app.use('/api/users', userRoutes);
-    console.log('✅ UserRoutes registered to Express app');
-    
-    // List all routes
-    console.log('5. Registered routes:');
-    let routeCount = 0;
-    app._router.stack.forEach(function(middleware) {
-        if (middleware.route) {
-            console.log(`  ${middleware.route.path}`);
-            routeCount++;
-        } else if (middleware.name === 'router') {
-            middleware.handle.stack.forEach(function(handler) {
-                if (handler.route) {
-                    const basePath = middleware.regexp.source.replace(/\\\//g, '/').replace(/\\\?/g, '').replace(/\$/, '');
-                    console.log(`  ${basePath}${handler.route.path}`);
-                    routeCount++;
-                }
-            });
-        }
-    });
-    console.log(`Total routes: ${routeCount}`);
-    
-} catch (error) {
-    console.error('❌ Error:', error.message);
-    console.error('Stack:', error.stack);
-    process.exit(1);
+async function debugProduction() {
+    try {
+        console.log('🔍 Debug production environment...');
+        console.log('NODE_ENV:', process.env.NODE_ENV);
+        console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+        console.log('DATABASE_URL starts with:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 20) + '...' : 'undefined');
+        
+        // Test database connection
+        const testQuery = await pool.query('SELECT NOW(), current_database()');
+        console.log('✅ Database connection successful');
+        console.log('Current time:', testQuery.rows[0].now);
+        console.log('Current database:', testQuery.rows[0].current_database);
+        
+        // Check schedules table structure
+        const tableInfo = await pool.query(`
+            SELECT column_name, data_type, is_nullable 
+            FROM information_schema.columns 
+            WHERE table_name = 'schedules' 
+            ORDER BY ordinal_position
+        `);
+        console.log('📋 Schedules table structure:');
+        tableInfo.rows.forEach(col => {
+            console.log(`  ${col.column_name}: ${col.data_type} (${col.is_nullable})`);
+        });
+        
+        // Check total count
+        const countResult = await pool.query('SELECT COUNT(*) as total FROM schedules');
+        console.log('📊 Total schedules in database:', countResult.rows[0].total);
+        
+        // Check recent schedules
+        const recentSchedules = await pool.query(`
+            SELECT id, name, title, date, employee_list, created_at 
+            FROM schedules 
+            ORDER BY created_at DESC 
+            LIMIT 5
+        `);
+        console.log('🕒 Recent schedules:');
+        recentSchedules.rows.forEach((schedule, index) => {
+            console.log(`${index + 1}. ID: ${schedule.id}`);
+            console.log(`   Name: ${schedule.name}`);
+            console.log(`   Title: ${schedule.title}`);
+            console.log(`   Date: ${schedule.date}`);
+            console.log(`   Employee List: ${JSON.stringify(schedule.employee_list)}`);
+            console.log(`   Created: ${schedule.created_at}`);
+            console.log('   ---');
+        });
+        
+        // Test the exact controller query
+        console.log('🎯 Testing controller query...');
+        const controllerQuery = `SELECT * FROM schedules WHERE 1=1 ORDER BY created_at DESC LIMIT 10 OFFSET 0`;
+        const controllerResult = await pool.query(controllerQuery);
+        console.log('Controller query returned:', controllerResult.rows.length, 'rows');
+        
+    } catch (error) {
+        console.error('❌ Debug error:', error);
+    } finally {
+        process.exit(0);
+    }
 }
 
-console.log('✅ All production tests passed');
+debugProduction();
