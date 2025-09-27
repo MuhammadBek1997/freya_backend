@@ -4,7 +4,7 @@ const axios = require('axios');
 async function testSalonTypesEndpoint() {
     console.log('🧪 Salon types endpoint test boshlandi...\n');
     
-    const baseURL = 'https://freya-backend-b8b8b8b8b8b8.herokuapp.com';
+    const baseURL = 'https://freya-salon-backend-cc373ce6622a.herokuapp.com';
     
     try {
         // Test 1: Salon turlari bilan filtrlash
@@ -72,7 +72,7 @@ async function testSalonTypesEndpoint() {
         
         console.log('✅ Status:', response3.status);
         console.log('📊 Topilgan salonlar soni:', response3.data.salons?.length || 0);
-        console.log('🔍 Qidiruv so'zi:', response3.data.filters?.search);
+        console.log('🔍 Qidiruv so\'zi:', response3.data.filters?.search);
         
         console.log('\n' + '='.repeat(50) + '\n');
         
