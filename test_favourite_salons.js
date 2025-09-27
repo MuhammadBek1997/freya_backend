@@ -3,8 +3,16 @@ const axios = require('axios');
 // Test konfiguratsiyasi
 const BASE_URL = 'https://freya-salon-backend-cc373ce6622a.herokuapp.com/api';
 
-// Test user ma'lumotlari (mavjud user token kerak)
-const TEST_USER_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicGhvbmUiOiIrOTk4OTAxMjM0NTY3IiwiaWF0IjoxNzM4NzU5MjAwLCJleHAiOjE3Mzg4NDU2MDB9.example'; // Bu yerga haqiqiy token qo'ying
+// ========================================
+// MUHIM: Testni ishlatish uchun qo'llanma
+// ========================================
+// 1. Avval login qiling: POST /api/auth/login
+//    Body: { "email": "your_email", "password": "your_password" }
+// 2. Response'dan token oling
+// 3. Quyidagi TEST_USER_TOKEN o'rniga o'sha tokenni qo'ying
+// 4. Keyin bu faylni ishga tushiring: node test_favourite_salons.js
+
+const TEST_USER_TOKEN = 'REAL_USER_TOKEN_HERE'; // Yuqoridagi qo'llanma bo'yicha token oling
 
 const headers = {
     'Authorization': `Bearer ${TEST_USER_TOKEN}`,
