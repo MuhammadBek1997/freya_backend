@@ -64,6 +64,9 @@ const corsOptions = {
         // Ruxsat etilgan originlar ro'yxati
         const allowedOrigins = [
             'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
+            'https://freya-admin-c1sq6y8b4-muhammads-projects-3a6ae627.vercel.app',
+            'https://freya-admin.vercel.app',
+            'https://*.vercel.app',
             'https://your-frontend-domain.com',
             'https://*.herokuapp.com',
             'http://localhost:3000',
