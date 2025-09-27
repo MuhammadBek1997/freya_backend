@@ -28,6 +28,7 @@ const adminRoutes = require('./routes/admin');
 const i18nRoutes = require('./routes/i18nRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const postRoutes = require('./routes/postRoutes');
+const serviceRoutes = require('./routes/serviceRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -335,6 +336,9 @@ app.use('/api/appointments', appointmentRoutes);
 
 // Post routes
 app.use('/api/posts', postRoutes);
+
+// Service routes
+app.use('/api', serviceRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
