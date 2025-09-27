@@ -1,69 +1,72 @@
-const { Pool } = require('pg');
-
-// Production database connection
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-        rejectUnauthorized: false
-    }
-});
+const { pool } = require('./config/database');
 
 async function updateSalonTypes() {
     try {
-        console.log('🔧 Updating salon types...\n');
+        console.log('Barcha salonlarga yangi salon turlarini qo\'shish...\n');
         
-        // Get all salons
-        const salonsResult = await pool.query(`
-            SELECT id, name, salon_type 
-            FROM salons 
-            ORDER BY created_at
-        `);
+        // Avval barcha salonlarni olish
+        const salonsResult = await pool.query('SELECT id, name, salon_types FROM salons ORDER BY created_at');
         
-        console.log('📍 CURRENT SALONS:');
-        salonsResult.rows.forEach((salon, index) => {
-            console.log(`${index + 1}. ${salon.name} - Type: ${salon.salon_type}`);
-        });
+        console.log(`Jami salonlar: ${salonsResult.rows.length}\n`);
         
-        // Update specific salons to corporate
-        // Let's make the first 4 salons corporate and keep 2 as private
-        const salonsToUpdate = salonsResult.rows.slice(0, 4); // First 4 salons
-        
-        console.log('\n🔄 Updating salons to corporate type:');
-        for (const salon of salonsToUpdate) {
-            await pool.query(`
-                UPDATE salons 
-                SET salon_type = 'corporate' 
-                WHERE id = $1
-            `, [salon.id]);
+        for (const salon of salonsResult.rows) {
+            console.log(`Salon yangilanmoqda: ${salon.name}`);
             
-            console.log(`✅ Updated "${salon.name}" to corporate`);
+            // Hozirgi salon_types ni olish
+            let currentTypes = salon.salon_types || [];
+            
+            // Yangi turlarni qo'shish
+            const newTypes = [
+                {
+                    "type": "Для детей",
+                    "selected": false
+                },
+                {
+                    "type": "На природе", 
+                    "selected": false
+                }
+            ];
+            
+            // Yangi turlar allaqachon mavjudligini tekshirish
+            const existingTypeNames = currentTypes.map(t => t.type);
+            
+            newTypes.forEach(newType => {
+                if (!existingTypeNames.includes(newType.type)) {
+                    currentTypes.push(newType);
+                    console.log(`  - Qo'shildi: ${newType.type}`);
+                } else {
+                    console.log(`  - Allaqachon mavjud: ${newType.type}`);
+                }
+            });
+            
+            // Salonni yangilash
+            await pool.query(
+                'UPDATE salons SET salon_types = $1 WHERE id = $2',
+                [JSON.stringify(currentTypes), salon.id]
+            );
+            
+            console.log(`  ✓ ${salon.name} muvaffaqiyatli yangilandi\n`);
         }
         
-        // Show updated results
-        const updatedSalons = await pool.query(`
-            SELECT id, name, salon_type 
-            FROM salons 
-            ORDER BY created_at
-        `);
+        console.log('Barcha salonlar muvaffaqiyatli yangilandi!');
         
-        console.log('\n📍 UPDATED SALONS:');
-        const privateCount = updatedSalons.rows.filter(s => s.salon_type === 'private').length;
-        const corporateCount = updatedSalons.rows.filter(s => s.salon_type === 'corporate').length;
+        // Yangilangan natijalarni ko'rsatish
+        console.log('\n=== YANGILANGAN SALON TYPES ===\n');
+        const updatedResult = await pool.query('SELECT id, name, salon_types FROM salons ORDER BY created_at');
         
-        updatedSalons.rows.forEach((salon, index) => {
-            console.log(`${index + 1}. ${salon.name} - Type: ${salon.salon_type}`);
+        updatedResult.rows.forEach((salon, index) => {
+            console.log(`${index + 1}. ${salon.name}:`);
+            salon.salon_types.forEach(type => {
+                console.log(`   - ${type.type} (${type.selected ? 'tanlangan' : 'tanlanmagan'})`);
+            });
+            console.log('');
         });
         
-        console.log(`\n📊 Summary:`);
-        console.log(`   Private salons: ${privateCount}`);
-        console.log(`   Corporate salons: ${corporateCount}`);
-        console.log(`   Total salons: ${updatedSalons.rows.length}`);
-        
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Xatolik:', error);
     } finally {
         await pool.end();
-        console.log('\n🔚 Database connection closed');
+        process.exit();
     }
 }
 
