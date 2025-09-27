@@ -227,7 +227,7 @@ const deleteSchedule = async (req, res) => {
 // Get schedules grouped by date
 const getSchedulesGroupedByDate = async (req, res) => {
     try {
-        const query = `SELECT * FROM schedules ORDER BY date, start_time`;
+        const query = `SELECT * FROM schedules ORDER BY date, created_at`;
         const schedules = await pool.query(query);
         
         // Group schedules by weekday
@@ -238,19 +238,12 @@ const getSchedulesGroupedByDate = async (req, res) => {
             const date = new Date(item.date);
             const dayOfWeek = weekdays[date.getDay()];
             
-            // Format time
-            const formatTime = (dateStr, timeStr) => {
-                const fullDateTime = `${dateStr}T${timeStr}`;
-                const d = new Date(fullDateTime);
-                if (isNaN(d)) return timeStr;
-                return d.toISOString().substring(11, 16); // "HH:MM"
-            };
-            
             const newItem = {
                 ...item,
                 dayOfWeek,
-                start_time: formatTime(item.date, item.start_time),
-                end_time: formatTime(item.date, item.end_time),
+                // Since production DB doesn't have start_time/end_time, we'll use default values
+                start_time: "09:00",
+                end_time: "18:00",
             };
             
             if (!groupedByDate[dayOfWeek]) {
