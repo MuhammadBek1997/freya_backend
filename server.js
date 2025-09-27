@@ -65,6 +65,7 @@ const corsOptions = {
         const allowedOrigins = [
             'https://freya-salon-backend-cc373ce6622a.herokuapp.com',
             'https://freya-admin-c1sq6y8b4-muhammads-projects-3a6ae627.vercel.app',
+            'https://freya-admin-fjihrgzbk-muhammads-projects-3a6ae627.vercel.app',
             'https://freya-admin.vercel.app',
             'https://*.vercel.app',
             'https://your-frontend-domain.com',
