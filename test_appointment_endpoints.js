@@ -62,7 +62,7 @@ async function testUserAppointments() {
     }
 }
 
-async function testSalonAppointments(salonId = 1) {
+async function testSalonAppointments(salonId = 'ec21babc-9ea2-49b9-a48b-dfc2a5e9d7b3') {
     try {
         console.log(`\n🏢 Salon ${salonId} appointmentlarini olish...`);
         const response = await axios.get(`${BASE_URL}/appointments/salon/${salonId}`, {
@@ -98,7 +98,7 @@ async function testSalonAppointments(salonId = 1) {
     }
 }
 
-async function testSalonAppointmentsWithFilters(salonId = 1) {
+async function testSalonAppointmentsWithFilters(salonId = 'ec21babc-9ea2-49b9-a48b-dfc2a5e9d7b3') {
     try {
         console.log(`\n🔍 Salon ${salonId} appointments (filtered)...`);
         const response = await axios.get(`${BASE_URL}/appointments/salon/${salonId}?status=pending&page=1&limit=5`, {
@@ -147,10 +147,10 @@ async function runTests() {
         await testUserAppointments();
         
         // 3. Test salon appointments
-        await testSalonAppointments(1);
+        await testSalonAppointments();
         
         // 4. Test salon appointments with filters
-        await testSalonAppointmentsWithFilters(1);
+        await testSalonAppointmentsWithFilters();
         
         // 5. Test all appointments
         await testAllAppointments();
