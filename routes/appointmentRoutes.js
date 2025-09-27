@@ -3,8 +3,8 @@ const router = express.Router();
 const appointmentController = require('../controllers/appointmentController');
 const authMiddleware = require('../middleware/authMiddleware');
 
-// All routes require authentication
-router.use(authMiddleware.verifyUser);
+// All routes require authentication (users, employees, admins)
+router.use(authMiddleware.verifyAuth);
 
 /**
  * @swagger
