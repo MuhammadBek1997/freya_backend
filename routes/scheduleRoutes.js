@@ -5,9 +5,44 @@ const {
     getScheduleById,
     createSchedule,
     updateSchedule,
-    deleteSchedule
+    deleteSchedule,
+    getSchedulesGroupedByDate
 } = require('../controllers/scheduleController');
 const { verifyAdmin } = require('../middleware/authMiddleware');
+
+/**
+ * @swagger
+ * /api/schedules/grouped-by-date:
+ *   get:
+ *     summary: Sana bo'yicha guruhlangan jadvallarni olish
+ *     description: Barcha jadvallarni hafta kunlari bo'yicha guruhlangan holda olish
+ *     tags: [Schedules]
+ *     responses:
+ *       200:
+ *         description: Guruhlangan jadvallar muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: array
+ *                     items:
+ *                       $ref: '#/components/schemas/Schedule'
+ *       500:
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/schedules/grouped-by-date', getSchedulesGroupedByDate);
 
 /**
  * @swagger

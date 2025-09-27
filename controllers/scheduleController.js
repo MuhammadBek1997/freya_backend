@@ -224,10 +224,67 @@ const deleteSchedule = async (req, res) => {
     }
 };
 
+// Get schedules grouped by date
+const getSchedulesGroupedByDate = async (req, res) => {
+    try {
+        const query = `SELECT * FROM schedules ORDER BY date, start_time`;
+        const schedules = await pool.query(query);
+        
+        // Group schedules by weekday
+        const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+        const groupedByDate = {};
+        
+        schedules.rows.forEach(item => {
+            const date = new Date(item.date);
+            const dayOfWeek = weekdays[date.getDay()];
+            
+            // Format time
+            const formatTime = (dateStr, timeStr) => {
+                const fullDateTime = `${dateStr}T${timeStr}`;
+                const d = new Date(fullDateTime);
+                if (isNaN(d)) return timeStr;
+                return d.toISOString().substring(11, 16); // "HH:MM"
+            };
+            
+            const newItem = {
+                ...item,
+                dayOfWeek,
+                start_time: formatTime(item.date, item.start_time),
+                end_time: formatTime(item.date, item.end_time),
+            };
+            
+            if (!groupedByDate[dayOfWeek]) {
+                groupedByDate[dayOfWeek] = [newItem];
+            } else {
+                groupedByDate[dayOfWeek].push(newItem);
+            }
+        });
+        
+        // Convert to ordered array
+        const orderedWeekdays = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+        const dayListItems = orderedWeekdays
+            .map(day => groupedByDate[day])
+            .filter(daySchedules => daySchedules && daySchedules.length > 0);
+        
+        res.json({
+            success: true,
+            message: 'Sana bo\'yicha guruhlangan jadvallar muvaffaqiyatli olindi',
+            data: dayListItems
+        });
+    } catch (error) {
+        console.error('Error fetching grouped schedules:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Guruhlangan jadvallarni olishda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     getAllSchedules,
     getScheduleById,
     createSchedule,
     updateSchedule,
-    deleteSchedule
+    deleteSchedule,
+    getSchedulesGroupedByDate
 };
