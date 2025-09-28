@@ -49,8 +49,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": false },
                     { "name": "towel", "isActive": false },
-                    { "name": "allow14", "isActive": false },
-                    { "name": "allow16", "isActive": false }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: true,
                 is_private: true,
@@ -93,8 +92,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": false },
                     { "name": "towel", "isActive": true },
-                    { "name": "allow14", "isActive": false },
-                    { "name": "allow16", "isActive": true }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: false,
                 is_private: false,
@@ -137,8 +135,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": true },
                     { "name": "towel", "isActive": true },
-                    { "name": "allow14", "isActive": true },
-                    { "name": "allow16", "isActive": true }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: true,
                 is_private: false,
@@ -181,8 +178,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": false },
                     { "name": "towel", "isActive": true },
-                    { "name": "allow14", "isActive": false },
-                    { "name": "allow16", "isActive": true }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: false,
                 is_private: true,
@@ -225,8 +221,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": true },
                     { "name": "towel", "isActive": true },
-                    { "name": "allow14", "isActive": false },
-                    { "name": "allow16", "isActive": false }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: true,
                 is_private: false,
@@ -269,8 +264,7 @@ async function recreate6Salons() {
                     { "name": "pets", "isActive": false },
                     { "name": "bath", "isActive": false },
                     { "name": "towel", "isActive": false },
-                    { "name": "allow14", "isActive": true },
-                    { "name": "allow16", "isActive": true }
+                    { "name": "kids", "isActive": true }
                 ],
                 is_top: false,
                 is_private: true,

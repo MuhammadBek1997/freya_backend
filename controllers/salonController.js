@@ -68,8 +68,7 @@ const createSalon = async (req, res) => {
             {"name": "pets", "isActive": false},
             {"name": "bath", "isActive": false},
             {"name": "towel", "isActive": false},
-            {"name": "allow14", "isActive": false},
-            {"name": "allow16", "isActive": false}
+            {"name": "kids", "isActive": true}
         ];
 
         const query = `
