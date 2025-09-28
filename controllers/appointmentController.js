@@ -29,7 +29,7 @@ const createAppointment = async (req, res) => {
             notes
         } = req.body;
 
-        const user_id = req.user.id; // JWT token'dan olinadi
+        const user_id = req.user ? req.user.id : null; // JWT token'dan olinadi yoki null
 
         // Validate required fields
         if (!schedule_id || !user_name || !phone_number || !application_date || !application_time) {
