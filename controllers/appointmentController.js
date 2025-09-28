@@ -100,7 +100,7 @@ const getAllAppointments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT a.*, e.name as employee_name
+            SELECT a.*, e.employee_name
             FROM appointments a
             LEFT JOIN employees e ON a.employee_id = e.id
             WHERE 1=1
@@ -185,7 +185,7 @@ const getAppointmentById = async (req, res) => {
         const query = `
             SELECT a.*, s.day_of_week, s.start_time, s.end_time,
                    u.full_name as user_full_name, u.email as user_email,
-                   e.name as employee_name
+                   e.employee_name
             FROM appointments a
             LEFT JOIN schedules s ON a.schedule_id = s.id
             LEFT JOIN users u ON a.user_id = u.id
@@ -634,7 +634,7 @@ const getAppointmentsBySalonId = async (req, res) => {
         }
 
         let query = `
-            SELECT a.*, e.name as employee_name, u.full_name as user_name
+            SELECT a.*, e.employee_name, u.full_name as user_name
             FROM appointments a
             LEFT JOIN employees e ON a.employee_id = e.id
             LEFT JOIN users u ON a.user_id = u.id

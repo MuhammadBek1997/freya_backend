@@ -35,6 +35,12 @@ async function testSalonFilterEndpoint() {
         console.log('Appointmentlar soni:', filterResponse.data.data?.length || 0);
         console.log('Salon ma\'lumotlari:', filterResponse.data.salon);
         console.log('Pagination:', filterResponse.data.pagination);
+        
+        // Birinchi appointmentning strukturasini ko'rsatish
+        if (filterResponse.data.data && filterResponse.data.data.length > 0) {
+            console.log('\nBirinchi appointment ma\'lumotlari:');
+            console.log(JSON.stringify(filterResponse.data.data[0], null, 2));
+        }
 
         // Status bo'yicha filtrlash test qilish
         console.log('\n--- Status bo\'yicha filtrlash (pending) ---');
