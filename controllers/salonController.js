@@ -264,6 +264,7 @@ const getAllSalons = async (req, res) => {
             salon.salon_orient = safeJsonParse(salon.salon_orient, null);
             salon.salon_photos = safeJsonParse(salon.salon_photos, []);
             salon.salon_comfort = safeJsonParse(salon.salon_comfort, []);
+            salon.salon_sale = safeJsonParse(salon.salon_sale, { amount: '', date: '' });
             
             return salon;
         }));
@@ -360,6 +361,7 @@ const getSalonById = async (req, res) => {
         salon.salon_orient = salon.salon_orient || null;
         salon.salon_photos = salon.salon_photos || [];
         salon.salon_comfort = salon.salon_comfort || [];
+        salon.salon_sale = salon.salon_sale || { amount: '', date: '' };
 
         res.json({
             success: true,
@@ -399,7 +401,7 @@ const updateSalon = async (req, res) => {
         }
 
         // Convert objects to JSON strings for JSONB fields
-        const jsonFields = ['comments', 'salon_payment', 'salon_types', 'salon_format', 'work_schedule', 'salon_additionals', 'location', 'salon_orient', 'salon_photos', 'salon_comfort'];
+        const jsonFields = ['comments', 'salon_payment', 'salon_types', 'salon_format', 'work_schedule', 'salon_additionals', 'location', 'salon_orient', 'salon_photos', 'salon_comfort', 'salon_sale'];
         
         fields.forEach((field, index) => {
             if (jsonFields.includes(field) && typeof values[index] === 'object') {
@@ -437,6 +439,7 @@ const updateSalon = async (req, res) => {
         salon.salon_orient = salon.salon_orient || {};
         salon.salon_photos = salon.salon_photos || [];
         salon.salon_comfort = salon.salon_comfort || [];
+        salon.salon_sale = salon.salon_sale || { amount: '', date: '' };
 
         // Yangilangan ma'lumotlarni tarjima qilish va saqlash
         try {
