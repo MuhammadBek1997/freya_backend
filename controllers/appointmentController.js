@@ -77,7 +77,7 @@ const createAppointment = async (req, res) => {
         `;
 
         const result = await pool.query(query, [
-            application_number, user_id, user_name, phone_number,
+            application_number, null, user_name, phone_number,
             application_date, application_time, schedule_id, employee_id,
             service_name, service_price, notes
         ]);
