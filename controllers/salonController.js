@@ -917,84 +917,45 @@ const getSalonsByTypes = async (req, res) => {
 // Recommended salons - user favourite salonlari asosida tavsiya qilish
 const getRecommendedSalons = async (req, res) => {
     try {
-        const user_id = req.user.id;
-        const { current_language = 'ru', page = 1, limit = 10 } = req.query;
-        const offset = (page - 1) * limit;
-
-        // User favourite salonlarini olish
-        const userResult = await pool.query(
-            'SELECT favourite_salons FROM users WHERE id = $1',
-            [user_id]
-        );
-
-        if (userResult.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'User topilmadi'
-            });
-        }
-
-        const favouriteSalonIds = userResult.rows[0].favourite_salons || [];
-
-        // Agar user hech qaysi salonga like bosmagan bo'lsa, bo'sh to'plam qaytarish
-        if (favouriteSalonIds.length === 0) {
-            return res.status(200).json({
-                success: true,
-                salons: [],
-                pagination: {
-                    current_page: parseInt(page),
-                    total_pages: 0,
-                    total_salons: 0,
-                    limit: parseInt(limit)
-                },
-                message: 'Hali hech qaysi salon favourite qilinmagan'
-            });
-        }
-
-        // Favourite salonlarning turlarini olish
-        const placeholders = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
-        const favouriteSalonsResult = await pool.query(
-            `SELECT salon_types FROM salons WHERE id IN (${placeholders}) AND is_active = true`,
-            favouriteSalonIds
-        );
-
-        // Barcha favourite salon turlarini yig'ish
-        const allFavouriteTypes = [];
-        favouriteSalonsResult.rows.forEach(salon => {
-            if (salon.salon_types && Array.isArray(salon.salon_types)) {
-                allFavouriteTypes.push(...salon.salon_types);
-            }
-        });
-
-        // Takrorlanuvchi turlarni olib tashlash
-        const uniqueTypes = [...new Set(allFavouriteTypes)];
-
-        if (uniqueTypes.length === 0) {
-            return res.status(200).json({
-                success: true,
-                salons: [],
-                pagination: {
-                    current_page: parseInt(page),
-                    total_pages: 0,
-                    total_salons: 0,
-                    limit: parseInt(limit)
-                },
-                message: 'Favourite salonlarda turlar topilmadi'
-            });
-        }
-
-        // Recommended salonlarni olish (favourite salonlarni chiqarib tashlash)
-        const typeConditions = uniqueTypes.map((_, index) => `salon_types @> $${index + favouriteSalonIds.length + 1}`).join(' OR ');
-        const excludeConditions = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
+        const { user_id, limit = 10, offset = 0 } = req.query;
         
-        const countQuery = `
-            SELECT COUNT(*) as total 
-            FROM salons 
-            WHERE is_active = true 
-            AND id NOT IN (${excludeConditions})
-            AND (${typeConditions})
-        `;
-
+        // Foydalanuvchining sevimli salonlarini olish
+        let favouriteSalonIds = [];
+        if (user_id) {
+            const favouritesQuery = `
+                SELECT salon_id FROM user_favourites 
+                WHERE user_id = $1 AND is_active = true
+            `;
+            const favouritesResult = await pool.query(favouritesQuery, [user_id]);
+            favouriteSalonIds = favouritesResult.rows.map(row => row.salon_id);
+        }
+        
+        // Foydalanuvchining sevimli salon turlarini aniqlash
+        let uniqueTypes = [];
+        if (favouriteSalonIds.length > 0) {
+            const typesQuery = `
+                SELECT DISTINCT jsonb_array_elements(salon_types) as salon_type
+                FROM salons 
+                WHERE id = ANY($1) AND is_active = true
+            `;
+            const typesResult = await pool.query(typesQuery, [favouriteSalonIds]);
+            uniqueTypes = typesResult.rows.map(row => row.salon_type.type);
+        }
+        
+        // Agar sevimli salonlar yo'q bo'lsa, eng mashhur turlarni olish
+        if (uniqueTypes.length === 0) {
+            uniqueTypes = ['Салон красоты', 'Фитнес', 'Массаж'];
+        }
+        
+        // Sevimli salon turlariga mos salonlarni topish (sevimli salonlarni chiqarib tashlash)
+        let excludeConditions = favouriteSalonIds.length > 0 
+            ? favouriteSalonIds.map((_, index) => `$${index + 1}`).join(', ')
+            : 'NULL';
+            
+        let typeConditions = uniqueTypes.map((_, index) => 
+            `salon_types @> '[{"type": "${uniqueTypes[index]}"}]'`
+        ).join(' OR ');
+        
         const salonsQuery = `
             SELECT * FROM salons 
             WHERE is_active = true 
@@ -1004,67 +965,153 @@ const getRecommendedSalons = async (req, res) => {
             LIMIT $${favouriteSalonIds.length + uniqueTypes.length + 1} 
             OFFSET $${favouriteSalonIds.length + uniqueTypes.length + 2}
         `;
-
-        const queryParams = [
-            ...favouriteSalonIds,
-            ...uniqueTypes.map(type => JSON.stringify([type])),
-            parseInt(limit),
-            offset
-        ];
-
-        const [countResult, salonsResult] = await Promise.all([
-            pool.query(countQuery, [...favouriteSalonIds, ...uniqueTypes.map(type => JSON.stringify([type]))]),
-            pool.query(salonsQuery, queryParams)
-        ]);
-
-        const totalSalons = parseInt(countResult.rows[0].total);
-        const totalPages = Math.ceil(totalSalons / limit);
-
-        // Tarjima qilish
-        const { translateText } = require('../services/i18nService');
         
-        const salons = await Promise.all(salonsResult.rows.map(async (salon) => {
-            const translatedSalon = { ...salon };
-            
-            if (current_language !== 'ru') {
-                try {
-                    if (salon.salon_name) {
-                        translatedSalon.salon_name = await translateText(salon.salon_name, current_language);
-                    }
-                    if (salon.salon_description) {
-                        translatedSalon.salon_description = await translateText(salon.salon_description, current_language);
-                    }
-                    if (salon.salon_title) {
-                        translatedSalon.salon_title = await translateText(salon.salon_title, current_language);
-                    }
-                } catch (translateError) {
-                    console.error('Tarjima xatosi:', translateError);
-                }
-            }
-            
-            return translatedSalon;
+        const queryParams = [...favouriteSalonIds, parseInt(limit), parseInt(offset)];
+        const salonsResult = await pool.query(salonsQuery, queryParams);
+        
+        // Salonlarni formatlash
+        const formattedSalons = salonsResult.rows.map(salon => ({
+            id: salon.id,
+            salon_name: salon.salon_name || salon.name,
+            salon_phone: salon.salon_phone || salon.phone,
+            salon_rating: salon.salon_rating || 0,
+            salon_description: salon.salon_description || salon.description,
+            salon_photos: salon.salon_photos || [],
+            location: salon.location,
+            salon_types: salon.salon_types || [],
+            salon_comfort: salon.salon_comfort || [],
+            is_private: salon.is_private || false
         }));
-
-        res.status(200).json({
+        
+        res.json({
             success: true,
-            salons: salons,
+            data: formattedSalons,
             pagination: {
-                current_page: parseInt(page),
-                total_pages: totalPages,
-                total_salons: totalSalons,
-                limit: parseInt(limit)
+                limit: parseInt(limit),
+                offset: parseInt(offset),
+                total: formattedSalons.length
             },
             recommendation_info: {
-                based_on_types: uniqueTypes,
-                favourite_salons_count: favouriteSalonIds.length
+                based_on_favourites: favouriteSalonIds.length > 0,
+                favourite_salon_types: uniqueTypes,
+                excluded_salons: favouriteSalonIds.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting recommended salons:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Tavsiya etilgan salonlarni olishda xatolik yuz berdi'
+        });
+    }
+};
+
+// Salon rasmlarini yuklash
+const uploadSalonPhotos = async (req, res) => {
+    try {
+        const { salon_id } = req.params;
+        const { photos } = req.body; // Base64 formatdagi rasmlar massivi
+
+        if (!photos || !Array.isArray(photos) || photos.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rasmlar majburiy va massiv formatida bo\'lishi kerak'
+            });
+        }
+
+        // Salonni tekshirish
+        const salonQuery = 'SELECT * FROM salons WHERE id = $1';
+        const salonResult = await pool.query(salonQuery, [salon_id]);
+        
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        const salon = salonResult.rows[0];
+        const currentPhotos = salon.salon_photos || [];
+
+        // Yangi rasmlarni qo'shish
+        const updatedPhotos = [...currentPhotos, ...photos];
+
+        // Bazani yangilash
+        const updateQuery = 'UPDATE salons SET salon_photos = $1 WHERE id = $2 RETURNING salon_photos';
+        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), salon_id]);
+
+        res.json({
+            success: true,
+            message: 'Rasmlar muvaffaqiyatli yuklandi',
+            data: {
+                salon_id: salon_id,
+                salon_photos: updateResult.rows[0].salon_photos,
+                added_photos_count: photos.length,
+                total_photos_count: updatedPhotos.length
             }
         });
 
     } catch (error) {
-        console.error('Recommended salonlarni olishda xatolik:', error);
+        console.error('Error uploading salon photos:', error);
         res.status(500).json({
             success: false,
-            message: 'Recommended salonlarni olishda xatolik yuz berdi'
+            message: 'Rasmlarni yuklashda xatolik yuz berdi'
+        });
+    }
+};
+
+// Salon rasmini o'chirish
+const deleteSalonPhoto = async (req, res) => {
+    try {
+        const { salon_id, photo_index } = req.params;
+
+        // Salonni tekshirish
+        const salonQuery = 'SELECT * FROM salons WHERE id = $1';
+        const salonResult = await pool.query(salonQuery, [salon_id]);
+        
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        const salon = salonResult.rows[0];
+        const currentPhotos = salon.salon_photos || [];
+
+        // Rasm indeksini tekshirish
+        const photoIndexNum = parseInt(photo_index);
+        if (isNaN(photoIndexNum) || photoIndexNum < 0 || photoIndexNum >= currentPhotos.length) {
+            return res.status(400).json({
+                success: false,
+                message: 'Noto\'g\'ri rasm indeksi'
+            });
+        }
+
+        // Rasmni o'chirish
+        const updatedPhotos = currentPhotos.filter((_, index) => index !== photoIndexNum);
+
+        // Bazani yangilash
+        const updateQuery = 'UPDATE salons SET salon_photos = $1 WHERE id = $2 RETURNING salon_photos';
+        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), salon_id]);
+
+        res.json({
+            success: true,
+            message: 'Rasm muvaffaqiyatli o\'chirildi',
+            data: {
+                salon_id: salon_id,
+                salon_photos: updateResult.rows[0].salon_photos,
+                deleted_photo_index: photoIndexNum,
+                remaining_photos_count: updatedPhotos.length
+            }
+        });
+
+    } catch (error) {
+        console.error('Error deleting salon photo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Rasmni o\'chirishda xatolik yuz berdi'
         });
     }
 };
@@ -1079,5 +1126,7 @@ module.exports = {
     getSalonComments,
     getNearbySalons,
     getSalonsByTypes,
-    getRecommendedSalons
+    getRecommendedSalons,
+    uploadSalonPhotos,
+    deleteSalonPhoto
 };

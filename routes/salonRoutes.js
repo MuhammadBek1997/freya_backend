@@ -10,7 +10,9 @@ const {
     getSalonComments,
     getNearbySalons,
     getSalonsByTypes,
-    getRecommendedSalons
+    getRecommendedSalons,
+    uploadSalonPhotos,
+    deleteSalonPhoto
 } = require('../controllers/salonController');
 const { verifySuperAdmin, verifyUser } = require('../middleware/authMiddleware');
 const { languageDetection } = require('../middleware/languageMiddleware');
@@ -748,5 +750,125 @@ router.get('/filter/types', languageDetection, getSalonsByTypes);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/recommended', verifyUser, languageDetection, getRecommendedSalons);
+
+/**
+ * @swagger
+ * /api/salons/{id}/photos:
+ *   post:
+ *     summary: Salon rasmlarini yuklash
+ *     tags: [Salons]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - photos
+ *             properties:
+ *               photos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: Base64 formatdagi rasmlar massivi
+ *     responses:
+ *       200:
+ *         description: Rasmlar muvaffaqiyatli yuklandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     salon_id:
+ *                       type: string
+ *                     salon_photos:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     added_photos_count:
+ *                       type: integer
+ *                     total_photos_count:
+ *                       type: integer
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       404:
+ *         description: Salon topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.post('/:salon_id/photos', verifySuperAdmin, uploadSalonPhotos);
+
+/**
+ * @swagger
+ * /api/salons/{id}/photos/{photo_index}:
+ *   delete:
+ *     summary: Salon rasmini o'chirish
+ *     tags: [Salons]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID
+ *       - in: path
+ *         name: photo_index
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: O'chiriladigan rasm indeksi
+ *     responses:
+ *       200:
+ *         description: Rasm muvaffaqiyatli o'chirildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     salon_id:
+ *                       type: string
+ *                     salon_photos:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     deleted_photo_index:
+ *                       type: integer
+ *                     remaining_photos_count:
+ *                       type: integer
+ *       400:
+ *         description: Noto'g'ri rasm indeksi
+ *       404:
+ *         description: Salon topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.delete('/:salon_id/photos/:photo_index', verifySuperAdmin, deleteSalonPhoto);
 
 module.exports = router;
