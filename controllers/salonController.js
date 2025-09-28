@@ -1010,7 +1010,7 @@ const getRecommendedSalons = async (req, res) => {
 // Salon rasmlarini yuklash
 const uploadSalonPhotos = async (req, res) => {
     try {
-        const { salon_id } = req.params;
+        const { id } = req.params;
         const { photos } = req.body; // Base64 formatdagi rasmlar massivi
 
         if (!photos || !Array.isArray(photos) || photos.length === 0) {
@@ -1022,7 +1022,7 @@ const uploadSalonPhotos = async (req, res) => {
 
         // Salonni tekshirish
         const salonQuery = 'SELECT * FROM salons WHERE id = $1';
-        const salonResult = await pool.query(salonQuery, [salon_id]);
+        const salonResult = await pool.query(salonQuery, [id]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
@@ -1039,13 +1039,13 @@ const uploadSalonPhotos = async (req, res) => {
 
         // Bazani yangilash
         const updateQuery = 'UPDATE salons SET salon_photos = $1 WHERE id = $2 RETURNING salon_photos';
-        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), salon_id]);
+        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), id]);
 
         res.json({
             success: true,
             message: 'Rasmlar muvaffaqiyatli yuklandi',
             data: {
-                salon_id: salon_id,
+                salon_id: id,
                 salon_photos: updateResult.rows[0].salon_photos,
                 added_photos_count: photos.length,
                 total_photos_count: updatedPhotos.length
@@ -1064,11 +1064,11 @@ const uploadSalonPhotos = async (req, res) => {
 // Salon rasmini o'chirish
 const deleteSalonPhoto = async (req, res) => {
     try {
-        const { salon_id, photo_index } = req.params;
+        const { id, photoIndex } = req.params;
 
         // Salonni tekshirish
         const salonQuery = 'SELECT * FROM salons WHERE id = $1';
-        const salonResult = await pool.query(salonQuery, [salon_id]);
+        const salonResult = await pool.query(salonQuery, [id]);
         
         if (salonResult.rows.length === 0) {
             return res.status(404).json({
@@ -1081,7 +1081,7 @@ const deleteSalonPhoto = async (req, res) => {
         const currentPhotos = salon.salon_photos || [];
 
         // Rasm indeksini tekshirish
-        const photoIndexNum = parseInt(photo_index);
+        const photoIndexNum = parseInt(photoIndex);
         if (isNaN(photoIndexNum) || photoIndexNum < 0 || photoIndexNum >= currentPhotos.length) {
             return res.status(400).json({
                 success: false,
@@ -1094,13 +1094,13 @@ const deleteSalonPhoto = async (req, res) => {
 
         // Bazani yangilash
         const updateQuery = 'UPDATE salons SET salon_photos = $1 WHERE id = $2 RETURNING salon_photos';
-        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), salon_id]);
+        const updateResult = await pool.query(updateQuery, [JSON.stringify(updatedPhotos), id]);
 
         res.json({
             success: true,
             message: 'Rasm muvaffaqiyatli o\'chirildi',
             data: {
-                salon_id: salon_id,
+                salon_id: id,
                 salon_photos: updateResult.rows[0].salon_photos,
                 deleted_photo_index: photoIndexNum,
                 remaining_photos_count: updatedPhotos.length
