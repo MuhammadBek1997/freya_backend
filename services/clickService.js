@@ -7,6 +7,7 @@ class ClickService {
         this.merchantId = process.env.CLICK_MERCHANT_ID || '12345';
         this.serviceId = process.env.CLICK_SERVICE_ID || '67890';
         this.secretKey = process.env.CLICK_SECRET_KEY || 'your_secret_key';
+        this.merchantUserId = process.env.CLICK_MERCHANT_USER_ID || '12345';
         this.baseUrl = process.env.CLICK_BASE_URL || 'https://api.click.uz/v2';
     }
 
