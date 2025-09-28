@@ -625,7 +625,9 @@ const getAppointmentsBySalonId = async (req, res) => {
         const offset = (page - 1) * limit;
 
         // Validate salon exists
+        console.log('Checking salon with ID:', salon_id);
         const salonCheck = await pool.query('SELECT id, salon_name FROM salons WHERE id = $1', [salon_id]);
+        console.log('Salon check result:', salonCheck.rows.length);
         if (salonCheck.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -660,11 +662,14 @@ const getAppointmentsBySalonId = async (req, res) => {
         query += ` ORDER BY a.application_date DESC, a.application_time DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
+        console.log('About to execute main query...');
         console.log('Executing query:', query);
         console.log('With params:', params);
         const appointments = await pool.query(query, params);
+        console.log('Main query executed successfully, rows:', appointments.rows.length);
 
         // Get total count
+        console.log('About to execute count query...');
         let countQuery = `
             SELECT COUNT(*) as total 
             FROM appointments a
