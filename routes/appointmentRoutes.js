@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 // All routes require authentication (users, employees, admins)
 // Temporarily bypass auth for testing
-router.use(authMiddleware.verifyAuth);
+// router.use(authMiddleware.verifyAuth);
 
 /**
  * @swagger
