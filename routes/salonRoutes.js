@@ -14,7 +14,7 @@ const {
     uploadSalonPhotos,
     deleteSalonPhoto
 } = require('../controllers/salonController');
-const { verifySuperAdmin, verifyUser } = require('../middleware/authMiddleware');
+const { verifySuperAdmin, verifyAdmin, verifyUser } = require('../middleware/authMiddleware');
 const { languageDetection } = require('../middleware/languageMiddleware');
 
 /**
@@ -415,7 +415,7 @@ router.post('/', verifySuperAdmin, createSalon);
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.put('/:id', verifySuperAdmin, updateSalon);
+router.put('/:id', verifyAdmin, updateSalon);
 
 /**
  * @swagger

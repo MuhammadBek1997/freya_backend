@@ -2,6 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyAdmin } = require('../middleware/authMiddleware');
+const {
+    updateSalon,
+    uploadSalonPhotos,
+    deleteSalonPhoto
+} = require('../controllers/salonController');
 
 /**
  * @swagger
@@ -359,5 +364,124 @@ router.get('/my-salon', verifyAdmin, async (req, res) => {
         });
     }
 });
+
+/**
+ * @swagger
+ * /api/admin/salons/{id}:
+ *   put:
+ *     summary: Salonni yangilash
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID raqami
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               working_hours:
+ *                 type: string
+ *               salon_types:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *     responses:
+ *       200:
+ *         description: Salon muvaffaqiyatli yangilandi
+ *       403:
+ *         description: Ruxsat yo'q
+ *       404:
+ *         description: Salon topilmadi
+ */
+router.put('/salons/:id', verifyAdmin, updateSalon);
+
+/**
+ * @swagger
+ * /api/admin/salons/{id}/photos:
+ *   post:
+ *     summary: Salon rasmlarini yuklash
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID raqami
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               photos:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *     responses:
+ *       200:
+ *         description: Rasmlar muvaffaqiyatli yuklandi
+ *       403:
+ *         description: Ruxsat yo'q
+ *       404:
+ *         description: Salon topilmadi
+ */
+router.post('/salons/:id/photos', verifyAdmin, uploadSalonPhotos);
+
+/**
+ * @swagger
+ * /api/admin/salons/{id}/photos/{photoIndex}:
+ *   delete:
+ *     summary: Salon rasmini o'chirish
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID raqami
+ *       - in: path
+ *         name: photoIndex
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Rasm indeksi
+ *     responses:
+ *       200:
+ *         description: Rasm muvaffaqiyatli o'chirildi
+ *       403:
+ *         description: Ruxsat yo'q
+ *       404:
+ *         description: Salon yoki rasm topilmadi
+ */
+router.delete('/salons/:id/photos/:photoIndex', verifyAdmin, deleteSalonPhoto);
 
 module.exports = router;

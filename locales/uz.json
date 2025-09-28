@@ -1,45 +1,5 @@
 {
   "salons": {
-    "undefined": {
-      "id": "8769c6df-a5f1-4e66-99e3-e4a915619187",
-      "name": "Test Salon",
-      "description": "Bu test salon",
-      "address": "Toshkent, Test ko'chasi 1",
-      "phone": "+998901234567",
-      "email": "test@salon.uz",
-      "working_hours": {
-        "friday": {
-          "open": "09:00",
-          "close": "18:00"
-        },
-        "monday": {
-          "open": "09:00",
-          "close": "18:00"
-        },
-        "sunday": {
-          "closed": true
-        },
-        "tuesday": {
-          "open": "09:00",
-          "close": "18:00"
-        },
-        "saturday": {
-          "open": "10:00",
-          "close": "16:00"
-        },
-        "thursday": {
-          "open": "09:00",
-          "close": "18:00"
-        },
-        "wednesday": {
-          "open": "09:00",
-          "close": "18:00"
-        }
-      },
-      "is_active": true,
-      "created_at": "2025-09-22T22:56:57.729Z",
-      "updated_at": "2025-09-22T22:56:57.729Z"
-    },
     "6bb9b316-0c40-4557-8f3c-5738b438b0ff": {
       "name": "Test Salon",
       "description": "Bu test salon"
@@ -189,7 +149,6 @@
     },
     "5925baed-0e7f-4020-9364-4de4253cdc1b": {
       "title": "Test Title"
-    },
-    "[object Object]": {}
+    }
   }
 }
