@@ -274,4 +274,90 @@ router.get('/salons', verifyAdmin, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/admin/my-salon:
+ *   get:
+ *     summary: Adminning o'z salon ma'lumotlarini olish
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Salon ma'lumotlari muvaffaqiyatli olingan
+ *       403:
+ *         description: Ruxsat yo'q
+ *       404:
+ *         description: Salon topilmadi
+ */
+router.get('/my-salon', verifyAdmin, async (req, res) => {
+    try {
+        // Admin ekanligini tekshirish
+        if (!req.admin || !req.admin.salon_id) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Admin salon ma\'lumotlari topilmadi' 
+            });
+        }
+
+        const salonId = req.admin.salon_id;
+
+        // Salon ma'lumotlarini olish
+        const salonQuery = `
+            SELECT s.*,
+                   CASE WHEN sth.is_active = TRUE THEN sth.end_date ELSE NULL END as top_end_date,
+                   CASE WHEN sth.is_active = TRUE THEN TRUE ELSE FALSE END as is_currently_top
+            FROM salons s
+            LEFT JOIN salon_top_history sth ON s.id = sth.salon_id AND sth.is_active = TRUE
+            WHERE s.id = $1
+        `;
+
+        const salonResult = await pool.query(salonQuery, [salonId]);
+
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Salon topilmadi' 
+            });
+        }
+
+        let salon = salonResult.rows[0];
+
+        // Salon tarjimalarini olish
+        try {
+            const salonTranslationService = require('../services/salonTranslationService');
+            
+            // Har bir til uchun tarjimalarni olish
+            const languages = ['uz', 'en', 'ru'];
+            for (const lang of languages) {
+                const translation = await salonTranslationService.getSalonByLanguage(salonId, lang);
+                if (translation) {
+                    salon[`salon_name_${lang}`] = translation.salon_name || salon.name;
+                    salon[`salon_description_${lang}`] = translation.salon_description || salon.description;
+                    salon[`salon_title_${lang}`] = translation.salon_title || '';
+                    salon[`salon_address_${lang}`] = translation.salon_address || salon.address;
+                    salon[`salon_direction_${lang}`] = translation.salon_direction || '';
+                }
+            }
+        } catch (translationError) {
+            console.error('Translation error:', translationError);
+            // Tarjima xatosi bo'lsa, asosiy ma'lumotlarni qaytaramiz
+        }
+
+        res.json({
+            success: true,
+            data: salon,
+            message: 'Salon ma\'lumotlari muvaffaqiyatli olingan'
+        });
+
+    } catch (error) {
+        console.error('Get admin salon error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
