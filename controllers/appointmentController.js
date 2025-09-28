@@ -100,11 +100,19 @@ const getAllAppointments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT a.*
+            SELECT a.*, s.name as schedule_name, e.name as employee_name
             FROM appointments a
+            LEFT JOIN schedules s ON a.schedule_id = s.id
+            LEFT JOIN employees e ON a.employee_id = e.id
             WHERE 1=1
         `;
         const params = [];
+
+        // Filter by admin's salon if user is admin
+        if (req.user.role === 'admin' && req.user.salon_id) {
+            query += ` AND e.salon_id = $${params.length + 1}`;
+            params.push(req.user.salon_id);
+        }
 
         if (status) {
             query += ` AND a.status = $${params.length + 1}`;
@@ -123,16 +131,27 @@ const getAllAppointments = async (req, res) => {
 
 
         // Get total count
-        let countQuery = `SELECT COUNT(*) as total FROM appointments WHERE 1=1`;
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM appointments a
+            LEFT JOIN employees e ON a.employee_id = e.id
+            WHERE 1=1
+        `;
         const countParams = [];
 
+        // Filter by admin's salon if user is admin
+        if (req.user.role === 'admin' && req.user.salon_id) {
+            countQuery += ` AND e.salon_id = $${countParams.length + 1}`;
+            countParams.push(req.user.salon_id);
+        }
+
         if (status) {
-            countQuery += ` AND status = $${countParams.length + 1}`;
+            countQuery += ` AND a.status = $${countParams.length + 1}`;
             countParams.push(status);
         }
 
         if (user_id) {
-            countQuery += ` AND user_id = $${countParams.length + 1}`;
+            countQuery += ` AND a.user_id = $${countParams.length + 1}`;
             countParams.push(user_id);
         }
 
