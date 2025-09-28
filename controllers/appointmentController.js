@@ -626,7 +626,7 @@ const getAppointmentsBySalonId = async (req, res) => {
 
         // Validate salon exists
         console.log('Checking salon with ID:', salon_id);
-        const salonCheck = await pool.query('SELECT id, salon_name FROM salons WHERE id = $1', [salon_id]);
+        const salonCheck = await pool.query('SELECT id, salon_name_uz FROM salons WHERE id = $1', [salon_id]);
         console.log('Salon check result:', salonCheck.rows.length);
         if (salonCheck.rows.length === 0) {
             return res.status(404).json({
