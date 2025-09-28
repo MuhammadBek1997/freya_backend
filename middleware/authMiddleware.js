@@ -110,7 +110,7 @@ const authMiddleware = {
       // Check based on role in token
       if (decoded.role === 'employee') {
         const result = await query(
-          'SELECT id, employee_name, employee_phone, employee_password, salon_id, position, name, is_active, created_at, updated_at FROM employees WHERE id = $1 AND is_active = true',
+          'SELECT id, employee_name, employee_phone, employee_password, salon_id, position, is_active, created_at, updated_at FROM employees WHERE id = $1 AND is_active = true',
           [decoded.id]
         );
         if (result.rows.length > 0) {

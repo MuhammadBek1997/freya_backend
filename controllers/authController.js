@@ -218,8 +218,8 @@ const employeeLogin = async (req, res) => {
                 id: employee.id,
                 username: employee.employee_name || employee.email,
                 email: employee.email,
-                name: employee.name || employee.employee_name,
-                surname: employee.name || employee.employee_name, // surname yo'q, shuning uchun name ishlatamiz
+                name: employee.name,
+                surname: employee.surname, // surname yo'q, shuning uchun employee_name ishlatamiz
                 role: 'employee',
                 salon_id: employee.salon_id
             }

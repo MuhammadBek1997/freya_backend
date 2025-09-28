@@ -100,9 +100,8 @@ const getAllAppointments = async (req, res) => {
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT a.*, s.name as schedule_name, e.name as employee_name
+            SELECT a.*, e.name as employee_name
             FROM appointments a
-            LEFT JOIN schedules s ON a.schedule_id = s.id
             LEFT JOIN employees e ON a.employee_id = e.id
             WHERE 1=1
         `;
@@ -185,7 +184,7 @@ const getAppointmentById = async (req, res) => {
 
         const query = `
             SELECT a.*, s.day_of_week, s.start_time, s.end_time,
-                   u.name as user_full_name, u.email as user_email,
+                   u.full_name as user_full_name, u.email as user_email,
                    e.name as employee_name
             FROM appointments a
             LEFT JOIN schedules s ON a.schedule_id = s.id
@@ -574,7 +573,7 @@ const getSalonAppointments = async (req, res) => {
         query += ` ORDER BY a.application_date DESC, a.application_time DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
         params.push(parseInt(limit), parseInt(offset));
 
-        const appointments = await pool.query(query, params);
+        const result = await pool.query(query, params);
 
         // Get total count
         let countQuery = `
@@ -618,6 +617,101 @@ const getSalonAppointments = async (req, res) => {
     }
 };
 
+// Get appointments by salon ID with proper filtering
+const getAppointmentsBySalonId = async (req, res) => {
+    try {
+        const { salon_id } = req.params;
+        const { page = 1, limit = 10, status, date, employee_id } = req.query;
+        const offset = (page - 1) * limit;
+
+        // Validate salon exists
+        const salonCheck = await pool.query('SELECT id, salon_name FROM salons WHERE id = $1', [salon_id]);
+        if (salonCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        let query = `
+            SELECT a.*, e.name as employee_name, u.full_name as user_name
+            FROM appointments a
+            LEFT JOIN employees e ON a.employee_id = e.id
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE e.salon_id = $1
+        `;
+        const params = [salon_id];
+
+        if (status) {
+            query += ` AND a.status = $${params.length + 1}`;
+            params.push(status);
+        }
+
+        if (date) {
+            query += ` AND a.application_date = $${params.length + 1}`;
+            params.push(date);
+        }
+
+        if (employee_id) {
+            query += ` AND a.employee_id = $${params.length + 1}`;
+            params.push(employee_id);
+        }
+
+        query += ` ORDER BY a.application_date DESC, a.application_time DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(parseInt(limit), parseInt(offset));
+
+        console.log('Executing query:', query);
+        console.log('With params:', params);
+        const appointments = await pool.query(query, params);
+
+        // Get total count
+        let countQuery = `
+            SELECT COUNT(*) as total 
+            FROM appointments a
+            LEFT JOIN employees e ON a.employee_id = e.id
+            WHERE e.salon_id = $1
+        `;
+        const countParams = [salon_id];
+
+        if (status) {
+            countQuery += ` AND a.status = $${countParams.length + 1}`;
+            countParams.push(status);
+        }
+
+        if (date) {
+            countQuery += ` AND a.application_date = $${countParams.length + 1}`;
+            countParams.push(date);
+        }
+
+        if (employee_id) {
+            countQuery += ` AND a.employee_id = $${countParams.length + 1}`;
+            countParams.push(employee_id);
+        }
+
+        const totalResult = await pool.query(countQuery, countParams);
+        const total = totalResult.rows[0].total;
+
+        res.json({
+            success: true,
+            message: 'Salon appointmentlari muvaffaqiyatli olindi',
+            data: appointments.rows,
+            salon: salonCheck.rows[0],
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total: parseInt(total),
+                pages: Math.ceil(total / limit)
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching salon appointments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Salon appointmentlarini olishda xatolik yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     createAppointment,
     getAllAppointments,
@@ -626,6 +720,7 @@ module.exports = {
     updateAppointmentStatus,
     getUserAppointments,
     getSalonAppointments,
+    getAppointmentsBySalonId,
     cancelAppointment,
     deleteAppointment
 };
