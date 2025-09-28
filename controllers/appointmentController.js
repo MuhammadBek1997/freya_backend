@@ -3,9 +3,12 @@ const { pool } = require('../config/database');
 // Generate unique application number
 const generateApplicationNumber = async () => {
     try {
-        const result = await pool.query('SELECT nextval(\'appointment_number_seq\') as next_val');
-        const nextVal = result.rows[0].next_val;
-        return `APP${String(nextVal).padStart(6, '0')}`;
+        // Get the count of existing appointments to generate sequential numbers
+        const countResult = await pool.query('SELECT COUNT(*) as count FROM appointments');
+        const count = parseInt(countResult.rows[0].count) + 1;
+        
+        // Format: APP + 3 digits (e.g., APP001, APP002)
+        return `APP${String(count).padStart(3, '0')}`;
     } catch (error) {
         console.error('Error generating application number:', error);
         throw error;
