@@ -51,8 +51,7 @@ const createAppointment = async (req, res) => {
         const employee_list = scheduleCheck.rows[0].employee_list;
         const salon_id = scheduleCheck.rows[0].salon_id;
         
-        // For backward compatibility, if employee_list is not empty, use the first employee
-        // Otherwise, set employee_id to null
+        // Get the first employee from employee_list if available
         const employee_id = employee_list && employee_list.length > 0 ? employee_list[0] : null;
 
         // Validate that salon exists
