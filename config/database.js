@@ -1,18 +1,20 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// PostgreSQL connection configuration
+// PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // Test database connection
 pool.connect((err, client, release) => {
   if (err) {
-    console.error('PostgreSQL database ulanish xatosi:', err);
-    process.exit(-1);
+    console.error('PostgreSQL ulanish xatosi:', err.message);
   } else {
+    console.log('PostgreSQL database muvaffaqiyatli ulandi');
     release();
     
     // Initialize tables

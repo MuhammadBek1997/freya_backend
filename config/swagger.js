@@ -18,6 +18,32 @@ const swaggerDefinition = {
       description: 'Development server (Local)'
     }
   ],
+  tags: [
+    {
+      name: 'Authentication',
+      description: 'Foydalanuvchi autentifikatsiyasi va ro\'yxatdan o\'tish'
+    },
+    {
+      name: 'Users',
+      description: 'Foydalanuvchi boshqaruvi'
+    },
+    {
+      name: 'Payment Cards',
+      description: 'To\'lov kartalari boshqaruvi'
+    },
+    {
+      name: 'Salons',
+      description: 'Salon ma\'lumotlari'
+    },
+    {
+      name: 'Employees',
+      description: 'Xodimlar ma\'lumotlari'
+    },
+    {
+      name: 'Appointments',
+      description: 'Uchrashuvlar boshqaruvi'
+    }
+  ],
   components: {
     securitySchemes: {
       bearerAuth: {

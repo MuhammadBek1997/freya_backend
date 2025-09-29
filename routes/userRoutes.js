@@ -22,7 +22,12 @@ const {
     deleteProfileImage,
     addFavouriteSalon,
     removeFavouriteSalon,
-    getFavouriteSalons
+    getFavouriteSalons,
+    addPaymentCard,
+    getUserPaymentCards,
+    updatePaymentCard,
+    deletePaymentCard,
+    setDefaultPaymentCard
 } = require('../controllers/userController');
 
 // Middleware
@@ -1215,5 +1220,207 @@ router.post('/favourites/remove', verifyUser, removeFavouriteSalon);
  *         description: Server xatoligi
  */
 router.get('/favourites', verifyUser, getFavouriteSalons);
+
+/**
+ * @swagger
+ * /api/users/payment-cards:
+ *   post:
+ *     summary: Payment card qo'shish
+ *     tags: [Payment Cards]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - card_number
+ *               - card_holder_name
+ *               - expiry_month
+ *               - expiry_year
+ *               - phone_number
+ *             properties:
+ *               card_number:
+ *                 type: string
+ *                 description: Karta raqami
+ *                 example: "4111111111111111"
+ *               card_holder_name:
+ *                 type: string
+ *                 description: Karta egasining ismi
+ *                 example: "John Doe"
+ *               expiry_month:
+ *                 type: integer
+ *                 description: Karta muddati (oy)
+ *                 example: 12
+ *               expiry_year:
+ *                 type: integer
+ *                 description: Karta muddati (yil)
+ *                 example: 2025
+ *               phone_number:
+ *                 type: string
+ *                 description: Telefon raqami
+ *                 example: "+998901234567"
+ *               is_default:
+ *                 type: boolean
+ *                 description: Default karta sifatida belgilash
+ *                 example: false
+ *     responses:
+ *       201:
+ *         description: Payment card muvaffaqiyatli qo'shildi
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ */
+router.post('/payment-cards', verifyUser, addPaymentCard);
+
+/**
+ * @swagger
+ * /api/users/payment-cards:
+ *   get:
+ *     summary: User payment cardlarini olish
+ *     tags: [Payment Cards]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Payment cardlar muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       card_holder_name:
+ *                         type: string
+ *                       last_four_digits:
+ *                         type: string
+ *                       card_type:
+ *                         type: string
+ *                       expiry_month:
+ *                         type: integer
+ *                       expiry_year:
+ *                         type: integer
+ *                       is_default:
+ *                         type: boolean
+ *                       created_at:
+ *                         type: string
+ *                 total:
+ *                   type: integer
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ */
+router.get('/payment-cards', verifyUser, getUserPaymentCards);
+
+/**
+ * @swagger
+ * /api/users/payment-cards/{cardId}:
+ *   put:
+ *     summary: Payment card yangilash
+ *     tags: [Payment Cards]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Payment card ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               card_holder_name:
+ *                 type: string
+ *                 description: Karta egasining ismi
+ *               expiry_month:
+ *                 type: integer
+ *                 description: Karta muddati (oy)
+ *               expiry_year:
+ *                 type: integer
+ *                 description: Karta muddati (yil)
+ *               phone_number:
+ *                 type: string
+ *                 description: Telefon raqami
+ *               is_default:
+ *                 type: boolean
+ *                 description: Default karta sifatida belgilash
+ *     responses:
+ *       200:
+ *         description: Payment card muvaffaqiyatli yangilandi
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ *       404:
+ *         description: Payment card topilmadi
+ */
+router.put('/payment-cards/:cardId', verifyUser, updatePaymentCard);
+
+/**
+ * @swagger
+ * /api/users/payment-cards/{cardId}:
+ *   delete:
+ *     summary: Payment card o'chirish
+ *     tags: [Payment Cards]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Payment card ID
+ *     responses:
+ *       200:
+ *         description: Payment card muvaffaqiyatli o'chirildi
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ *       404:
+ *         description: Payment card topilmadi
+ */
+router.delete('/payment-cards/:cardId', verifyUser, deletePaymentCard);
+
+/**
+ * @swagger
+ * /api/users/payment-cards/{cardId}/set-default:
+ *   put:
+ *     summary: Default payment card belgilash
+ *     tags: [Payment Cards]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: cardId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Payment card ID
+ *     responses:
+ *       200:
+ *         description: Default payment card muvaffaqiyatli belgilandi
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ *       404:
+ *         description: Payment card topilmadi
+ */
+router.put('/payment-cards/:cardId/set-default', verifyUser, setDefaultPaymentCard);
 
 module.exports = router;

@@ -1,10 +1,68 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { pool } = require('../config/database');
+const { query } = require('../config/database');
 const smsService = require('../services/smsService');
 const { getImageAsBase64, deleteOldImage } = require('../middleware/imageUpload');
 const tempUserStorage = require('../services/tempUserStorage');
 const path = require('path');
+const crypto = require('crypto');
+
+// Payment card encryption settings
+const ENCRYPTION_KEY = process.env.CARD_ENCRYPTION_KEY || 'your-32-character-secret-key-here';
+const ALGORITHM = 'aes-256-cbc';
+
+// Karta raqamini shifrlash
+function encryptCardNumber(cardNumber) {
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY.slice(0, 32)), iv);
+    let encrypted = cipher.update(cardNumber, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return iv.toString('hex') + ':' + encrypted;
+}
+
+// Karta raqamini deshifrlash
+function decryptCardNumber(encryptedCardNumber) {
+    const textParts = encryptedCardNumber.split(':');
+    const iv = Buffer.from(textParts.shift(), 'hex');
+    const encryptedText = textParts.join(':');
+    const decipher = crypto.createDecipheriv(ALGORITHM, Buffer.from(ENCRYPTION_KEY.slice(0, 32)), iv);
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+// Karta turini aniqlash
+function detectCardType(cardNumber) {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    if (cleanNumber.startsWith('4')) return 'visa';
+    if (cleanNumber.startsWith('5') || cleanNumber.startsWith('2')) return 'mastercard';
+    if (cleanNumber.startsWith('8600')) return 'uzcard';
+    if (cleanNumber.startsWith('9860')) return 'humo';
+    return 'unknown';
+}
+
+// Karta raqamini validatsiya qilish (Luhn algorithm)
+function validateCardNumber(cardNumber) {
+    const cleanNumber = cardNumber.replace(/\s/g, '');
+    if (!/^\d{13,19}$/.test(cleanNumber)) return false;
+    
+    let sum = 0;
+    let isEven = false;
+    
+    for (let i = cleanNumber.length - 1; i >= 0; i--) {
+        let digit = parseInt(cleanNumber[i]);
+        
+        if (isEven) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+        }
+        
+        sum += digit;
+        isEven = !isEven;
+    }
+    
+    return sum % 10 === 0;
+}
 
 // Telefon raqam formatini tekshirish
 const validatePhoneNumber = (phone) => {
@@ -53,7 +111,7 @@ const registerStep1 = async (req, res) => {
         }
 
         // Telefon raqam allaqachon mavjudligini tekshirish (asosiy database'da)
-        const existingUser = await pool.query(
+        const existingUser = await query(
             'SELECT id FROM users WHERE phone = $1',
             [phone]
         );
@@ -154,7 +212,7 @@ const verifyPhone = async (req, res) => {
 
         // SMS tasdiqlash muvaffaqiyatli - endi user'ni asosiy database'da yaratamiz
         try {
-            const result = await pool.query(
+            const result = await query(
                 `INSERT INTO users (phone, email, password_hash, registration_step, phone_verified, created_at, updated_at)
                  VALUES ($1, $2, $3, 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
                  RETURNING id, phone, email, registration_step, phone_verified`,
@@ -238,7 +296,7 @@ const registerStep2 = async (req, res) => {
         }
 
         // Foydalanuvchini topish va telefon tasdiqlangan ekanligini tekshirish
-        const result = await pool.query(
+        const result = await query(
             `SELECT id, phone, email, phone_verified, registration_step
              FROM users 
              WHERE phone = $1 AND registration_step = 1 AND phone_verified = true`,
@@ -255,7 +313,7 @@ const registerStep2 = async (req, res) => {
         const user = result.rows[0];
 
         // Username allaqachon mavjudligini tekshirish
-        const existingUsername = await pool.query(
+        const existingUsername = await query(
             'SELECT id FROM users WHERE username = $1 AND id != $2',
             [username, user.id]
         );
@@ -269,7 +327,7 @@ const registerStep2 = async (req, res) => {
 
         // Email mavjudligini tekshirish (agar berilgan bo'lsa)
         if (email) {
-            const existingEmail = await pool.query(
+            const existingEmail = await query(
                 'SELECT id FROM users WHERE email = $1 AND id != $2',
                 [email, user.id]
             );
@@ -283,7 +341,7 @@ const registerStep2 = async (req, res) => {
         }
 
         // Foydalanuvchi ma'lumotlarini yangilash va 2-bosqichni yakunlash
-        const updateResult = await pool.query(
+        const updateResult = await query(
             `UPDATE users 
              SET username = $1, email = $2, registration_step = 2, updated_at = CURRENT_TIMESTAMP
              WHERE id = $3
@@ -341,7 +399,7 @@ const loginUser = async (req, res) => {
         }
 
         // Foydalanuvchini topish
-        const result = await pool.query(
+        const result = await query(
             'SELECT * FROM users WHERE phone = $1',
             [phone]
         );
@@ -424,7 +482,7 @@ const sendPasswordResetCode = async (req, res) => {
         }
 
         // Foydalanuvchi mavjudligini tekshirish
-        const userResult = await pool.query('SELECT id FROM users WHERE phone = $1', [phone]);
+        const userResult = await query('SELECT id FROM users WHERE phone = $1', [phone]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -438,7 +496,7 @@ const sendPasswordResetCode = async (req, res) => {
         if (smsResult.success) {
             // Verification code'ni bazaga saqlash
             const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
-            await pool.query(
+            await query(
                 'UPDATE users SET verification_code = $1, verification_expires_at = $2 WHERE phone = $3',
                 [smsResult.verificationCode, verificationExpires, phone]
             );
@@ -484,7 +542,7 @@ const sendPhoneChangeCode = async (req, res) => {
         }
 
         // Yangi telefon raqam allaqachon ishlatilganligini tekshirish
-        const existingUser = await pool.query('SELECT id FROM users WHERE phone = $1 AND id != $2', [newPhone, userId]);
+        const existingUser = await query('SELECT id FROM users WHERE phone = $1 AND id != $2', [newPhone, userId]);
         if (existingUser.rows.length > 0) {
             return res.status(400).json({
                 success: false,
@@ -498,7 +556,7 @@ const sendPhoneChangeCode = async (req, res) => {
         if (smsResult.success) {
             // Verification code'ni bazaga saqlash
             const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
-            await pool.query(
+            await query(
                 'UPDATE users SET verification_code = $1, verification_expires_at = $2 WHERE id = $3',
                 [smsResult.verificationCode, verificationExpires, userId]
             );
@@ -545,7 +603,7 @@ const deleteUser = async (req, res) => {
 
         // Foydalanuvchini topish
         const userQuery = 'SELECT * FROM users WHERE phone = $1';
-        const userResult = await pool.query(userQuery, [phone]);
+        const userResult = await query(userQuery, [phone]);
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({
@@ -610,7 +668,7 @@ const updateUser = async (req, res) => {
         const { name, email, phone, password, location } = req.body;
 
         // Foydalanuvchini tekshirish
-        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        const userResult = await query('SELECT * FROM users WHERE id = $1', [id]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -635,7 +693,7 @@ const updateUser = async (req, res) => {
 
         // Telefon raqam yoki email boshqa foydalanuvchida mavjudligini tekshirish
         if (phone) {
-            const phoneCheck = await pool.query('SELECT id FROM users WHERE phone = $1 AND id != $2', [phone, id]);
+            const phoneCheck = await query('SELECT id FROM users WHERE phone = $1 AND id != $2', [phone, id]);
             if (phoneCheck.rows.length > 0) {
                 return res.status(400).json({
                     success: false,
@@ -645,7 +703,7 @@ const updateUser = async (req, res) => {
         }
 
         if (email) {
-            const emailCheck = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+            const emailCheck = await query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
             if (emailCheck.rows.length > 0) {
                 return res.status(400).json({
                     success: false,
@@ -708,7 +766,7 @@ const updateUser = async (req, res) => {
             RETURNING id, name, email, phone, location, image, created_at, updated_at
         `;
 
-        const result = await pool.query(updateQuery, updateValues);
+        const result = await query(updateQuery, updateValues);
 
         res.json({
             success: true,
@@ -731,7 +789,7 @@ const generateUserToken = async (req, res) => {
         const { id } = req.params;
 
         // Foydalanuvchini tekshirish
-        const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
+        const userResult = await query('SELECT * FROM users WHERE id = $1', [id]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -800,7 +858,7 @@ const updateUserLocation = async (req, res) => {
         }
 
         // Foydalanuvchini tekshirish
-        const userResult = await pool.query('SELECT id FROM users WHERE id = $1', [userId]);
+        const userResult = await query('SELECT id FROM users WHERE id = $1', [userId]);
         if (userResult.rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -823,7 +881,7 @@ const updateUserLocation = async (req, res) => {
             RETURNING id, latitude, longitude, address, city, country, location_permission, location_updated_at
         `;
 
-        const result = await pool.query(updateQuery, [
+        const result = await query(updateQuery, [
             lat, 
             lng, 
             address || null, 
@@ -865,7 +923,7 @@ const getUserLocation = async (req, res) => {
         const userId = req.user.userId; // JWT tokendan olinadi
 
         // Foydalanuvchi location ma'lumotlarini olish
-        const result = await pool.query(`
+        const result = await query(`
             SELECT id, latitude, longitude, address, city, country, location_permission, location_updated_at
             FROM users 
             WHERE id = $1
@@ -912,7 +970,7 @@ const getUserProfile = async (req, res) => {
         const userId = req.user.userId; // JWT tokendan olinadi
 
         // Foydalanuvchi ma'lumotlarini olish
-        const result = await pool.query(`
+        const result = await query(`
             SELECT id, full_name as name, email, phone, location, image, created_at, updated_at
             FROM users 
             WHERE id = $1
@@ -928,7 +986,7 @@ const getUserProfile = async (req, res) => {
         const user = result.rows[0];
 
         // Foydalanuvchining payment cardlarini olish
-        const paymentCardsResult = await pool.query(`
+        const paymentCardsResult = await query(`
             SELECT 
                 id,
                 card_holder_name,
@@ -1016,7 +1074,7 @@ const resetPassword = async (req, res) => {
             FROM users 
             WHERE phone = $1
         `;
-        const userResult = await pool.query(userQuery, [phone]);
+        const userResult = await query(userQuery, [phone]);
 
         if (userResult.rows.length === 0) {
             return res.status(404).json({
@@ -1065,7 +1123,7 @@ const resetPassword = async (req, res) => {
             RETURNING id, phone
         `;
 
-        const updateResult = await pool.query(updateQuery, [hashedPassword, user.id]);
+        const updateResult = await query(updateQuery, [hashedPassword, user.id]);
 
         res.json({
             success: true,
@@ -1099,7 +1157,7 @@ const uploadProfileImage = async (req, res) => {
 
         // Eski rasmni olish
         const getUserQuery = 'SELECT image FROM users WHERE id = $1';
-        const userResult = await pool.query(getUserQuery, [userId]);
+        const userResult = await query(getUserQuery, [userId]);
         const userRows = userResult.rows;
         
         if (userRows.length === 0) {
@@ -1115,7 +1173,7 @@ const uploadProfileImage = async (req, res) => {
 
         // Base64 ni database'ga saqlash
         const updateQuery = 'UPDATE users SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2';
-        await pool.query(updateQuery, [imageBase64, userId]);
+        await query(updateQuery, [imageBase64, userId]);
 
         // Eski rasmni o'chirish (memory storage uchun hech narsa qilmaydi)
         const oldImageData = userRows[0].image;
@@ -1146,7 +1204,7 @@ const getProfileImage = async (req, res) => {
         const userId = req.user.id;
 
         const query = 'SELECT image FROM users WHERE id = $1';
-        const result = await pool.query(query, [userId]);
+        const result = await query(query, [userId]);
         const rows = result.rows;
 
         if (rows.length === 0) {
@@ -1195,7 +1253,7 @@ const deleteProfileImage = async (req, res) => {
 
         // Eski rasmni olish
         const getUserQuery = 'SELECT image FROM users WHERE id = $1';
-        const userResult = await pool.query(getUserQuery, [userId]);
+        const userResult = await query(getUserQuery, [userId]);
         const userRows = userResult.rows;
         
         if (userRows.length === 0) {
@@ -1209,7 +1267,7 @@ const deleteProfileImage = async (req, res) => {
 
         // Database dan rasm ma'lumotlarini o'chirish
         const updateQuery = 'UPDATE users SET image = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1';
-        await pool.query(updateQuery, [userId]);
+        await query(updateQuery, [userId]);
 
         // Memory storage uchun eski rasm ma'lumotlarini tozalash
         if (oldImageData) {
@@ -1244,7 +1302,7 @@ const addFavouriteSalon = async (req, res) => {
         }
 
         // Salon mavjudligini tekshirish
-        const salonCheck = await pool.query(
+        const salonCheck = await query(
             'SELECT id FROM salons WHERE id = $1 AND is_active = true',
             [salon_id]
         );
@@ -1257,7 +1315,7 @@ const addFavouriteSalon = async (req, res) => {
         }
 
         // User mavjudligini tekshirish va favourite_salons olish
-        const userResult = await pool.query(
+        const userResult = await query(
             'SELECT favourite_salons FROM users WHERE id = $1',
             [user_id]
         );
@@ -1283,7 +1341,7 @@ const addFavouriteSalon = async (req, res) => {
         favouriteSalons.push(salon_id);
 
         // Database'ni yangilash
-        await pool.query(
+        await query(
             'UPDATE users SET favourite_salons = $1 WHERE id = $2',
             [JSON.stringify(favouriteSalons), user_id]
         );
@@ -1317,7 +1375,7 @@ const removeFavouriteSalon = async (req, res) => {
         }
 
         // User mavjudligini tekshirish va favourite_salons olish
-        const userResult = await pool.query(
+        const userResult = await query(
             'SELECT favourite_salons FROM users WHERE id = $1',
             [user_id]
         );
@@ -1343,7 +1401,7 @@ const removeFavouriteSalon = async (req, res) => {
         favouriteSalons = favouriteSalons.filter(id => id !== salon_id);
 
         // Database'ni yangilash
-        await pool.query(
+        await query(
             'UPDATE users SET favourite_salons = $1 WHERE id = $2',
             [JSON.stringify(favouriteSalons), user_id]
         );
@@ -1370,7 +1428,7 @@ const getFavouriteSalons = async (req, res) => {
         const { current_language = 'ru' } = req.query;
 
         // User favourite salonlarini olish
-        const userResult = await pool.query(
+        const userResult = await query(
             'SELECT favourite_salons FROM users WHERE id = $1',
             [user_id]
         );
@@ -1394,7 +1452,7 @@ const getFavouriteSalons = async (req, res) => {
 
         // Favourite salonlar ma'lumotlarini olish
         const placeholders = favouriteSalonIds.map((_, index) => `$${index + 1}`).join(',');
-        const salonsResult = await pool.query(
+        const salonsResult = await query(
             `SELECT * FROM salons WHERE id IN (${placeholders}) AND is_active = true ORDER BY salon_name`,
             favouriteSalonIds
         );
@@ -1439,6 +1497,288 @@ const getFavouriteSalons = async (req, res) => {
     }
 };
 
+// Payment card qo'shish
+const addPaymentCard = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { 
+            card_number, 
+            card_holder_name, 
+            expiry_month, 
+            expiry_year, 
+            phone_number,
+            is_default = false 
+        } = req.body;
+
+        // Validate required fields
+        if (!card_number || !card_holder_name || !expiry_month || !expiry_year || !phone_number) {
+            return res.status(400).json({
+                success: false,
+                message: 'Barcha maydonlar to\'ldirilishi shart'
+            });
+        }
+
+        // Validate card number
+        if (!validateCardNumber(card_number)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Karta raqami noto\'g\'ri'
+            });
+        }
+
+        // Validate expiry date
+        const currentYear = new Date().getFullYear();
+        const currentMonth = new Date().getMonth() + 1;
+        
+        if (expiry_year < currentYear || (expiry_year === currentYear && expiry_month < currentMonth)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Karta muddati tugagan'
+            });
+        }
+
+        // Encrypt card number
+        const encryptedCardNumber = encryptCardNumber(card_number);
+        const lastFourDigits = card_number.slice(-4);
+        const cardType = detectCardType(card_number);
+
+        // Check if this is the first card (make it default)
+        const existingCardsResult = await query(
+            'SELECT COUNT(*) as count FROM payment_cards WHERE user_id = $1',
+            [userId]
+        );
+        const isFirstCard = existingCardsResult.rows[0].count === '0';
+        const shouldBeDefault = is_default || isFirstCard;
+
+        // If setting as default, remove default from other cards
+        if (shouldBeDefault) {
+            await query(
+                'UPDATE payment_cards SET is_default = false WHERE user_id = $1',
+                [userId]
+            );
+        }
+
+        // Insert new card
+        const result = await query(`
+            INSERT INTO payment_cards (
+                user_id, card_number_encrypted, card_holder_name, 
+                expiry_month, expiry_year, card_type, phone_number,
+                is_default, last_four_digits
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, card_holder_name, last_four_digits, card_type, 
+                     expiry_month, expiry_year, is_default, created_at
+        `, [
+            userId, encryptedCardNumber, card_holder_name,
+            expiry_month, expiry_year, cardType, phone_number,
+            shouldBeDefault, lastFourDigits
+        ]);
+
+        res.status(201).json({
+            success: true,
+            message: 'Payment card muvaffaqiyatli qo\'shildi',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error adding payment card:', error);
+        
+        if (error.code === '23505') { // Unique constraint violation
+            return res.status(400).json({
+                success: false,
+                message: 'Bu karta allaqachon qo\'shilgan'
+            });
+        }
+        
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// User payment cardlarini olish
+const getUserPaymentCards = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const result = await query(`
+            SELECT id, card_holder_name, last_four_digits, card_type,
+                   expiry_month, expiry_year, is_default, created_at
+            FROM payment_cards
+            WHERE user_id = $1
+            ORDER BY is_default DESC, created_at DESC
+        `, [userId]);
+
+        res.json({
+            success: true,
+            message: 'Payment cardlar muvaffaqiyatli olindi',
+            data: result.rows,
+            total: result.rows.length
+        });
+
+    } catch (error) {
+        console.error('Error getting payment cards:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// Payment card yangilash
+const updatePaymentCard = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { cardId } = req.params;
+        const { card_holder_name, expiry_month, expiry_year, phone_number, is_default } = req.body;
+
+        // Check if card exists and belongs to user
+        const cardCheck = await query(
+            'SELECT id FROM payment_cards WHERE id = $1 AND user_id = $2 AND is_active = true',
+            [cardId, userId]
+        );
+
+        if (cardCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment card topilmadi'
+            });
+        }
+
+        // If setting as default, remove default from other cards
+        if (is_default) {
+            await query(
+                'UPDATE payment_cards SET is_default = false WHERE user_id = $1',
+                [userId]
+            );
+        }
+
+        // Update card
+        const result = await query(`
+            UPDATE payment_cards 
+            SET card_holder_name = COALESCE($1, card_holder_name),
+                expiry_month = COALESCE($2, expiry_month),
+                expiry_year = COALESCE($3, expiry_year),
+                phone_number = COALESCE($4, phone_number),
+                is_default = COALESCE($5, is_default),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $6 AND user_id = $7
+            RETURNING id, card_holder_name, last_four_digits, card_type,
+                     expiry_month, expiry_year, is_default, updated_at
+        `, [card_holder_name, expiry_month, expiry_year, phone_number, is_default, cardId, userId]);
+
+        res.json({
+            success: true,
+            message: 'Payment card muvaffaqiyatli yangilandi',
+            data: result.rows[0]
+        });
+
+    } catch (error) {
+        console.error('Error updating payment card:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// Payment card o'chirish
+const deletePaymentCard = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { cardId } = req.params;
+
+        // Check if card exists and belongs to user
+        const cardCheck = await query(
+            'SELECT id, is_default FROM payment_cards WHERE id = $1 AND user_id = $2 AND is_active = true',
+            [cardId, userId]
+        );
+
+        if (cardCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment card topilmadi'
+            });
+        }
+
+        const wasDefault = cardCheck.rows[0].is_default;
+
+        // Soft delete the card
+        await query(
+            'UPDATE payment_cards SET is_active = false, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+            [cardId]
+        );
+
+        // If deleted card was default, set another card as default
+        if (wasDefault) {
+            await query(`
+                UPDATE payment_cards 
+                SET is_default = true 
+                WHERE user_id = $1 AND is_active = true 
+                ORDER BY created_at ASC 
+                LIMIT 1
+            `, [userId]);
+        }
+
+        res.json({
+            success: true,
+            message: 'Payment card muvaffaqiyatli o\'chirildi'
+        });
+
+    } catch (error) {
+        console.error('Error deleting payment card:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
+// Default payment card belgilash
+const setDefaultPaymentCard = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { cardId } = req.params;
+
+        // Check if card exists and belongs to user
+        const cardCheck = await query(
+            'SELECT id FROM payment_cards WHERE id = $1 AND user_id = $2 AND is_active = true',
+            [cardId, userId]
+        );
+
+        if (cardCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Payment card topilmadi'
+            });
+        }
+
+        // Remove default from all cards
+        await query(
+            'UPDATE payment_cards SET is_default = false WHERE user_id = $1',
+            [userId]
+        );
+
+        // Set new default card
+        await query(
+            'UPDATE payment_cards SET is_default = true WHERE id = $1',
+            [cardId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Default payment card muvaffaqiyatli belgilandi'
+        });
+
+    } catch (error) {
+        console.error('Error setting default payment card:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatoligi'
+        });
+    }
+};
+
 module.exports = {
     registerStep1,
     verifyPhone,
@@ -1458,5 +1798,10 @@ module.exports = {
     deleteProfileImage,
     addFavouriteSalon,
     removeFavouriteSalon,
-    getFavouriteSalons
+    getFavouriteSalons,
+    addPaymentCard,
+    getUserPaymentCards,
+    updatePaymentCard,
+    deletePaymentCard,
+    setDefaultPaymentCard
 };

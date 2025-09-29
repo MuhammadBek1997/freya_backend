@@ -3,8 +3,8 @@ require('dotenv').config();
 
 // Generate test token for user
 function generateTestToken() {
-  const userId = 'ad88400b-2ce7-4116-9322-cf017f20d89e';
-  const phone = '+998901111112';
+  const userId = '6165fd4a-8861-488b-b6ab-55c884df7391'; // UUID for existing user
+  const phone = '+99890444001';
   
   // Create payload similar to what the app would create
   const payload = {
