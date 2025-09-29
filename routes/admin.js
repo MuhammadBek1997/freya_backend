@@ -484,4 +484,104 @@ router.post('/salons/:id/photos', verifyAdmin, uploadSalonPhotos);
  */
 router.delete('/salons/:id/photos/:photoIndex', verifyAdmin, deleteSalonPhoto);
 
+/**
+ * @swagger
+ * /api/admin/card/phone:
+ *   post:
+ *     summary: Karta raqami bo'yicha telefon topish
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               cardNumber:
+ *                 type: string
+ *                 description: Karta raqami (16 raqam)
+ *                 example: "1234567890123456"
+ *     responses:
+ *       200:
+ *         description: Telefon raqami topildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 phone:
+ *                   type: string
+ *                   example: "+998901234567"
+ *       404:
+ *         description: Karta topilmadi
+ *       400:
+ *         description: Noto'g'ri karta raqami
+ */
+router.post('/card/phone', verifyAdmin, async (req, res) => {
+    try {
+        const { cardNumber } = req.body;
+
+        // Karta raqami validatsiyasi
+        if (!cardNumber || cardNumber.length !== 16 || !/^\d{16}$/.test(cardNumber)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Karta raqami 16 ta raqamdan iborat bo\'lishi kerak'
+            });
+        }
+
+        // Admin salon ma'lumotlarini olish
+        const adminSalon = await pool.query(`
+            SELECT salon_payment, salon_phone, salon_add_phone 
+            FROM salons 
+            WHERE id = $1
+        `, [req.admin.salon_id]);
+
+        if (adminSalon.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Salon topilmadi'
+            });
+        }
+
+        const salon = adminSalon.rows[0];
+        const paymentData = salon.salon_payment || {};
+
+        // Karta raqamini tekshirish
+        if (paymentData.card_number === cardNumber) {
+            // Telefon raqamini qaytarish (salon_phone yoki salon_add_phone)
+            const phone = salon.salon_phone || salon.salon_add_phone;
+            
+            if (phone) {
+                return res.json({
+                    success: true,
+                    phone: phone,
+                    message: 'Telefon raqami topildi'
+                });
+            } else {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Ushbu karta uchun telefon raqami topilmadi'
+                });
+            }
+        } else {
+            return res.status(404).json({
+                success: false,
+                message: 'Ushbu karta raqami ro\'yxatda yo\'q'
+            });
+        }
+
+    } catch (error) {
+        console.error('Card phone lookup error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
