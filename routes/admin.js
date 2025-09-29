@@ -535,7 +535,7 @@ router.post('/card/phone', verifyAdmin, async (req, res) => {
 
         // Barcha salonlarda karta raqamini qidirish
         const salons = await pool.query(`
-            SELECT salon_payment, salon_phone, salon_add_phone, name
+            SELECT salon_payment, phone, name
             FROM salons 
             WHERE salon_payment IS NOT NULL
         `);
@@ -548,7 +548,7 @@ router.post('/card/phone', verifyAdmin, async (req, res) => {
             const paymentData = salon.salon_payment || {};
             
             if (paymentData.card_number === cardNumber) {
-                foundPhone = salon.salon_phone || salon.salon_add_phone;
+                foundPhone = salon.phone;
                 salonName = salon.name;
                 break;
             }
