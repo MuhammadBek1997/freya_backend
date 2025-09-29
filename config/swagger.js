@@ -752,6 +752,222 @@ const swaggerDefinition = {
         },
         required: ['phone_number', 'application_date', 'application_time', 'schedule_id', 'service_name', 'service_price']
       },
+      PaymentCard: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Karta ID si',
+            example: '123e4567-e89b-12d3-a456-426614174000'
+          },
+          user_id: {
+            type: 'string',
+            format: 'uuid',
+            description: 'Foydalanuvchi ID si',
+            example: '456e7890-f12b-34c5-d678-901234567890'
+          },
+          card_number: {
+            type: 'string',
+            description: 'Shifrlangan karta raqami',
+            example: 'encrypted_card_number'
+          },
+          last_four_digits: {
+            type: 'string',
+            description: 'Kartaning oxirgi 4 raqami',
+            example: '1234'
+          },
+          cardholder_name: {
+            type: 'string',
+            description: 'Karta egasining ismi',
+            example: 'JOHN DOE'
+          },
+          expiry_month: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 12,
+            description: 'Amal qilish muddati (oy)',
+            example: 12
+          },
+          expiry_year: {
+            type: 'integer',
+            description: 'Amal qilish muddati (yil)',
+            example: 2025
+          },
+          card_type: {
+            type: 'string',
+            enum: ['visa', 'mastercard', 'uzcard', 'humo'],
+            description: 'Karta turi',
+            example: 'visa'
+          },
+          phone_number: {
+            type: 'string',
+            description: 'Telefon raqami',
+            example: '+998901234567'
+          },
+          is_default: {
+            type: 'boolean',
+            description: 'Asosiy karta ekanligini ko\'rsatadi',
+            example: false
+          },
+          is_active: {
+            type: 'boolean',
+            description: 'Karta faol holati',
+            example: true
+          },
+          created_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yaratilgan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          },
+          updated_at: {
+            type: 'string',
+            format: 'date-time',
+            description: 'Yangilangan vaqt',
+            example: '2024-01-01T00:00:00.000Z'
+          }
+        },
+        required: ['id', 'user_id', 'last_four_digits', 'cardholder_name', 'expiry_month', 'expiry_year', 'card_type']
+      },
+      AddPaymentCardRequest: {
+        type: 'object',
+        properties: {
+          card_number: {
+            type: 'string',
+            description: 'Karta raqami (16 raqam)',
+            example: '4111111111111111'
+          },
+          cardholder_name: {
+            type: 'string',
+            description: 'Karta egasining ismi',
+            example: 'JOHN DOE'
+          },
+          expiry_month: {
+            type: 'integer',
+            minimum: 1,
+            maximum: 12,
+            description: 'Amal qilish muddati (oy)',
+            example: 12
+          },
+          expiry_year: {
+            type: 'integer',
+            description: 'Amal qilish muddati (yil)',
+            example: 2025
+          },
+          cvv: {
+            type: 'string',
+            description: 'CVV kodi (3-4 raqam)',
+            example: '123'
+          },
+          phone_number: {
+            type: 'string',
+            description: 'Telefon raqami',
+            example: '+998901234567'
+          },
+          is_default: {
+            type: 'boolean',
+            description: 'Asosiy karta qilib belgilash',
+            example: false
+          }
+        },
+        required: ['card_number', 'cardholder_name', 'expiry_month', 'expiry_year', 'cvv', 'phone_number']
+      },
+      PaymentCardStats: {
+        type: 'object',
+        properties: {
+          total_cards: {
+            type: 'integer',
+            description: 'Jami kartalar soni',
+            example: 3
+          },
+          active_cards: {
+            type: 'integer',
+            description: 'Faol kartalar soni',
+            example: 2
+          },
+          has_default_card: {
+            type: 'boolean',
+            description: 'Asosiy karta mavjudligi',
+            example: true
+          },
+          card_types: {
+            type: 'object',
+            properties: {
+              visa: {
+                type: 'integer',
+                example: 2
+              },
+              mastercard: {
+                type: 'integer',
+                example: 1
+              },
+              uzcard: {
+                type: 'integer',
+                example: 0
+              },
+              humo: {
+                type: 'integer',
+                example: 0
+              }
+            },
+            description: 'Karta turlari bo\'yicha statistika'
+          }
+        }
+      },
+      CardValidationResponse: {
+        type: 'object',
+        properties: {
+          is_valid: {
+            type: 'boolean',
+            description: 'Karta raqami to\'g\'riligi',
+            example: true
+          },
+          card_type: {
+            type: 'string',
+            description: 'Aniqlangan karta turi',
+            example: 'visa'
+          },
+          formatted_number: {
+            type: 'string',
+            description: 'Formatlangan karta raqami',
+            example: '4111 1111 1111 1111'
+          }
+        }
+      },
+      SupportedCardType: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            description: 'Karta turi',
+            example: 'visa'
+          },
+          name: {
+            type: 'string',
+            description: 'Karta nomi',
+            example: 'Visa'
+          },
+          pattern: {
+            type: 'string',
+            description: 'Karta raqami namunasi',
+            example: '^4[0-9]{12}(?:[0-9]{3})?$'
+          },
+          length: {
+            type: 'array',
+            items: {
+              type: 'integer'
+            },
+            description: 'Ruxsat etilgan uzunliklar',
+            example: [13, 16, 19]
+          },
+          cvv_length: {
+            type: 'integer',
+            description: 'CVV uzunligi',
+            example: 3
+          }
+        }
+      }
     },
   },
   security: [

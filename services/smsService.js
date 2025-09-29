@@ -176,6 +176,33 @@ class SMSService {
     }
 
     /**
+     * To'lov kartasi qo'shish uchun tasdiqlash kodi yuborish
+     * @param {string} phone - Telefon raqami
+     * @param {string} cardNumber - Karta raqamining oxirgi 4 raqami
+     * @param {string} code - Tasdiqlash kodi (ixtiyoriy, agar berilmasa random yaratiladi)
+     * @returns {Promise<Object>} - SMS yuborish natijasi
+     */
+    async sendPaymentCardVerificationCode(phone, cardNumber, code = null) {
+        // Agar kod berilmagan bo'lsa, random yaratish
+        const verificationCode = code || this.generateVerificationCode();
+        
+        // Karta raqamining oxirgi 4 raqamini olish
+        const lastFourDigits = cardNumber.replace(/\s/g, '').slice(-4);
+        
+        // SMS matni
+        const message = `Freya ilovasiga *${lastFourDigits} kartani qo'shish uchun tasdiqlash kodi: ${verificationCode}`;
+        
+        const result = await this.sendSMS(phone, message);
+        
+        // Natijaga verification code qo'shish
+        if (result.success) {
+            result.verificationCode = verificationCode;
+        }
+        
+        return result;
+    }
+
+    /**
      * Token mavjudligini va amal qilish muddatini tekshirish
      * @returns {Promise<void>}
      */

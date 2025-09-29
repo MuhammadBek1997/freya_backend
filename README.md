@@ -125,6 +125,91 @@ Server `http://localhost:5000` da ishga tushadi.
 - `GET /api/mobile/notifications` - Bildirishnomalar
 - `PUT /api/mobile/notifications/:id/read` - Bildirishnomani o'qilgan deb belgilash
 
+#### Payment Cards (Mobile Optimized)
+- `GET /api/payment-cards` - Foydalanuvchi to'lov kartalarini olish
+- `POST /api/payment-cards` - Yangi to'lov kartasi qo'shish
+- `PUT /api/payment-cards/:id` - To'lov kartasini yangilash
+- `DELETE /api/payment-cards/:id` - To'lov kartasini o'chirish
+- `PUT /api/payment-cards/:id/default` - Kartani asosiy qilib belgilash
+- `GET /api/payment-cards/stats` - To'lov kartalari statistikasi (mobil uchun)
+- `POST /api/payment-cards/validate` - Karta raqamini real-time tekshirish (mobil uchun)
+- `GET /api/payment-cards/supported-types` - Qo'llab-quvvatlanadigan karta turlari (mobil uchun)
+
+**Payment Card API Response Examples:**
+
+```json
+// GET /api/payment-cards - Kartalar ro'yxati
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "card_number": "****1234",
+      "cardholder_name": "John Doe",
+      "expiry_date": "12/25",
+      "card_type": "visa",
+      "phone": "+998901234567",
+      "is_default": true,
+      "last_four": "1234",
+      "is_active": true,
+      "created_at": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+
+// GET /api/payment-cards/stats - Kartalar statistikasi
+{
+  "success": true,
+  "data": {
+    "total_cards": 3,
+    "active_cards": 2,
+    "default_card": {
+      "id": 1,
+      "last_four": "1234",
+      "card_type": "visa"
+    },
+    "card_types": {
+      "visa": 2,
+      "mastercard": 1
+    }
+  }
+}
+
+// POST /api/payment-cards/validate - Karta validatsiyasi
+{
+  "card_number": "4111111111111111"
+}
+// Response:
+{
+  "success": true,
+  "data": {
+    "is_valid": true,
+    "card_type": "visa",
+    "formatted_number": "4111 1111 1111 1111",
+    "last_four": "1111"
+  }
+}
+
+// GET /api/payment-cards/supported-types - Qo'llab-quvvatlanadigan kartalar
+{
+  "success": true,
+  "data": [
+    {
+      "type": "visa",
+      "name": "Visa",
+      "pattern": "^4[0-9]{12}(?:[0-9]{3})?$",
+      "icon": "visa-icon.svg"
+    },
+    {
+      "type": "mastercard", 
+      "name": "Mastercard",
+      "pattern": "^5[1-5][0-9]{14}$",
+      "icon": "mastercard-icon.svg"
+    }
+  ]
+}
+```
+
 ## Heroku ga deploy qilish
 
 ### 1. Heroku CLI o'rnatish

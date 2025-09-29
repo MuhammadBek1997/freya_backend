@@ -29,6 +29,7 @@ const i18nRoutes = require('./routes/i18nRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const postRoutes = require('./routes/postRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
+const paymentCardRoutes = require('./routes/paymentCardRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -391,6 +392,9 @@ app.use('/api/posts', postRoutes);
 
 // Service routes
 app.use('/api', serviceRoutes);
+
+// Payment card routes
+app.use('/api/payment-cards', paymentCardRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

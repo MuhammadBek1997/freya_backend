@@ -223,6 +223,24 @@ CREATE TABLE IF NOT EXISTS chat_participants (
     last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Payment cards table for user payment methods
+CREATE TABLE IF NOT EXISTS payment_cards (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    card_number_encrypted VARCHAR(255) NOT NULL, -- Encrypted card number
+    card_holder_name VARCHAR(100) NOT NULL,
+    expiry_month INTEGER NOT NULL CHECK (expiry_month >= 1 AND expiry_month <= 12),
+    expiry_year INTEGER NOT NULL CHECK (expiry_year >= EXTRACT(YEAR FROM CURRENT_DATE)),
+    card_type VARCHAR(20), -- 'visa', 'mastercard', 'uzcard', etc.
+    phone_number VARCHAR(20) NOT NULL, -- Phone number for SMS notifications
+    is_default BOOLEAN DEFAULT false,
+    is_active BOOLEAN DEFAULT true,
+    last_four_digits VARCHAR(4) NOT NULL, -- Last 4 digits for display
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, card_number_encrypted)
+);
+
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -253,6 +271,9 @@ CREATE INDEX IF NOT EXISTS idx_messages_receiver ON messages(receiver_id, receiv
 CREATE INDEX IF NOT EXISTS idx_messages_created_at ON messages(created_at);
 CREATE INDEX IF NOT EXISTS idx_chat_participants_room ON chat_participants(room_id);
 CREATE INDEX IF NOT EXISTS idx_chat_participants_user ON chat_participants(participant_id, participant_type);
+CREATE INDEX IF NOT EXISTS idx_payment_cards_user_id ON payment_cards(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_cards_active ON payment_cards(is_active);
+CREATE INDEX IF NOT EXISTS idx_payment_cards_default ON payment_cards(is_default);
 
 -- Insert default superadmin user (password: admin123)
 INSERT INTO admins (username, email, password_hash, full_name, role) 

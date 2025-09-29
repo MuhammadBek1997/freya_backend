@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const smsService = require('../services/smsService');
 const { getImageAsBase64, deleteOldImage } = require('../middleware/imageUpload');
+const tempUserStorage = require('../services/tempUserStorage');
 const path = require('path');
 
 // Telefon raqam formatini tekshirish
@@ -51,7 +52,7 @@ const registerStep1 = async (req, res) => {
             });
         }
 
-        // Telefon raqam allaqachon mavjudligini tekshirish
+        // Telefon raqam allaqachon mavjudligini tekshirish (asosiy database'da)
         const existingUser = await pool.query(
             'SELECT id FROM users WHERE phone = $1',
             [phone]
@@ -75,31 +76,30 @@ const registerStep1 = async (req, res) => {
         const verificationCode = smsResult.verificationCode || generateVerificationCode();
         const verificationExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 daqiqa
 
-        // Foydalanuvchini 1-bosqich bilan saqlash (email null)
-        const result = await pool.query(
-            `INSERT INTO users (phone, email, password_hash, registration_step, verification_code, verification_expires_at, created_at)
-             VALUES ($1, $2, $3, 1, $4, $5, CURRENT_TIMESTAMP)
-             RETURNING id, phone, email, registration_step`,
-            [phone, null, hashedPassword, verificationCode, verificationExpires]
-        );
-
-        const user = result.rows[0];
+        // User ma'lumotlarini vaqtinchalik storage'da saqlash (database'da emas!)
+        const sessionId = tempUserStorage.storeTempUser(phone, {
+            password_hash: hashedPassword,
+            registration_step: 1,
+            verificationCode,
+            verificationExpiresAt: verificationExpires
+        });
         
         if (!smsResult.success) {
             console.error('SMS yuborishda xatolik:', smsResult.error);
-            // SMS yuborilmasa ham, foydalanuvchi ro'yxatdan o'tsin (development uchun)
+            // SMS yuborilmasa ham, vaqtinchalik ma'lumotlar saqlanadi (development uchun)
         }
 
         res.status(201).json({
             success: true,
-            message: 'Ro\'yxatdan o\'tish 1-bosqichi muvaffaqiyatli. Telefon raqamingizga tasdiqlash kodi yuborildi.',
+            message: 'Ro\'yxatdan o\'tish 1-bosqichi muvaffaqiyatli. Telefon raqamingizga tasdiqlash kodi yuborildi. SMS tasdiqlash tugallanmaguncha hisobingiz yaratilmaydi.',
             data: {
-                userId: user.id,
-                phone: user.phone,
-                registrationStep: user.registration_step,
+                sessionId: sessionId,
+                phone: phone,
+                registrationStep: 1,
                 smsStatus: smsResult.success ? 'yuborildi' : 'yuborilmadi',
                 // Development uchun verification code qaytaramiz
-                verificationCode: verificationCode
+                verificationCode: verificationCode,
+                message: 'SMS kodni tasdiqlash kerak'
             }
         });
 
@@ -115,7 +115,7 @@ const registerStep1 = async (req, res) => {
 // Telefon raqamni tasdiqlash
 const verifyPhone = async (req, res) => {
     try {
-        const { phone, verificationCode } = req.body;
+        const { phone, verificationCode, sessionId } = req.body;
 
         if (!phone || !verificationCode) {
             return res.status(400).json({
@@ -124,57 +124,74 @@ const verifyPhone = async (req, res) => {
             });
         }
 
-        // Foydalanuvchini topish va kod tekshirish
-        const result = await pool.query(
-            `SELECT id, phone, email, verification_code, verification_expires_at, registration_step
-             FROM users 
-             WHERE phone = $1 AND registration_step = 1`,
-            [phone]
-        );
-
-        if (result.rows.length === 0) {
+        // Vaqtinchalik storage'dan user ma'lumotlarini olish
+        const tempUser = tempUserStorage.getTempUser(phone);
+        
+        if (!tempUser) {
             return res.status(404).json({
                 success: false,
-                message: 'Foydalanuvchi topilmadi yoki allaqachon tasdiqlangan'
+                message: 'Foydalanuvchi ma\'lumotlari topilmadi yoki muddati tugagan. Qaytadan ro\'yxatdan o\'ting.'
             });
         }
 
-        const user = result.rows[0];
-
-        // Kod muddati tugaganligini tekshirish
-        if (new Date() > new Date(user.verification_expires_at)) {
+        // Tasdiqlash kodining muddati o'tganligini tekshirish
+        if (new Date() > new Date(tempUser.verificationExpiresAt)) {
+            // Muddati tugagan ma'lumotlarni o'chirish
+            tempUserStorage.removeTempUser(phone);
             return res.status(400).json({
                 success: false,
-                message: 'Tasdiqlash kodi muddati tugagan'
+                message: 'Tasdiqlash kodining muddati tugagan. Qaytadan ro\'yxatdan o\'ting.'
             });
         }
 
-        // Kodni tekshirish
-        if (user.verification_code !== verificationCode) {
+        // Tasdiqlash kodini tekshirish
+        if (tempUser.verificationCode !== verificationCode) {
             return res.status(400).json({
                 success: false,
                 message: 'Tasdiqlash kodi noto\'g\'ri'
             });
         }
 
-        // Telefon raqamni tasdiqlangan deb belgilash
-        await pool.query(
-            `UPDATE users 
-             SET phone_verified = true, verification_code = NULL, verification_expires_at = NULL
-             WHERE id = $1`,
-            [user.id]
-        );
+        // SMS tasdiqlash muvaffaqiyatli - endi user'ni asosiy database'da yaratamiz
+        try {
+            const result = await pool.query(
+                `INSERT INTO users (phone, email, password_hash, registration_step, phone_verified, created_at, updated_at)
+                 VALUES ($1, $2, $3, 1, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                 RETURNING id, phone, email, registration_step, phone_verified`,
+                [phone, null, tempUser.password_hash]
+            );
 
-        res.json({
-            success: true,
-            message: 'Telefon raqam muvaffaqiyatli tasdiqlandi',
-            data: {
-                userId: user.id,
-                phone: user.phone,
-                email: user.email,
-                phoneVerified: true
+            const user = result.rows[0];
+
+            // Vaqtinchalik ma'lumotlarni o'chirish
+            tempUserStorage.removeTempUser(phone);
+
+            res.json({
+                success: true,
+                message: 'Telefon raqam muvaffaqiyatli tasdiqlandi va hisobingiz yaratildi',
+                data: {
+                    userId: user.id,
+                    phone: user.phone,
+                    phoneVerified: user.phone_verified,
+                    registrationStep: user.registration_step,
+                    message: 'Hisobingiz muvaffaqiyatli yaratildi'
+                }
+            });
+
+        } catch (dbError) {
+            console.error('Database error during user creation:', dbError);
+            
+            // Agar database'da xatolik bo'lsa, vaqtinchalik ma'lumotlarni saqlab qolamiz
+            if (dbError.code === '23505') { // Unique constraint violation
+                tempUserStorage.removeTempUser(phone);
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bu telefon raqam allaqachon ro\'yxatdan o\'tgan'
+                });
             }
-        });
+            
+            throw dbError; // Boshqa xatoliklar uchun
+        }
 
     } catch (error) {
         console.error('Verify Phone Error:', error);
@@ -910,10 +927,36 @@ const getUserProfile = async (req, res) => {
 
         const user = result.rows[0];
 
+        // Foydalanuvchining payment cardlarini olish
+        const paymentCardsResult = await pool.query(`
+            SELECT 
+                id,
+                card_holder_name,
+                last_four_digits,
+                card_type,
+                expiry_month,
+                expiry_year,
+                is_default,
+                is_active,
+                created_at
+            FROM payment_cards 
+            WHERE user_id = $1 AND is_active = true
+            ORDER BY is_default DESC, created_at DESC
+        `, [userId]);
+
+        const paymentCards = paymentCardsResult.rows;
+
         res.json({
             success: true,
             data: {
-                user: user
+                user: {
+                    ...user,
+                    payment_system: {
+                        cards: paymentCards,
+                        total_cards: paymentCards.length,
+                        has_default_card: paymentCards.some(card => card.is_default)
+                    }
+                }
             }
         });
 
