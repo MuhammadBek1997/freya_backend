@@ -329,6 +329,27 @@ router.get('/my-salon', verifyAdmin, async (req, res) => {
 
         let salon = salonResult.rows[0];
 
+        // Payment ma'lumotlarini to'g'ri formatga o'tkazish
+        if (salon.salon_payment) {
+            try {
+                const paymentArray = typeof salon.salon_payment === 'string' 
+                    ? JSON.parse(salon.salon_payment) 
+                    : salon.salon_payment;
+                
+                // Agar array bo'lsa, birinchi elementni olish
+                if (Array.isArray(paymentArray) && paymentArray.length > 0) {
+                    salon.paymentSystem = paymentArray[0];
+                } else if (typeof paymentArray === 'object') {
+                    salon.paymentSystem = paymentArray;
+                }
+            } catch (parseError) {
+                console.error('Payment data parse error:', parseError);
+                salon.paymentSystem = null;
+            }
+        } else {
+            salon.paymentSystem = null;
+        }
+
         // Salon tarjimalarini olish
         try {
             const salonTranslationService = require('../services/salonTranslationService');
