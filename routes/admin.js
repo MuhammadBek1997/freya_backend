@@ -533,40 +533,34 @@ router.post('/card/phone', verifyAdmin, async (req, res) => {
             });
         }
 
-        // Admin salon ma'lumotlarini olish
-        const adminSalon = await pool.query(`
-            SELECT salon_payment, salon_phone, salon_add_phone 
+        // Barcha salonlarda karta raqamini qidirish
+        const salons = await pool.query(`
+            SELECT salon_payment, salon_phone, salon_add_phone, name
             FROM salons 
-            WHERE id = $1
-        `, [req.admin.salon_id]);
+            WHERE salon_payment IS NOT NULL
+        `);
 
-        if (adminSalon.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Salon topilmadi'
-            });
+        let foundPhone = null;
+        let salonName = null;
+
+        // Har bir salonda karta raqamini tekshirish
+        for (const salon of salons.rows) {
+            const paymentData = salon.salon_payment || {};
+            
+            if (paymentData.card_number === cardNumber) {
+                foundPhone = salon.salon_phone || salon.salon_add_phone;
+                salonName = salon.name;
+                break;
+            }
         }
 
-        const salon = adminSalon.rows[0];
-        const paymentData = salon.salon_payment || {};
-
-        // Karta raqamini tekshirish
-        if (paymentData.card_number === cardNumber) {
-            // Telefon raqamini qaytarish (salon_phone yoki salon_add_phone)
-            const phone = salon.salon_phone || salon.salon_add_phone;
-            
-            if (phone) {
-                return res.json({
-                    success: true,
-                    phone: phone,
-                    message: 'Telefon raqami topildi'
-                });
-            } else {
-                return res.status(404).json({
-                    success: false,
-                    message: 'Ushbu karta uchun telefon raqami topilmadi'
-                });
-            }
+        if (foundPhone) {
+            return res.json({
+                success: true,
+                phone: foundPhone,
+                salonName: salonName,
+                message: 'Telefon raqami topildi'
+            });
         } else {
             return res.status(404).json({
                 success: false,
