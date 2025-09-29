@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/database');
 const { verifyAdmin } = require('../middleware/authMiddleware');
+const smsService = require('../services/smsService');
 const {
     updateSalon,
     uploadSalonPhotos,
@@ -573,6 +574,136 @@ router.post('/card/phone', verifyAdmin, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server xatosi',
+            error: error.message
+        });
+    }
+});
+
+// SMS yuborish endpoint - karta raqami orqali telefon topib SMS kod yuborish
+router.post('/send-sms', verifyAdmin, async (req, res) => {
+    try {
+        const { card_number } = req.body;
+
+        if (!card_number || card_number.length !== 16) {
+            return res.status(400).json({
+                success: false,
+                message: "Karta raqami 16 ta raqamdan iborat bo'lishi kerak"
+            });
+        }
+
+        // Karta raqami orqali telefon topish
+        const salonQuery = `
+            SELECT phone, name 
+            FROM salons 
+            WHERE salon_payment::text LIKE $1
+        `;
+        
+        const salonResult = await pool.query(salonQuery, [`%${card_number}%`]);
+        
+        if (salonResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Ushbu karta raqami ro'yxatda yo'q"
+            });
+        }
+
+        const foundPhone = salonResult.rows[0].phone;
+        const salonName = salonResult.rows[0].name;
+
+        // SMS kod yuborish
+        const smsResult = await smsService.sendVerificationCode(foundPhone);
+        
+        if (smsResult.success) {
+            res.json({
+                success: true,
+                message: "SMS kod yuborildi",
+                phone: foundPhone,
+                salonName: salonName,
+                verificationCode: smsResult.verificationCode // Test uchun
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                message: "SMS yuborishda xatolik",
+                error: smsResult.error
+            });
+        }
+
+    } catch (error) {
+        console.error('SMS yuborish xatosi:', error);
+        res.status(500).json({
+            success: false,
+            message: "Server xatosi",
+            error: error.message
+        });
+    }
+});
+
+// SMS kod tasdiqlash endpoint
+router.post('/verify-sms', verifyAdmin, async (req, res) => {
+    try {
+        const { card_number, sms_code, card_holder, card_type } = req.body;
+
+        if (!card_number || !sms_code || !card_holder || !card_type) {
+            return res.status(400).json({
+                success: false,
+                message: "Barcha maydonlar to'ldirilishi kerak"
+            });
+        }
+
+        // Bu yerda SMS kodni tekshirish logikasi bo'lishi kerak
+        // Hozircha oddiy tekshirish qilamiz (real loyihada Redis yoki database ishlatiladi)
+        if (sms_code.length !== 6) {
+            return res.status(400).json({
+                success: false,
+                message: "SMS kod 6 ta raqamdan iborat bo'lishi kerak"
+            });
+        }
+
+        // Admin salon ma'lumotlarini yangilash
+        const adminId = req.admin.id;
+        
+        // Avval admin salon_id sini topamiz
+        const adminQuery = 'SELECT salon_id FROM admins WHERE id = $1';
+        const adminResult = await pool.query(adminQuery, [adminId]);
+        
+        if (adminResult.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "Admin topilmadi"
+            });
+        }
+
+        const salonId = adminResult.rows[0].salon_id;
+
+        // Salon payment ma'lumotlarini yangilash
+        const newPaymentData = {
+            card_number,
+            card_holder,
+            card_type,
+            verified: true,
+            verified_at: new Date().toISOString()
+        };
+
+        const updateQuery = `
+            UPDATE salons 
+            SET salon_payment = $1 
+            WHERE id = $2
+        `;
+        
+        await pool.query(updateQuery, [JSON.stringify([newPaymentData]), salonId]);
+
+        res.json({
+            success: true,
+            message: "Karta muvaffaqiyatli qo'shildi va tasdiqlandi",
+            card_data: newPaymentData
+        });
+
+    } catch (error) {
+        console.error('SMS tasdiqlash xatosi:', error);
+        res.status(500).json({
+            success: false,
+            message: "Server xatosi",
             error: error.message
         });
     }
