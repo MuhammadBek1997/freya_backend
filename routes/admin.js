@@ -485,140 +485,39 @@ router.post('/salons/:id/photos', verifyAdmin, uploadSalonPhotos);
  */
 router.delete('/salons/:id/photos/:photoIndex', verifyAdmin, deleteSalonPhoto);
 
-/**
- * @swagger
- * /api/admin/card/phone:
- *   post:
- *     summary: Karta raqami bo'yicha telefon topish
- *     tags: [Admin]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               cardNumber:
- *                 type: string
- *                 description: Karta raqami (16 raqam)
- *                 example: "1234567890123456"
- *     responses:
- *       200:
- *         description: Telefon raqami topildi
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 phone:
- *                   type: string
- *                   example: "+998901234567"
- *       404:
- *         description: Karta topilmadi
- *       400:
- *         description: Noto'g'ri karta raqami
- */
-router.post('/card/phone', verifyAdmin, async (req, res) => {
-    try {
-        const { cardNumber } = req.body;
 
-        // Karta raqami validatsiyasi
-        if (!cardNumber || cardNumber.length !== 16 || !/^\d{16}$/.test(cardNumber)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Karta raqami 16 ta raqamdan iborat bo\'lishi kerak'
-            });
-        }
 
-        // Barcha salonlarda karta raqamini qidirish
-        const salons = await pool.query(`
-            SELECT salon_payment, phone, name
-            FROM salons 
-            WHERE salon_payment IS NOT NULL
-        `);
-
-        let foundPhone = null;
-        let salonName = null;
-
-        // Har bir salonda karta raqamini tekshirish
-        for (const salon of salons.rows) {
-            const paymentData = salon.salon_payment || {};
-            
-            if (paymentData.card_number === cardNumber) {
-                foundPhone = salon.phone;
-                salonName = salon.name;
-                break;
-            }
-        }
-
-        if (foundPhone) {
-            return res.json({
-                success: true,
-                phone: foundPhone,
-                salonName: salonName,
-                message: 'Telefon raqami topildi'
-            });
-        } else {
-            return res.status(404).json({
-                success: false,
-                message: 'Ushbu karta raqami ro\'yxatda yo\'q'
-            });
-        }
-
-    } catch (error) {
-        console.error('Card phone lookup error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Server xatosi',
-            error: error.message
-        });
-    }
-});
-
-// SMS yuborish endpoint - karta raqami orqali telefon topib SMS kod yuborish
+// SMS yuborish endpoint - kiritilgan telefon raqamiga SMS kod yuborish
 router.post('/send-sms', verifyAdmin, async (req, res) => {
     try {
-        const { card_number } = req.body;
+        const { phone_number } = req.body;
 
-        if (!card_number || card_number.length !== 16) {
+        if (!phone_number) {
             return res.status(400).json({
                 success: false,
-                message: "Karta raqami 16 ta raqamdan iborat bo'lishi kerak"
+                message: "Telefon raqami kiritilishi kerak"
             });
         }
 
-        // Karta raqami orqali telefon topish
-        const salonQuery = `
-            SELECT phone, name 
-            FROM salons 
-            WHERE salon_payment::text LIKE $1
-        `;
+        // Telefon raqamini tozalash (faqat raqamlar qoldirish)
+        const cleanPhone = phone_number.replace(/\D/g, '');
         
-        const salonResult = await pool.query(salonQuery, [`%${card_number}%`]);
-        
-        if (salonResult.rows.length === 0) {
-            return res.status(404).json({
+        // Telefon raqami formatini tekshirish (998XXXXXXXXX)
+        if (!cleanPhone.startsWith('998') || cleanPhone.length !== 12) {
+            return res.status(400).json({
                 success: false,
-                message: "Ushbu karta raqami ro'yxatda yo'q"
+                message: "Telefon raqami noto'g'ri formatda. +998XXXXXXXXX formatida kiriting"
             });
         }
-
-        const foundPhone = salonResult.rows[0].phone;
-        const salonName = salonResult.rows[0].name;
 
         // SMS kod yuborish
-        const smsResult = await smsService.sendVerificationCode(foundPhone);
+        const smsResult = await smsService.sendVerificationCode(cleanPhone);
         
         if (smsResult.success) {
             res.json({
                 success: true,
                 message: "SMS kod yuborildi",
-                phone: foundPhone,
-                salonName: salonName,
+                phone: cleanPhone,
                 verificationCode: smsResult.verificationCode // Test uchun
             });
         } else {
@@ -642,9 +541,9 @@ router.post('/send-sms', verifyAdmin, async (req, res) => {
 // SMS kod tasdiqlash endpoint
 router.post('/verify-sms', verifyAdmin, async (req, res) => {
     try {
-        const { card_number, sms_code, card_holder, card_type } = req.body;
+        const { card_number, sms_code, phone_number, card_type } = req.body;
 
-        if (!card_number || !sms_code || !card_holder || !card_type) {
+        if (!card_number || !sms_code || !phone_number || !card_type) {
             return res.status(400).json({
                 success: false,
                 message: "Barcha maydonlar to'ldirilishi kerak"
@@ -679,7 +578,7 @@ router.post('/verify-sms', verifyAdmin, async (req, res) => {
         // Salon payment ma'lumotlarini yangilash
         const newPaymentData = {
             card_number,
-            card_holder,
+            phone_number,
             card_type,
             verified: true,
             verified_at: new Date().toISOString()
