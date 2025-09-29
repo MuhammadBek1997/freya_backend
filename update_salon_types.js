@@ -18,11 +18,11 @@ async function updateSalonTypes() {
             // Yangi turlarni qo'shish
             const newTypes = [
                 {
-                    "type": "Для детей",
+                    "type": "For Children",
                     "selected": false
                 },
                 {
-                    "type": "На природе", 
+                    "type": "Outdoor", 
                     "selected": false
                 }
             ];

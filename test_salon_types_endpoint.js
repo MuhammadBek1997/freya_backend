@@ -8,10 +8,11 @@ async function testSalonTypesEndpoint() {
     
     try {
         // Test 1: Salon turlari bilan filtrlash
-        console.log('📋 Test 1: "Салон красоты" va "Фитнес" turlari bilan filtrlash');
-        const response1 = await axios.get(`${baseURL}/api/salons/filter/types`, {
+        console.log('📋 Test 1: "Beauty Salon" va "Fitness" turlari bilan filtrlash');
+        
+        const response1 = await axios.get(`${baseUrl}/salons`, {
             params: {
-                salon_types: 'Салон красоты,Фитнес',
+                salon_types: 'Beauty Salon,Fitness',
                 current_language: 'ru',
                 page: 1,
                 limit: 5
@@ -34,10 +35,11 @@ async function testSalonTypesEndpoint() {
         console.log('\n' + '='.repeat(50) + '\n');
         
         // Test 2: Yangi qo'shilgan turlar bilan test
-        console.log('📋 Test 2: "Для детей" va "На природе" turlari bilan filtrlash');
-        const response2 = await axios.get(`${baseURL}/api/salons/filter/types`, {
+        console.log('📋 Test 2: "For Children" va "Outdoor" turlari bilan filtrlash');
+        
+        const response2 = await axios.get(`${baseUrl}/salons`, {
             params: {
-                salon_types: 'Для детей,На природе',
+                salon_types: 'For Children,Outdoor',
                 current_language: 'ru',
                 page: 1,
                 limit: 5
@@ -59,10 +61,11 @@ async function testSalonTypesEndpoint() {
         console.log('\n' + '='.repeat(50) + '\n');
         
         // Test 3: Qidiruv bilan birgalikda
-        console.log('📋 Test 3: "Салон красоты" turi va "beauty" qidiruvi');
-        const response3 = await axios.get(`${baseURL}/api/salons/filter/types`, {
+        console.log('📋 Test 3: "Beauty Salon" turi va "beauty" qidiruvi');
+        
+        const response3 = await axios.get(`${baseUrl}/salons`, {
             params: {
-                salon_types: 'Салон красоты',
+                salon_types: 'Beauty Salon',
                 search: 'beauty',
                 current_language: 'ru',
                 page: 1,

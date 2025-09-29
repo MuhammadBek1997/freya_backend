@@ -16,12 +16,12 @@ async function testUpdatedSalonTypes() {
             console.log(`${index + 1}. ${salon.name}:`);
             
             const typeNames = salon.salon_types.map(t => t.type);
-            const hasChildrenType = typeNames.includes('Для детей');
-            const hasOutdoorType = typeNames.includes('На природе');
+            const hasChildrenType = typeNames.includes('For Children');
+            const hasOutdoorType = typeNames.includes('Outdoor');
             
             console.log(`   Jami turlar: ${salon.salon_types.length}`);
-            console.log(`   "Для детей" mavjud: ${hasChildrenType ? '✓' : '✗'}`);
-            console.log(`   "На природе" mavjud: ${hasOutdoorType ? '✓' : '✗'}`);
+            console.log(`   "For Children" mavjud: ${hasChildrenType ? '✓' : '✗'}`);
+            console.log(`   "Outdoor" mavjud: ${hasOutdoorType ? '✓' : '✗'}`);
             
             if (!hasChildrenType || !hasOutdoorType) {
                 allSalonsHaveNewTypes = false;
@@ -42,7 +42,7 @@ async function testUpdatedSalonTypes() {
         console.log('=== TEST NATIJASI ===');
         if (allSalonsHaveNewTypes) {
             console.log('✅ Barcha salonlarga yangi turlar muvaffaqiyatli qo\'shildi!');
-            console.log('✅ "Для детей" va "На природе" turlari barcha salonlarda mavjud');
+            console.log('✅ "For Children" va "Outdoor" turlari barcha salonlarda mavjud');
         } else {
             console.log('❌ Ba\'zi salonlarda yangi turlar to\'liq qo\'shilmagan');
         }

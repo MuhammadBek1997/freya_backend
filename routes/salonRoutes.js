@@ -598,8 +598,8 @@ router.post('/:id/comments', verifySuperAdmin, addSalonComment);
  *         required: true
  *         schema:
  *           type: string
- *         description: Salon turlari (vergul bilan ajratilgan, masalan "Салон красоты,Фитнес")
- *         example: "Салон красоты,Фитнес"
+ *         description: Salon turlari (vergul bilan ajratilgan, masalan "Beauty Salon,Fitness")
+         example: "Beauty Salon,Fitness"
  *       - in: query
  *         name: page
  *         schema:

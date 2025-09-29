@@ -50,11 +50,11 @@ const createSalon = async (req, res) => {
 
         // Default qiymatlar
         const defaultSalonTypes = [
-            {"type": "Салон красоты", "selected": true},
-            {"type": "Фитнес", "selected": false},
-            {"type": "Функциональные тренировки", "selected": false},
-            {"type": "Йога", "selected": false},
-            {"type": "Массаж", "selected": false}
+            {"type": "Beauty Salon", "selected": true},
+            {"type": "Fitness", "selected": false},
+            {"type": "Functional Training", "selected": false},
+            {"type": "Yoga", "selected": false},
+            {"type": "Massage", "selected": false}
         ];
 
         const defaultLocation = {"lat": 41, "long": 64};
@@ -944,7 +944,7 @@ const getRecommendedSalons = async (req, res) => {
         
         // Agar sevimli salonlar yo'q bo'lsa, eng mashhur turlarni olish
         if (uniqueTypes.length === 0) {
-            uniqueTypes = ['Салон красоты', 'Фитнес', 'Массаж'];
+            uniqueTypes = ['Beauty Salon', 'Fitness', 'Massage'];
         }
         
         // Sevimli salon turlariga mos salonlarni topish (sevimli salonlarni chiqarib tashlash)

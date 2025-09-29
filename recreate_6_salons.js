@@ -33,11 +33,11 @@ async function recreate6Salons() {
                 working_hours: {},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": true },
-                    { "type": "Фитнес", "selected": false },
-                    { "type": "Функциональные тренировки", "selected": false },
-                    { "type": "Йога", "selected": false },
-                    { "type": "Массаж", "selected": false }
+                    { "type": "Beauty Salon", "selected": true },
+                    { "type": "Fitness", "selected": false },
+                    { "type": "Functional Training", "selected": false },
+                    { "type": "Yoga", "selected": false },
+                    { "type": "Massage", "selected": false }
                 ],
                 location: { "lat": 41, "long": 64 },
                 salon_orient: { "lat": 41, "long": 64 },
@@ -76,11 +76,11 @@ async function recreate6Salons() {
                 working_hours: {"monday": {"open": "09:00", "close": "18:00"}},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": true },
-                    { "type": "Фитнес", "selected": false },
-                    { "type": "Функциональные тренировки", "selected": false },
-                    { "type": "Йога", "selected": false },
-                    { "type": "Массаж", "selected": true }
+                    { "type": "Beauty Salon", "selected": true },
+                    { "type": "Fitness", "selected": false },
+                    { "type": "Functional Training", "selected": false },
+                    { "type": "Yoga", "selected": false },
+                    { "type": "Massage", "selected": true }
                 ],
                 location: { "lat": 41.2995, "long": 69.2401 },
                 salon_orient: { "lat": 41.2995, "long": 69.2401 },
@@ -119,11 +119,11 @@ async function recreate6Salons() {
                 working_hours: {"monday": {"open": "06:00", "close": "22:00"}},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": false },
-                    { "type": "Фитнес", "selected": true },
-                    { "type": "Функциональные тренировки", "selected": true },
-                    { "type": "Йога", "selected": true },
-                    { "type": "Массаж", "selected": false }
+                    { "type": "Beauty Salon", "selected": false },
+                    { "type": "Fitness", "selected": true },
+                    { "type": "Functional Training", "selected": true },
+                    { "type": "Yoga", "selected": true },
+                    { "type": "Massage", "selected": false }
                 ],
                 location: { "lat": 41.3111, "long": 69.2797 },
                 salon_orient: { "lat": 41.3111, "long": 69.2797 },
@@ -162,11 +162,11 @@ async function recreate6Salons() {
                 working_hours: {"monday": {"open": "07:00", "close": "21:00"}},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": false },
-                    { "type": "Фитнес", "selected": false },
-                    { "type": "Функциональные тренировки", "selected": false },
-                    { "type": "Йога", "selected": true },
-                    { "type": "Массаж", "selected": true }
+                    { "type": "Beauty Salon", "selected": false },
+                    { "type": "Fitness", "selected": false },
+                    { "type": "Functional Training", "selected": false },
+                    { "type": "Yoga", "selected": true },
+                    { "type": "Massage", "selected": true }
                 ],
                 location: { "lat": 41.2856, "long": 69.2034 },
                 salon_orient: { "lat": 41.2856, "long": 69.2034 },
@@ -205,11 +205,11 @@ async function recreate6Salons() {
                 working_hours: {"monday": {"open": "10:00", "close": "20:00"}},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": true },
-                    { "type": "Фитнес", "selected": false },
-                    { "type": "Функциональные тренировки", "selected": false },
-                    { "type": "Йога", "selected": false },
-                    { "type": "Массаж", "selected": true }
+                    { "type": "Beauty Salon", "selected": true },
+                    { "type": "Fitness", "selected": false },
+                    { "type": "Functional Training", "selected": false },
+                    { "type": "Yoga", "selected": false },
+                    { "type": "Massage", "selected": true }
                 ],
                 location: { "lat": 41.3264, "long": 69.2285 },
                 salon_orient: { "lat": 41.3264, "long": 69.2285 },
@@ -248,11 +248,11 @@ async function recreate6Salons() {
                 working_hours: {"monday": {"open": "09:00", "close": "19:00"}},
                 is_active: true,
                 salon_types: [
-                    { "type": "Салон красоты", "selected": true },
-                    { "type": "Фитнес", "selected": false },
-                    { "type": "Функциональные тренировки", "selected": false },
-                    { "type": "Йога", "selected": false },
-                    { "type": "Массаж", "selected": false }
+                    { "type": "Beauty Salon", "selected": true },
+                    { "type": "Fitness", "selected": false },
+                    { "type": "Functional Training", "selected": false },
+                    { "type": "Yoga", "selected": false },
+                    { "type": "Massage", "selected": false }
                 ],
                 location: { "lat": 41.2646, "long": 69.2163 },
                 salon_orient: { "lat": 41.2646, "long": 69.2163 },
