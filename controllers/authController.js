@@ -179,6 +179,7 @@ const createAdmin = async (req, res) => {
 const employeeLogin = async (req, res) => {
     try {
         const { username, password } = req.body;
+        console.log('Employee login attempt:', { username, hasPassword: !!password });
 
         if (!username || !password) {
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
@@ -190,6 +191,11 @@ const employeeLogin = async (req, res) => {
             [username, 'employee']
         );
 
+        console.log('Database query result:', { 
+            rowCount: result.rows.length, 
+            foundUser: result.rows.length > 0 ? result.rows[0].username : 'none' 
+        });
+
         if (result.rows.length === 0) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
@@ -198,6 +204,7 @@ const employeeLogin = async (req, res) => {
 
         // Password tekshirish
         const isValidPassword = await bcrypt.compare(password, employee.password_hash);
+        console.log('Password validation result:', isValidPassword);
         
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
