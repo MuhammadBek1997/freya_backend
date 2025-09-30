@@ -1,49 +1,42 @@
 const { Pool } = require('pg');
-require('dotenv').config();
+require('dotenv').config({ path: '.env.production' });
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 async function checkEmployeesStructure() {
+  const client = await pool.connect();
+  
   try {
-    console.log('🔍 Employees jadvalining strukturasini tekshirish...\n');
+    console.log('📋 Employees jadvalining strukturasi:\n');
     
-    // Jadval ustunlarini olish
-    const columnsQuery = `
-      SELECT column_name, data_type, is_nullable, column_default
+    const structure = await client.query(`
+      SELECT 
+        column_name, 
+        data_type, 
+        is_nullable,
+        column_default
       FROM information_schema.columns 
       WHERE table_name = 'employees' 
       ORDER BY ordinal_position
-    `;
+    `);
     
-    const columns = await pool.query(columnsQuery);
-    
-    console.log('📋 Employees jadval ustunlari:');
-    columns.rows.forEach(col => {
-      console.log(`- ${col.column_name}: ${col.data_type} (nullable: ${col.is_nullable})`);
+    structure.rows.forEach((col, index) => {
+      console.log(`${index + 1}. ${col.column_name} (${col.data_type}) - Nullable: ${col.is_nullable} - Default: ${col.column_default || 'None'}`);
     });
     
-    // Mavjud ma'lumotlarni ko'rish
-    const dataQuery = 'SELECT * FROM employees LIMIT 3';
-    const data = await pool.query(dataQuery);
-    
-    console.log('\n📊 Mavjud ma\'lumotlar (birinchi 3 ta):');
-    data.rows.forEach((row, index) => {
-      console.log(`${index + 1}. ID: ${row.id}`);
-      console.log(`   Name: ${row.name || 'NULL'}`);
-      console.log(`   Phone: ${row.phone || 'NULL'}`);
-      console.log(`   Email: ${row.email || 'NULL'}`);
-      console.log(`   Position: ${row.position || 'NULL'}`);
-      console.log(`   Salon ID: ${row.salon_id || 'NULL'}`);
-      console.log(`   Active: ${row.is_active}`);
-      console.log('');
-    });
+    console.log('\n📊 Mavjud employees soni:');
+    const count = await client.query('SELECT COUNT(*) as count FROM employees');
+    console.log(`Jami: ${count.rows[0].count} ta employee`);
     
   } catch (error) {
-    console.error('❌ Xatolik:', error.message);
+    console.error('❌ Xatolik:', error);
   } finally {
+    client.release();
     await pool.end();
   }
 }
