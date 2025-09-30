@@ -63,10 +63,10 @@ const adminLogin = async (req, res) => {
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
         }
 
-        // Admin ni database dan topish
+        // Admin ni database dan topish (faqat admin role'li userlar)
         const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND is_active = true',
-            [username]
+            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role IN ($2, $3, $4, $5) AND is_active = true',
+            [username, 'admin', 'salon_admin', 'private_salon_admin', 'superadmin']
         );
 
         if (result.rows.length === 0) {
@@ -85,7 +85,7 @@ const adminLogin = async (req, res) => {
         const token = generateToken({
             id: admin.id,
             username: admin.username,
-            role: 'admin'
+            role: admin.role
         });
 
         res.json({
@@ -96,7 +96,7 @@ const adminLogin = async (req, res) => {
                 username: admin.username,
                 email: admin.email,
                 full_name: admin.full_name,
-                role: 'admin',
+                role: admin.role,
                 salon_id: admin.salon_id
             }
         });
