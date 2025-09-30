@@ -79,7 +79,7 @@ app.post('/api/auth/employee/login', async (req, res) => {
                         id: employee.id, // UUID from employees table
                         username: admin.username, // Original username
                         name: employee.name,
-                        role: employee.position,
+                        role: 'employee', // Always employee for chat API
                         salon_id: employee.salon_id,
                         original_admin_id: admin.id
                     },
@@ -94,7 +94,7 @@ app.post('/api/auth/employee/login', async (req, res) => {
                         id: employee.id,
                         username: admin.username,
                         name: employee.name,
-                        role: employee.position,
+                        role: 'employee', // Always employee for chat API
                         salon_id: employee.salon_id
                     }
                 });
