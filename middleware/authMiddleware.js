@@ -97,34 +97,48 @@ const authMiddleware = {
   // Universal authentication middleware (user, employee, admin)
   verifyAuth: async (req, res, next) => {
     try {
+      console.log('🔍 verifyAuth: Starting authentication...');
       const token = req.header('Authorization')?.replace('Bearer ', '');
       
       if (!token) {
+        console.log('❌ verifyAuth: No token found');
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
+      console.log('🔍 verifyAuth: Token found, verifying...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('🔍 verifyAuth: Token decoded:', { id: decoded.id, role: decoded.role });
       
       let user = null;
       
       // Check based on role in token
       if (decoded.role === 'employee') {
+        console.log('🔍 verifyAuth: Checking employee in admins table...');
         const result = await query(
-          'SELECT id, employee_name, employee_phone, employee_password, salon_id, position, is_active, created_at, updated_at FROM employees WHERE id = $1 AND is_active = true',
-          [decoded.id]
+          'SELECT id, username, email, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
+          [decoded.id, 'employee']
         );
+        console.log('🔍 verifyAuth: Employee query result:', result.rows.length, 'rows');
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'employee' };
+          console.log('✅ verifyAuth: Employee found:', user.username);
+        } else {
+          console.log('❌ verifyAuth: Employee not found');
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
+        console.log('🔍 verifyAuth: Checking admin in admins table...');
         const result = await query(
       'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
       [decoded.id]
     );
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: decoded.role };
+          console.log('✅ verifyAuth: Admin found:', user.username);
+        } else {
+          console.log('❌ verifyAuth: Admin not found');
         }
       } else {
+        console.log('🔍 verifyAuth: Checking user in users table...');
         // Default to user table
         const userId = decoded.userId || decoded.id;
         const result = await query(
@@ -133,17 +147,22 @@ const authMiddleware = {
     );
         if (result.rows.length > 0) {
           user = { ...result.rows[0], role: 'user' };
+          console.log('✅ verifyAuth: User found:', user.username);
+        } else {
+          console.log('❌ verifyAuth: User not found');
         }
       }
 
       if (!user) {
+        console.log('❌ verifyAuth: No user found, returning 401');
         return res.status(401).json({ message: 'Foydalanuvchi topilmadi yoki faol emas' });
       }
 
+      console.log('✅ verifyAuth: Authentication successful, proceeding...');
       req.user = user;
       next();
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('❌ verifyAuth: Auth error:', error);
       res.status(401).json({ message: 'Token yaroqsiz' });
     }
   },

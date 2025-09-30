@@ -238,7 +238,7 @@ const getConversations = async (req, res) => {
       SELECT lm.*,
              CASE 
                WHEN lm.other_user_type = 'user' THEN u.full_name
-               WHEN lm.other_user_type = 'employee' THEN CONCAT(e.name, ' ', e.surname)
+               WHEN lm.other_user_type = 'employee' THEN e.name
                WHEN lm.other_user_type = 'admin' THEN a.full_name
              END as other_user_name,
              CASE 

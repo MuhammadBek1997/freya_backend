@@ -1,17 +1,18 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-// Production database connection
+// Local database connection
 const pool = new Pool({
-    connectionString: 'postgresql://freya_salon_user:Freya2024!@dpg-ct6ej8lds78s73e5ub60-a.oregon-postgres.render.com/freya_salon_db',
-    ssl: {
-        rejectUnauthorized: false
-    }
+    user: 'postgres',
+    host: 'localhost',
+    database: 'freya_salon',
+    password: 'admin',
+    port: 5432,
 });
 
-async function checkEmployeeCredentials() {
+async function checkLocalEmployee() {
     try {
-        console.log('🔍 Employee1_1 credentials tekshirish...');
+        console.log('🔍 Local database\'da employee1_1 tekshirish...');
         
         // Employee1_1 ni topish
         const result = await pool.query(
@@ -30,7 +31,6 @@ async function checkEmployeeCredentials() {
         console.log('Username:', employee.username);
         console.log('Role:', employee.role);
         console.log('Salon ID:', employee.salon_id);
-        console.log('Password hash:', employee.password);
 
         // Turli parollarni test qilish
         const testPasswords = [
@@ -43,12 +43,15 @@ async function checkEmployeeCredentials() {
         ];
 
         console.log('\n🔐 Parollarni test qilish...');
+        let correctPassword = null;
+        
         for (const testPassword of testPasswords) {
             try {
                 const isMatch = await bcrypt.compare(testPassword, employee.password);
                 if (isMatch) {
                     console.log(`✅ To'g'ri parol topildi: "${testPassword}"`);
-                    return testPassword;
+                    correctPassword = testPassword;
+                    break;
                 } else {
                     console.log(`❌ Noto'g'ri parol: "${testPassword}"`);
                 }
@@ -57,7 +60,11 @@ async function checkEmployeeCredentials() {
             }
         }
 
-        console.log('\n❌ Hech qanday test parol mos kelmadi');
+        if (!correctPassword) {
+            console.log('\n❌ Hech qanday test parol mos kelmadi');
+        }
+
+        return correctPassword;
 
     } catch (error) {
         console.error('❌ Database xatoligi:', error.message);
@@ -66,4 +73,4 @@ async function checkEmployeeCredentials() {
     }
 }
 
-checkEmployeeCredentials();
+checkLocalEmployee();

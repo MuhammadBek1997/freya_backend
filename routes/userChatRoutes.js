@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const userChatController = require('../controllers/userChatController');
-const { verifyUser } = require('../middleware/authMiddleware');
+const { verifyAuth } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -128,13 +128,13 @@ const { verifyUser } = require('../middleware/authMiddleware');
  *       500:
  *         description: Server xatosi
  */
-router.post('/send', verifyUser, userChatController.sendMessage);
+router.post('/send', verifyAuth, userChatController.sendMessage);
 
 /**
  * @swagger
  * /api/user-chat/conversations:
  *   get:
- *     summary: Foydalanuvchining barcha suhbatlari
+ *     summary: Foydalanuvchi suhbatlarini olish
  *     tags: [User Chat]
  *     security:
  *       - bearerAuth: []
@@ -159,7 +159,7 @@ router.post('/send', verifyUser, userChatController.sendMessage);
  *       500:
  *         description: Server xatosi
  */
-router.get('/conversations', verifyUser, userChatController.getConversations);
+router.get('/conversations', verifyAuth, userChatController.getConversations);
 
 /**
  * @swagger
@@ -219,7 +219,7 @@ router.get('/conversations', verifyUser, userChatController.getConversations);
  *       500:
  *         description: Server xatosi
  */
-router.get('/conversation/:employeeId', verifyUser, userChatController.getConversationWithEmployee);
+router.get('/conversation/:employeeId', verifyAuth, userChatController.getConversationWithEmployee);
 
 /**
  * @swagger
@@ -256,13 +256,13 @@ router.get('/conversation/:employeeId', verifyUser, userChatController.getConver
  *       500:
  *         description: Server xatosi
  */
-router.put('/mark-read/:messageId', verifyUser, userChatController.markMessageAsRead);
+router.put('/mark-read/:messageId', verifyAuth, userChatController.markMessageAsRead);
 
 /**
  * @swagger
  * /api/user-chat/unread-count:
  *   get:
- *     summary: O'qilmagan xabarlar soni
+ *     summary: O'qilmagan xabarlar sonini olish
  *     tags: [User Chat]
  *     security:
  *       - bearerAuth: []
@@ -278,13 +278,13 @@ router.put('/mark-read/:messageId', verifyUser, userChatController.markMessageAs
  *                   type: boolean
  *                 message:
  *                   type: string
- *                 unread_count:
+ *                 count:
  *                   type: integer
  *       401:
  *         description: Foydalanuvchi avtorizatsiyasi talab qilinadi
  *       500:
  *         description: Server xatosi
  */
-router.get('/unread-count', verifyUser, userChatController.getUnreadCount);
+router.get('/unread-count', verifyAuth, userChatController.getUnreadCount);
 
 module.exports = router;

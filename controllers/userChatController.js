@@ -6,8 +6,8 @@ const { query } = require('../config/database');
 const sendMessage = async (req, res) => {
   try {
     const { receiver_id, receiver_type, message_text, message_type = 'text' } = req.body;
-    const sender_id = req.user.id; // verifyUser middleware orqali olingan user ID
-    const sender_type = 'user'; // Foydalanuvchi har doim 'user' turi
+    const sender_id = req.user.id; // verifyAuth middleware orqali olingan user ID
+    const sender_type = req.user.role || 'user'; // User role'iga qarab sender_type belgilanadi
 
     // Majburiy maydonlarni tekshirish
     if (!receiver_id || !receiver_type || !message_text) {
@@ -61,7 +61,7 @@ const sendMessage = async (req, res) => {
 const getConversations = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const currentUserType = 'user';
+    const currentUserType = req.user.role || 'user';
 
     const queryText = `
       WITH latest_messages AS (
@@ -142,7 +142,7 @@ const getConversationWithEmployee = async (req, res) => {
     const { employeeId } = req.params;
     const { page = 1, limit = 20 } = req.query;
     const currentUserId = req.user.id;
-    const currentUserType = 'user';
+    const currentUserType = req.user.role || 'user';
     const offset = (page - 1) * limit;
 
     const queryText = `
@@ -208,7 +208,7 @@ const markMessageAsRead = async (req, res) => {
   try {
     const { messageId } = req.params;
     const currentUserId = req.user.id;
-    const currentUserType = 'user';
+    const currentUserType = req.user.role || 'user';
 
     const queryText = `
       UPDATE messages 
@@ -245,7 +245,7 @@ const markMessageAsRead = async (req, res) => {
 const getUnreadCount = async (req, res) => {
   try {
     const currentUserId = req.user.id;
-    const currentUserType = 'user';
+    const currentUserType = req.user.role || 'user';
 
     const queryText = `
       SELECT COUNT(*) as unread_count
