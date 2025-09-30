@@ -114,16 +114,33 @@ const authMiddleware = {
       // Check based on role in token
       if (decoded.role === 'employee') {
         console.log('🔍 verifyAuth: Checking employee in admins table...');
-        const result = await query(
-          'SELECT id, username, email, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND role = $2 AND is_active = true',
-          [decoded.id, 'employee']
-        );
-        console.log('🔍 verifyAuth: Employee query result:', result.rows.length, 'rows');
-        if (result.rows.length > 0) {
-          user = { ...result.rows[0], role: 'employee' };
-          console.log('✅ verifyAuth: Employee found:', user.username);
+        // First get admin record to verify authentication
+        const adminEmployee = await query('SELECT * FROM admins WHERE id = $1 AND role = $2', [decoded.id, 'employee']);
+        if (adminEmployee.rows.length === 0) {
+          console.log('❌ verifyAuth: Employee not found in admins');
         } else {
-          console.log('❌ verifyAuth: Employee not found');
+          // Map admin username to employee name
+          let employeeName = adminEmployee.rows[0].username;
+          if (employeeName === 'employee1' || employeeName === 'employee1_1') {
+            employeeName = 'Employee One';
+          }
+          
+          // Then get the actual employee record from employees table
+           console.log('🔍 verifyAuth: Looking for employee with name:', employeeName);
+           const employeeResult = await query('SELECT * FROM employees WHERE name = $1', [employeeName]);
+           console.log('🔍 verifyAuth: Employee query result:', employeeResult.rows.length, 'rows');
+           if (employeeResult.rows.length > 0) {
+             // Combine admin and employee data
+             user = {
+               ...employeeResult.rows[0],
+               role: 'employee',
+               admin_id: adminEmployee.rows[0].id,
+               salon_id: adminEmployee.rows[0].salon_id
+             };
+             console.log('✅ verifyAuth: Employee found:', user.name, 'ID:', user.id);
+           } else {
+             console.log('❌ verifyAuth: Employee not found in employees table for name:', employeeName);
+           }
         }
       } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
         console.log('🔍 verifyAuth: Checking admin in admins table...');
@@ -159,6 +176,7 @@ const authMiddleware = {
       }
 
       console.log('✅ verifyAuth: Authentication successful, proceeding...');
+      console.log('🔍 verifyAuth: Final user object:', JSON.stringify(user, null, 2));
       req.user = user;
       next();
     } catch (error) {

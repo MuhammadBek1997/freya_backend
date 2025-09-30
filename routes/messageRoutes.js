@@ -237,6 +237,43 @@ router.put('/mark-read/:messageId', verifyAuth, messageController.markAsRead);
 
 /**
  * @swagger
+ * /api/messages/conversation/{userId}/mark-read:
+ *   put:
+ *     summary: Suhbatdagi barcha xabarlarni o'qilgan deb belgilash
+ *     tags: [Messages]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Suhbatdosh ID
+ *     responses:
+ *       200:
+ *         description: Barcha xabarlar o'qilgan deb belgilandi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 updated_count:
+ *                   type: integer
+ *       401:
+ *         description: Avtorizatsiya talab qilinadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.put('/conversation/:userId/mark-read', verifyAuth, messageController.markConversationAsRead);
+
+/**
+ * @swagger
  * /api/messages/unread-count:
  *   get:
  *     summary: O'qilmagan xabarlar soni

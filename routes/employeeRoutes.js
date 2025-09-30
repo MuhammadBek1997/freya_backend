@@ -9,6 +9,7 @@ const {
     deleteEmployee,
     addEmployeeComment,
     addEmployeePost,
+    getEmployeePosts,
     updateEmployeeWaitingStatus,
     bulkUpdateEmployeeWaitingStatus
 } = require('../controllers/employeeController');
@@ -557,5 +558,140 @@ router.put('/employees/:id/waiting-status', verifyAdmin, updateEmployeeWaitingSt
  *               $ref: '#/components/schemas/Error'
  */
 router.put('/employees/bulk-waiting-status', verifyAdmin, bulkUpdateEmployeeWaitingStatus);
+
+/**
+ * @swagger
+ * /api/employees/{id}/posts:
+ *   get:
+ *     summary: Employee postlarini olish
+ *     tags: [Employees]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Employee ID si
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Sahifa raqami
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Sahifadagi postlar soni
+ *     responses:
+ *       200:
+ *         description: Employee postlari muvaffaqiyatli qaytarildi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         format: uuid
+ *                         description: Post ID
+ *                       employee_id:
+ *                         type: string
+ *                         format: uuid
+ *                         description: Employee ID
+ *                       title:
+ *                         type: string
+ *                         description: Post sarlavhasi
+ *                       description:
+ *                         type: string
+ *                         description: Post tavsifi
+ *                       employee_name:
+ *                         type: string
+ *                         description: Employee ismi
+ *                       employee_surname:
+ *                         type: string
+ *                         description: Employee familiyasi
+ *                       employee_profession:
+ *                         type: string
+ *                         description: Employee kasbi
+ *                       salon_id:
+ *                         type: string
+ *                         format: uuid
+ *                         description: Salon ID
+ *                       salon_name:
+ *                         type: string
+ *                         description: Salon nomi
+ *                       media_files:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                         description: Media fayllar ro'yxati
+ *                       is_active:
+ *                         type: boolean
+ *                         description: Post faol holati
+ *                       created_at:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Yaratilgan vaqt
+ *                       updated_at:
+ *                         type: string
+ *                         format: date-time
+ *                         description: Yangilangan vaqt
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       description: Joriy sahifa
+ *                     limit:
+ *                       type: integer
+ *                       description: Sahifadagi elementlar soni
+ *                     total:
+ *                       type: integer
+ *                       description: Jami elementlar soni
+ *                     pages:
+ *                       type: integer
+ *                       description: Jami sahifalar soni
+ *       404:
+ *         description: Employee topilmadi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Employee topilmadi"
+ *       500:
+ *         description: Server xatosi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Server xatosi yuz berdi"
+ */
+router.get('/employees/:id/posts', getEmployeePosts);
 
 module.exports = router;

@@ -803,6 +803,83 @@ const bulkUpdateEmployeeWaitingStatus = async (req, res) => {
     }
 };
 
+// Get employee posts
+const getEmployeePosts = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { page = 1, limit = 10 } = req.query;
+        
+        const offset = (page - 1) * limit;
+        
+        // Employee mavjudligini tekshirish
+        const employeeCheck = await pool.query('SELECT id FROM employees WHERE id = $1', [id]);
+        if (employeeCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Employee topilmadi'
+            });
+        }
+        
+        // Employee postlarini olish
+        const postsQuery = `
+            SELECT 
+                ep.*,
+                e.name as employee_name,
+                e.surname as employee_surname,
+                e.profession as employee_profession,
+                e.salon_id,
+                s.salon_name_uz as salon_name,
+                COALESCE(
+                    json_agg(
+                        CASE 
+                            WHEN pm.file_path IS NOT NULL 
+                            THEN pm.file_path 
+                            ELSE NULL 
+                        END
+                    ) FILTER (WHERE pm.file_path IS NOT NULL), 
+                    '[]'::json
+                ) as media_files
+            FROM employee_posts ep
+            LEFT JOIN employees e ON ep.employee_id = e.id
+            LEFT JOIN salons s ON e.salon_id = s.id
+            LEFT JOIN post_media pm ON ep.id = pm.post_id
+            WHERE ep.employee_id = $1 AND ep.is_active = true
+            GROUP BY ep.id, e.name, e.surname, e.profession, e.salon_id, s.salon_name_uz
+            ORDER BY ep.created_at DESC
+            LIMIT $2 OFFSET $3
+        `;
+        
+        const postsResult = await pool.query(postsQuery, [id, limit, offset]);
+        
+        // Total count olish
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM employee_posts
+            WHERE employee_id = $1 AND is_active = true
+        `;
+        const countResult = await pool.query(countQuery, [id]);
+        const total = parseInt(countResult.rows[0].total);
+        
+        res.json({
+            success: true,
+            data: postsResult.rows,
+            pagination: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                total,
+                pages: Math.ceil(total / limit)
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error getting employee posts:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi yuz berdi'
+        });
+    }
+};
+
 module.exports = {
     getAllEmployees,
     getEmployeesBySalonId,
@@ -812,6 +889,7 @@ module.exports = {
     deleteEmployee,
     addEmployeeComment,
     addEmployeePost,
+    getEmployeePosts,
     updateEmployeeWaitingStatus,
     bulkUpdateEmployeeWaitingStatus
 };
