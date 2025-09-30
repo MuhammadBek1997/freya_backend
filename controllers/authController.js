@@ -56,6 +56,7 @@ const superadminLogin = async (req, res) => {
 const adminLogin = async (req, res) => {
     try {
         const { username, password } = req.body;
+        console.log('Admin login attempt:', { username, password: '***' });
 
         if (!username || !password) {
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
@@ -67,13 +68,25 @@ const adminLogin = async (req, res) => {
             [username]
         );
 
+        console.log('Admin found in database:', admin ? { id: admin.id, username: admin.username, role: admin.role, is_active: admin.is_active } : 'Not found');
+
         if (!admin) {
+            console.log('Admin not found or inactive');
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
 
         // Password tekshirish
+        console.log('Comparing password:', password);
+        console.log('Against hash:', admin.password_hash.substring(0, 20) + '...');
         const isValidPassword = await bcrypt.compare(password, admin.password_hash);
+        console.log('Password validation result:', isValidPassword);
+        
+        // Additional debug - test with known working hash
+        const testHash = '$2b$10$4U925JeCMhDq3VQJGzKdKOQJGzKdKOQJGzKdKOQJGzKdKOQJGzKdKO';
+        console.log('Test comparison with sample hash:', await bcrypt.compare(password, testHash));
+        
         if (!isValidPassword) {
+            console.log('Invalid password for admin:', username);
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
 
@@ -230,9 +243,52 @@ const employeeLogin = async (req, res) => {
     }
 };
 
+// Admin profile olish
+const getAdminProfile = async (req, res) => {
+    try {
+        const adminId = req.admin.id;
+
+        // Admin ma'lumotlarini database dan olish
+        const admin = await get(
+            'SELECT id, username, email, full_name, role, is_active, created_at, updated_at FROM admins WHERE id = ? AND is_active = 1',
+            [adminId]
+        );
+
+        if (!admin) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Admin topilmadi' 
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Admin profili muvaffaqiyatli olindi',
+            user: {
+                id: admin.id,
+                username: admin.username,
+                email: admin.email,
+                full_name: admin.full_name,
+                role: admin.role,
+                is_active: admin.is_active,
+                created_at: admin.created_at,
+                updated_at: admin.updated_at
+            }
+        });
+
+    } catch (error) {
+        console.error('Admin profile olishda xato:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server xatosi yuz berdi' 
+        });
+    }
+};
+
 module.exports = {
     superadminLogin,
     adminLogin,
     createAdmin,
-    employeeLogin
+    employeeLogin,
+    getAdminProfile
 };

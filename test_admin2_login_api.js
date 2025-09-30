@@ -10,7 +10,7 @@ async function testAdmin2Login() {
         console.log('Testing admin2 login...');
         console.log('Username: admin2');
         console.log('Password: admin2123');
-        console.log('Expected Role: private_admin\n');
+        console.log('Expected Role: private_salon_admin\n');
         
         const loginResponse = await axios.post(`${API_BASE}/api/auth/admin/login`, {
             username: 'admin2',

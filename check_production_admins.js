@@ -1,71 +1,64 @@
-require('dotenv').config({ path: '.env.production' });
-const { Pool } = require('pg');
+const axios = require('axios');
+
+// Production backend URL
+const PRODUCTION_URL = 'https://freya-salon-backend-cc373ce6622a.herokuapp.com/api';
 
 async function checkProductionAdmins() {
-    const pool = new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    });
-
     try {
-        console.log('🔍 Production database admins tekshirilmoqda...\n');
+        console.log('🔄 Checking production backend admin endpoints...');
+        
+        // Test different admin credentials that might exist
+        const testCredentials = [
+            { username: 'admin1', password: 'admin123' },
+            { username: 'admin1', password: 'admin1' },
+            { username: 'admin', password: 'admin' },
+            { username: 'admin', password: 'admin123' },
+            { username: 'superadmin', password: 'admin123' },
+            { username: 'test_admin', password: 'admin123' }
+        ];
 
-        // Check if admins table exists
-        const tableCheck = await pool.query(`
-            SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = 'public' 
-                AND table_name = 'admins'
-            );
-        `);
+        for (const cred of testCredentials) {
+            try {
+                console.log(`\n🔄 Testing: ${cred.username}/${cred.password}`);
+                
+                const loginResponse = await axios.post(`${PRODUCTION_URL}/auth/admin/login`, {
+                    username: cred.username,
+                    password: cred.password
+                });
 
-        if (!tableCheck.rows[0].exists) {
-            console.log('❌ Admins jadvali mavjud emas!');
-            return;
+                console.log(`✅ SUCCESS! ${cred.username}/${cred.password} works!`);
+                console.log('Status:', loginResponse.status);
+                console.log('Response:', loginResponse.data);
+                
+                // Test profile with this token
+                const token = loginResponse.data.token;
+                if (token) {
+                    const profileResponse = await axios.get(`${PRODUCTION_URL}/auth/admin/profile`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    console.log('Profile data:', profileResponse.data);
+                }
+                
+                break; // Stop after first successful login
+                
+            } catch (error) {
+                console.log(`❌ Failed: ${cred.username}/${cred.password} - ${error.response?.data?.message || error.message}`);
+            }
         }
 
-        // Get all admins
-        const adminsResult = await pool.query('SELECT * FROM admins ORDER BY created_at');
+        // Also test if we can access any public endpoints
+        console.log('\n🔄 Testing public endpoints...');
         
-        console.log(`📊 Jami adminlar soni: ${adminsResult.rows.length}\n`);
-        
-        if (adminsResult.rows.length > 0) {
-            console.log('👥 Mavjud adminlar:');
-            adminsResult.rows.forEach((admin, index) => {
-                console.log(`${index + 1}. ID: ${admin.id}`);
-                console.log(`   Username: ${admin.username}`);
-                console.log(`   Email: ${admin.email || 'N/A'}`);
-                console.log(`   Role: ${admin.role || 'N/A'}`);
-                console.log(`   Salon ID: ${admin.salon_id || 'N/A'}`);
-                console.log(`   Created: ${admin.created_at}`);
-                console.log(`   Password hash: ${admin.password ? admin.password.substring(0, 20) + '...' : 'N/A'}`);
-                console.log('');
-            });
-        } else {
-            console.log('❌ Hech qanday admin topilmadi!');
-        }
-
-        // Check for admin1 specifically
-        const admin1Check = await pool.query('SELECT * FROM admins WHERE username = $1', ['admin1']);
-        
-        if (admin1Check.rows.length > 0) {
-            console.log('✅ admin1 topildi:');
-            const admin1 = admin1Check.rows[0];
-            console.log(`   ID: ${admin1.id}`);
-            console.log(`   Username: ${admin1.username}`);
-            console.log(`   Email: ${admin1.email || 'N/A'}`);
-            console.log(`   Password hash: ${admin1.password}`);
-            console.log(`   Role: ${admin1.role || 'N/A'}`);
-        } else {
-            console.log('❌ admin1 topilmadi!');
+        try {
+            const publicResponse = await axios.get(`${PRODUCTION_URL}/salons/`);
+            console.log('✅ Public salons endpoint works:', publicResponse.status);
+            console.log('Salon count:', publicResponse.data?.length || 'No data');
+        } catch (error) {
+            console.log('❌ Public salons endpoint failed:', error.response?.status, error.response?.data?.message);
         }
 
     } catch (error) {
-        console.error('❌ Xatolik:', error.message);
-    } finally {
-        await pool.end();
+        console.log('❌ General error:', error.message);
     }
 }
 

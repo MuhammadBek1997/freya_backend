@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const { superadminLogin, adminLogin, createAdmin, employeeLogin } = require('../controllers/authController');
-const { verifySuperAdmin } = require('../middleware/authMiddleware');
+const { superadminLogin, adminLogin, createAdmin, employeeLogin, getAdminProfile } = require('../controllers/authController');
+const { verifySuperAdmin, verifyAdmin } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
@@ -122,6 +122,64 @@ router.post('/admin/login', adminLogin);
  *         description: Server xatosi
  */
 router.post('/admin/create', verifySuperAdmin, createAdmin);
+
+/**
+ * @swagger
+ * /api/auth/admin/profile:
+ *   get:
+ *     summary: Admin profilini olish
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Admin profili muvaffaqiyatli olindi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Admin profili muvaffaqiyatli olindi"
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 1
+ *                     username:
+ *                       type: string
+ *                       example: "admin1"
+ *                     email:
+ *                       type: string
+ *                       example: "admin1@freya.com"
+ *                     full_name:
+ *                       type: string
+ *                       example: "Admin User"
+ *                     role:
+ *                       type: string
+ *                       example: "admin"
+ *                     is_active:
+ *                       type: integer
+ *                       example: 1
+ *                     created_at:
+ *                       type: string
+ *                       example: "2024-01-01T00:00:00.000Z"
+ *                     updated_at:
+ *                       type: string
+ *                       example: "2024-01-01T00:00:00.000Z"
+ *       401:
+ *         description: Token yaroqsiz
+ *       404:
+ *         description: Admin topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.get('/admin/profile', verifyAdmin, getAdminProfile);
 
 /**
  * @swagger

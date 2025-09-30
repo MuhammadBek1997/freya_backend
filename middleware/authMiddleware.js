@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { query } = require('../config/database');
+const { get } = require('../config/sqlite_database');
 
 const authMiddleware = {
   // Superadmin authentication middleware
@@ -40,24 +41,31 @@ const authMiddleware = {
         return res.status(401).json({ message: 'Token topilmadi, kirish rad etildi' });
       }
 
+      console.log('🔍 verifyAdmin: Token found, verifying...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('🔍 verifyAdmin: Token decoded:', { id: decoded.id, username: decoded.username, role: decoded.role });
       
-      // Check if admin exists and is active
-      const result = await query(
-        'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
+      // Check if admin exists and is active in SQLite database
+      const admin = await get(
+        'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE id = ? AND is_active = 1',
         [decoded.id]
       );
 
+      console.log('🔍 verifyAdmin: Database query result:', admin ? 'Admin found' : 'Admin not found');
+      if (admin) {
+        console.log('🔍 verifyAdmin: Admin found:', { id: admin.id, username: admin.username, role: admin.role });
+      }
 
-
-      if (result.rows.length === 0) {
+      if (!admin) {
+        console.log('❌ verifyAdmin: Admin not found in database');
         return res.status(401).json({ message: 'Admin huquqi talab qilinadi' });
       }
 
-      req.admin = result.rows[0];
+      req.admin = admin;
+      console.log('✅ verifyAdmin: Authentication successful');
       next();
     } catch (error) {
-      console.error('Admin verification error:', error);
+      console.error('❌ verifyAdmin: Admin verification error:', error);
       res.status(401).json({ message: 'Token yaroqsiz' });
     }
   },
@@ -142,7 +150,7 @@ const authMiddleware = {
              console.log('❌ verifyAuth: Employee not found in employees table for name:', employeeName);
            }
         }
-      } else if (decoded.role === 'admin' || decoded.role === 'superadmin') {
+      } else if (decoded.role === 'admin' || decoded.role === 'superadmin' || decoded.role === 'private_admin') {
         console.log('🔍 verifyAuth: Checking admin in admins table...');
         const result = await query(
       'SELECT id, username, email, password_hash, full_name, salon_id, is_active, created_at, updated_at FROM admins WHERE id = $1 AND is_active = true',
