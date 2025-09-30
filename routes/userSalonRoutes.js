@@ -10,10 +10,10 @@ const { verifyUserToken } = require('../middleware/authMiddleware');
  *     Salon:
  *       type: object
  *       properties:
-         id:
-           type: string
-           format: uuid
-           description: Salon ID raqami
+ *         id:
+ *           type: string
+ *           format: uuid
+ *           description: Salon ID raqami
  *         name:
  *           type: string
  *           description: Salon nomi
@@ -153,13 +153,13 @@ router.get('/', verifyUserToken, async (req, res) => {
  *     security:
  *       - UserToken: []
  *     parameters:
-       - in: path
-         name: id
-         required: true
-         schema:
-           type: string
-           format: uuid
-         description: Salon ID raqami
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Salon ID raqami
  *     responses:
  *       200:
  *         description: Salon ma'lumotlari muvaffaqiyatli qaytarildi

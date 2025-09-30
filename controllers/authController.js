@@ -184,10 +184,10 @@ const employeeLogin = async (req, res) => {
             return res.status(400).json({ message: 'Username va password talab qilinadi' });
         }
 
-        // Employee ni database dan topish (username yoki email orqali)
+        // Employee ni admins jadvalidan topish (username yoki email orqali)
         const result = await pool.query(
-            'SELECT * FROM employees WHERE (employee_name = $1 OR email = $1) AND is_active = true',
-            [username]
+            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE (username = $1 OR email = $1) AND role = $2 AND is_active = true',
+            [username, 'employee']
         );
 
         if (result.rows.length === 0) {
@@ -197,7 +197,7 @@ const employeeLogin = async (req, res) => {
         const employee = result.rows[0];
 
         // Password tekshirish
-        const isValidPassword = await bcrypt.compare(password, employee.employee_password);
+        const isValidPassword = await bcrypt.compare(password, employee.password_hash);
         
         if (!isValidPassword) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
@@ -206,7 +206,7 @@ const employeeLogin = async (req, res) => {
         // Token yaratish
         const token = generateToken({
             id: employee.id,
-            username: employee.employee_name || employee.email,
+            username: employee.username,
             role: 'employee',
             salon_id: employee.salon_id
         });
@@ -216,10 +216,10 @@ const employeeLogin = async (req, res) => {
             token,
             user: {
                 id: employee.id,
-                username: employee.employee_name || employee.email,
+                username: employee.username,
                 email: employee.email,
                 name: employee.name,
-                surname: employee.surname, // surname yo'q, shuning uchun employee_name ishlatamiz
+                surname: employee.surname,
                 role: 'employee',
                 salon_id: employee.salon_id
             }
