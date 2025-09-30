@@ -1,5 +1,4 @@
 require('dotenv').config({ path: '.env.production' });
-require('dotenv').config();
 
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
@@ -13,32 +12,54 @@ const pool = new Pool({
 
 async function testAdminPassword() {
   try {
-    console.log('🔍 Admin1 password ni tekshirmoqda...');
+    console.log('🔍 Yangilangan admin ma\'lumotlarini tekshirmoqda...\n');
     
-    // Get admin1 data
-    const result = await pool.query('SELECT * FROM admins WHERE username = $1', ['admin1']);
+    // Get all admins with updated roles
+    const result = await pool.query('SELECT username, password_hash, role, full_name FROM admins ORDER BY username');
     
     if (result.rows.length === 0) {
-      console.log('❌ admin1 topilmadi');
+      console.log('❌ Hech qanday admin topilmadi');
       return;
     }
     
-    const admin = result.rows[0];
-    console.log('✅ admin1 topildi:');
-    console.log(`   Username: ${admin.username}`);
-    console.log(`   Email: ${admin.email}`);
-    console.log(`   Full Name: ${admin.full_name}`);
-    console.log(`   Role: ${admin.role}`);
-    console.log(`   Is Active: ${admin.is_active}`);
-    console.log(`   Password Hash: ${admin.password_hash}`);
+    console.log(`✅ ${result.rows.length} ta admin topildi:\n`);
     
-    // Test different passwords
-    const testPasswords = ['admin1123', 'admin123', 'password', '123456', 'admin1'];
+    // Display admin information
+    result.rows.forEach((admin, index) => {
+      console.log(`${index + 1}. ${admin.username} (${admin.role})`);
+      console.log(`   Full Name: ${admin.full_name}`);
+      console.log(`   Password: admin${index + 1}123`);
+      console.log('');
+    });
     
-    console.log('\n🔐 Password testlari:');
-    for (const password of testPasswords) {
-      const isMatch = await bcrypt.compare(password, admin.password_hash);
-      console.log(`   "${password}": ${isMatch ? '✅ TO\'G\'RI' : '❌ NOTO\'G\'RI'}`);
+    console.log('🔐 Login ma\'lumotlari:');
+    console.log('='.repeat(50));
+    console.log('Admin 1:');
+    console.log('  Username: admin1');
+    console.log('  Password: admin1123');
+    console.log('  Role: admin');
+    console.log('');
+    console.log('Admin 2:');
+    console.log('  Username: admin2');
+    console.log('  Password: admin2123');
+    console.log('  Role: private_admin');
+    console.log('');
+    
+    // Test login for both admins
+    console.log('🧪 Login testlari:');
+    console.log('='.repeat(50));
+    
+    const testCredentials = [
+      { username: 'admin1', password: 'admin1123' },
+      { username: 'admin2', password: 'admin2123' }
+    ];
+    
+    for (const cred of testCredentials) {
+      const admin = result.rows.find(a => a.username === cred.username);
+      if (admin) {
+        const isValid = await bcrypt.compare(cred.password, admin.password_hash);
+        console.log(`${cred.username}: ${isValid ? '✅ TO\'G\'RI' : '❌ NOTO\'G\'RI'}`);
+      }
     }
     
   } catch (error) {

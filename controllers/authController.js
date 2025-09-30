@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const { pool } = require('../config/database');
+const { query, get, run } = require('../config/sqlite_database');
 const { generateToken } = require('../middleware/authMiddleware');
 
 // Superadmin login
@@ -12,16 +12,14 @@ const superadminLogin = async (req, res) => {
         }
 
         // Superadmin ni database dan topish
-        const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role = $2 AND is_active = true',
+        const superadmin = await get(
+            'SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at FROM admins WHERE username = ? AND role = ? AND is_active = 1',
             [username, 'superadmin']
         );
 
-        if (result.rows.length === 0) {
+        if (!superadmin) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
-
-        const superadmin = result.rows[0];
 
         // Password tekshirish
         const isValidPassword = await bcrypt.compare(password, superadmin.password_hash);
@@ -64,16 +62,14 @@ const adminLogin = async (req, res) => {
         }
 
         // Admin ni database dan topish (faqat admin role'li userlar)
-        const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE username = $1 AND role IN ($2, $3, $4, $5) AND is_active = true',
-            [username, 'admin', 'salon_admin', 'private_salon_admin', 'superadmin']
+        const admin = await get(
+            'SELECT id, username, email, password_hash, full_name, role, is_active, created_at, updated_at FROM admins WHERE username = ? AND is_active = 1',
+            [username]
         );
 
-        if (result.rows.length === 0) {
+        if (!admin) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
-
-        const admin = result.rows[0];
 
         // Password tekshirish
         const isValidPassword = await bcrypt.compare(password, admin.password_hash);
@@ -132,20 +128,20 @@ const createAdmin = async (req, res) => {
         }
 
         // Check if salon exists
-        const salonCheck = await pool.query('SELECT id FROM salons WHERE id = $1', [salon_id]);
-        if (salonCheck.rows.length === 0) {
+        const salon = await get('SELECT id FROM salons WHERE id = ?', [salon_id]);
+        if (!salon) {
             return res.status(404).json({
                 message: 'Salon topilmadi'
             });
         }
 
         // Check if admin already exists
-        const existingAdmin = await pool.query(
-            'SELECT id FROM admins WHERE username = $1 OR email = $2',
+        const existingAdmin = await get(
+            'SELECT id FROM admins WHERE username = ? OR email = ?',
             [username, email]
         );
 
-        if (existingAdmin.rows.length > 0) {
+        if (existingAdmin) {
             return res.status(400).json({
                 message: 'Admin allaqachon mavjud'
             });
@@ -156,17 +152,22 @@ const createAdmin = async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         // Create admin
-        const result = await pool.query(
+        const result = await run(
             `INSERT INTO admins (username, email, password_hash, full_name, salon_id)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, username, email, full_name, salon_id, created_at`,
+             VALUES (?, ?, ?, ?, ?)`,
             [username, email, hashedPassword, full_name, salon_id]
+        );
+
+        // Get the created admin
+        const newAdmin = await get(
+            'SELECT id, username, email, full_name, salon_id, created_at FROM admins WHERE id = ?',
+            [result.id]
         );
 
         res.status(201).json({
             success: true,
             message: 'Admin muvaffaqiyatli yaratildi',
-            data: result.rows[0]
+            data: newAdmin
         });
 
     } catch (error) {
@@ -185,16 +186,14 @@ const employeeLogin = async (req, res) => {
         }
 
         // Employee ni admins jadvalidan topish (username yoki email orqali)
-        const result = await pool.query(
-            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE (username = $1 OR email = $1) AND role = $2 AND is_active = true',
-            [username, 'employee']
+        const employee = await get(
+            'SELECT id, username, email, password_hash, full_name, role, salon_id, is_active, created_at, updated_at FROM admins WHERE (username = ? OR email = ?) AND role = ? AND is_active = 1',
+            [username, username, 'employee']
         );
 
-        if (result.rows.length === 0) {
+        if (!employee) {
             return res.status(401).json({ message: 'Noto\'g\'ri username yoki password' });
         }
-
-        const employee = result.rows[0];
 
         // Password tekshirish
         const isValidPassword = await bcrypt.compare(password, employee.password_hash);
