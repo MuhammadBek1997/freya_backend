@@ -1005,7 +1005,14 @@ const swaggerDefinition = {
 
 const options = {
   definition: swaggerDefinition,
-  apis: ['./routes/*.js'],
+  apis: [
+    './routes/*.js',
+    './routes/employeeRoutes.js',
+    './routes/postRoutes.js',
+    './routes/salonRoutes.js',
+    './routes/authRoutes.js',
+    './routes/userRoutes.js'
+  ],
 };
 
 const specs = swaggerJSDoc(options);
